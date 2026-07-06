@@ -827,7 +827,8 @@ img { display: block; max-width: 100%; }
     <p class="form-sub">We'll come to your location, evaluate your space, and recommend the right setup — no commitment, no pressure, no cost.</p>
 
     <div id="form-container">
-      <form id="eval-form" onsubmit="handleSubmit(event)">
+      <form id="eval-form" action="https://formspree.io/f/xaqgvvvl" method="POST" onsubmit="handleSubmit(event)">
+        <input type="hidden" name="_subject" value="New Vending Assessment Request — Sidecar Site">
         <div class="form-grid">
           <div class="form-field">
             <label for="biz-name">Business Name</label>
@@ -904,9 +905,31 @@ function handleSubmit(e) {
   e.preventDefault();
   const form = document.getElementById('eval-form');
   const success = document.getElementById('form-success');
-  form.style.display = 'none';
-  success.style.display = 'block';
-  success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const data = new FormData(form);
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+
+  fetch(form.action, {
+    method: form.method,
+    body: data,
+    headers: { 'Accept': 'application/json' }
+  })
+    .then((response) => {
+      if (response.ok) {
+        form.style.display = 'none';
+        success.style.display = 'block';
+        success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        throw new Error('Submission failed');
+      }
+    })
+    .catch(() => {
+      alert('Sorry, something went wrong sending your request. Please call us directly at (678) 313-5619, or try again in a moment.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Book My Free Assessment →';
+    });
 }
 </script>
 </body>
