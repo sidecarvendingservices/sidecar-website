@@ -820,37 +820,72 @@ img { display: block; max-width: 100%; }
 <div class="stripe"></div>
 
 <!-- FORM -->
-<form id="evaluation-form">
-  <input type="text" name="fi-sender-firstName" placeholder="Your Name" required>
-  <input type="text" name="fi-text-businessName" placeholder="Business Name" required>
-  <input type="email" name="fi-sender-email" placeholder="Email Address" required>
-  <input type="tel" name="fi-sender-phone" placeholder="Phone Number" required>
+<div class="form-section" id="evaluation">
+  <div class="form-card">
+    <span class="eyebrow" style="color:var(--sky);">Free On-Site Evaluation</span>
+    <h2>Request your free<br>on-site assessment</h2>
+    <p class="form-sub">We'll come to your location, evaluate your space, and recommend the right setup — no commitment, no pressure, no cost.</p>
 
-  <select name="fi-select-spaceType" required>
-    <option value="">Select your space...</option>
-    <option value="Office / Corporate">Office / Corporate</option>
-    <option value="Warehouse / Industrial">Warehouse / Industrial</option>
-    <option value="Apartment Community">Apartment Community</option>
-    <option value="Gym / Fitness Studio">Gym / Fitness Studio</option>
-    <option value="Medical / Healthcare">Medical / Healthcare</option>
-    <option value="Auto Dealership">Auto Dealership</option>
-    <option value="Other">Other</option>
-  </select>
+    <form id="evaluation-form">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="fi-businessName">Business Name</label>
+          <input type="text" id="fi-businessName" name="fi-text-businessName" required>
+        </div>
+        <div class="form-field">
+          <label for="fi-firstName">Your Name</label>
+          <input type="text" id="fi-firstName" name="fi-sender-firstName" required>
+        </div>
+        <div class="form-field">
+          <label for="fi-phone">Phone Number</label>
+          <input type="tel" id="fi-phone" name="fi-sender-phone" required>
+        </div>
+        <div class="form-field">
+          <label for="fi-email">Email Address</label>
+          <input type="email" id="fi-email" name="fi-sender-email" required>
+        </div>
+        <div class="form-field form-full">
+          <label for="fi-spaceType">Type of Space</label>
+          <select id="fi-spaceType" name="fi-select-spaceType" required>
+            <option value="">Select your space...</option>
+            <option value="Office / Corporate">Office / Corporate</option>
+            <option value="Warehouse / Industrial">Warehouse / Industrial</option>
+            <option value="Apartment Community">Apartment Community</option>
+            <option value="Gym / Fitness Studio">Gym / Fitness Studio</option>
+            <option value="Medical / Healthcare">Medical / Healthcare</option>
+            <option value="Auto Dealership">Auto Dealership</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-field form-full">
+          <label for="fi-employeeCount">Approx. Employee / Resident Count</label>
+          <input type="text" id="fi-employeeCount" name="fi-text-employeeCount">
+        </div>
+        <div class="form-field form-full">
+          <label for="fi-additionalInfo">Anything else we should know?</label>
+          <textarea id="fi-additionalInfo" name="fi-text-additionalInfo"></textarea>
+        </div>
+      </div>
 
-  <input type="text" name="fi-text-employeeCount" placeholder="Approx. Employee / Resident Count">
-  <textarea name="fi-text-additionalInfo" placeholder="Anything else we should know?"></textarea>
+      <button type="submit" class="btn-full">Book My Free Assessment →</button>
+      <p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
+    </form>
 
-  <button type="submit">Book My Free Assessment →</button>
-</form>
+    <div class="form-success" id="form-success">
+      <h3>✓ You're on the list.</h3>
+      <p>We'll be in touch within one business day to confirm your evaluation time.<br>
+      Questions? Call us directly: <a href="tel:6783135619" style="color:var(--sky);">(678) 313-5619</a></p>
+    </div>
+  </div>
+</div>
 
-<p id="form-status"></p>
-  <script src="https://forminit.com/sdk/v1/forminit.js"></script>
+<script src="https://forminit.com/sdk/v1/forminit.js"></script>
 <script>
   const forminit = new Forminit();
   const FORM_ID = 'fiv8sb0l2wj';
 
   const form = document.getElementById('evaluation-form');
-  const successMessage = document.getElementById('formSuccess'); // ← swap to your actual success block's id
+  const successMessage = document.getElementById('form-success');
   const button = form.querySelector('button[type="submit"]');
 
   form.addEventListener('submit', async function (event) {
@@ -866,15 +901,15 @@ img { display: block; max-width: 100%; }
     button.textContent = 'Book My Free Assessment →';
 
     if (error) {
-      alert(error.message || 'Something went wrong. Please try again or call us directly.');
+      alert(error.message || 'Something went wrong. Please call us directly at (678) 313-5619.');
       return;
     }
 
     form.style.display = 'none';
-    if (successMessage) successMessage.style.display = 'block';
+    successMessage.style.display = 'block';
+    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 </script>
-
 <!-- FOOTER -->
 <div class="footer-wrap">
   <div class="footer-inner">
