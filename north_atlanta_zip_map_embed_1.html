@@ -1,0 +1,304 @@
+<!-- ============================================================================
+     North Atlanta Territory — Zip Code Map (embeddable snippet)
+     Paste this ENTIRE block (div + style + script) anywhere inside your
+     page's <body>. It scopes its own CSS/JS and won't touch your site's
+     existing styles or globals. Embed once per page.
+
+     Runtime dependencies (fetched by each visitor's browser, not by you):
+       - Leaflet.js map library:  cdnjs.cloudflare.com, unpkg.com, cdn.jsdelivr.net
+         (tried in that order — skipped entirely if your page already loads Leaflet)
+       - Zip code boundaries:     tigerweb.geo.census.gov (Census TIGERweb API)
+       - Basemap tiles:           basemaps.cartocdn.com
+     If your site has a Content-Security-Policy, allow those hosts under
+     script-src / connect-src / img-src as needed.
+
+     To resize: set --na-zip-map-height on the #na-zip-map element, e.g.
+       <div id="na-zip-map" class="na-zip-map" style="--na-zip-map-height:800px">
+     ============================================================================ -->
+<div id="na-zip-map" class="na-zip-map">
+  <div class="na-zip-map__canvas"></div>
+  <div class="na-zip-map__sidebar">
+    <div class="na-zip-map__header">
+      <h3>North Atlanta Territory</h3>
+      <p>43 residential zip codes highlighted (PO Box‑only/unique codes, 30041, 30077, and 30356 excluded), drawn from official 2020 Census ZCTA boundaries. Click a shape (or a chip in the list) to zoom to it.</p>
+    </div>
+    <div class="na-zip-map__status">
+      <span class="na-zip-map__status-text">Loading zip code boundaries…</span>
+      <div class="na-zip-map__bar"><div class="na-zip-map__bar-fill"></div></div>
+    </div>
+    <div class="na-zip-map__toggle">
+      <label><input type="checkbox" class="na-zip-map__toggle-input" checked> Show zip code labels on map</label>
+    </div>
+    <div class="na-zip-map__list">
+      <div class="na-zip-map__group-title">On map (<span class="na-zip-map__count-found">0</span>)</div>
+      <div class="na-zip-map__grid na-zip-map__grid--found"></div>
+      <div class="na-zip-map__group-title">No boundary found (<span class="na-zip-map__count-missing">0</span>)</div>
+      <div class="na-zip-map__grid na-zip-map__grid--missing"></div>
+    </div>
+    <div class="na-zip-map__legend">
+      <div class="na-zip-map__legend-row"><span class="na-zip-map__swatch na-zip-map__swatch--fill"></span> Highlighted zip code area</div>
+      <div class="na-zip-map__legend-row"><span class="na-zip-map__swatch na-zip-map__swatch--missing"></span> No Census boundary returned for this zip</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .na-zip-map{
+    --na-ink:#1c2530; --na-muted:#5b6b7a; --na-line:#e2e7ec; --na-panel:#ffffff;
+    --na-accent:#2f6fed; --na-bg:#f4f6f8; --na-zip-map-height:640px;
+    display:flex; height:var(--na-zip-map-height); width:100%;
+    border:1px solid var(--na-line); border-radius:10px; overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--na-ink); background:var(--na-bg);
+  }
+  .na-zip-map, .na-zip-map *{ box-sizing:border-box; }
+  .na-zip-map__canvas{ flex:1; height:100%; min-width:0; }
+  .na-zip-map__sidebar{ width:320px; min-width:280px; background:var(--na-panel);
+    border-left:1px solid var(--na-line); display:flex; flex-direction:column; overflow:hidden; }
+  .na-zip-map__header{ padding:18px 18px 12px; border-bottom:1px solid var(--na-line); }
+  .na-zip-map__header h3{ font-size:16px; margin:0 0 4px; font-weight:650; }
+  .na-zip-map__header p{ margin:0; font-size:12.5px; color:var(--na-muted); line-height:1.45; }
+  .na-zip-map__status{ padding:10px 18px; font-size:12.5px; color:var(--na-muted); border-bottom:1px solid var(--na-line); }
+  .na-zip-map__status.is-error{ color:#b3261e; }
+  .na-zip-map__bar{ height:4px; background:var(--na-line); border-radius:3px; overflow:hidden; margin-top:6px; }
+  .na-zip-map__bar-fill{ height:100%; background:var(--na-accent); width:0%; transition:width .25s ease; }
+  .na-zip-map__list{ flex:1; overflow-y:auto; padding:10px 12px; }
+  .na-zip-map__group-title{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--na-muted);
+    padding:10px 8px 6px; font-weight:650; }
+  .na-zip-map__grid{ display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:0 6px; }
+  .na-zip-map__chip{ font-size:12.5px; padding:6px 8px; border-radius:7px; border:1px solid var(--na-line);
+    background:#fafbfc; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background .12s; }
+  .na-zip-map__chip:hover{ background:#eef3fe; border-color:#c7d8fb; }
+  .na-zip-map__chip .na-zip-map__dot{ width:8px; height:8px; border-radius:50%; background:var(--na-accent); flex:none; }
+  .na-zip-map__chip.is-missing .na-zip-map__dot{ background:#c7cdd4; }
+  .na-zip-map__chip.is-missing{ color:var(--na-muted); cursor:default; }
+  .na-zip-map__legend{ padding:12px 18px; border-top:1px solid var(--na-line); font-size:12px; color:var(--na-muted); }
+  .na-zip-map__legend-row{ display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .na-zip-map__swatch{ width:14px; height:14px; border-radius:3px; flex:none; }
+  .na-zip-map__swatch--fill{ background:rgba(47,111,237,.35); border:1.5px solid var(--na-accent); }
+  .na-zip-map__swatch--missing{ background:#c7cdd4; border-radius:50%; width:8px; height:8px; margin:0 3px; }
+  .na-zip-map__toggle{ padding:8px 18px; border-top:1px solid var(--na-line); font-size:12.5px; }
+  .na-zip-map__toggle label{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .na-zip-map .zip-label{ background:transparent; border:none; box-shadow:none; font-size:11px; font-weight:700;
+    color:#173d94; text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff,0 0 3px #fff; white-space:nowrap; }
+  .na-zip-map .leaflet-popup-content{ font-size:13px; }
+  @media (max-width: 640px){
+    .na-zip-map{ flex-direction:column; height:auto; }
+    .na-zip-map__canvas{ height:420px; }
+    .na-zip-map__sidebar{ width:100%; min-width:0; border-left:none; border-top:1px solid var(--na-line); max-height:420px; }
+  }
+</style>
+
+<script>
+(function(){
+  const root = document.getElementById('na-zip-map');
+  if(!root || root.dataset.naZipMapInit){ return; } // guard against double-paste on the same page
+  root.dataset.naZipMapInit = '1';
+
+  function loadScriptOnce(src){
+    return new Promise((resolve, reject)=>{
+      if(document.querySelector('script[data-na-zip-src="'+src+'"]')){ resolve(src); return; }
+      const s = document.createElement('script');
+      s.src = src; s.dataset.naZipSrc = src;
+      s.onload = ()=>resolve(src);
+      s.onerror = ()=>reject(new Error('failed: ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function loadCssOnce(href){
+    if(document.querySelector('link[data-na-zip-href="'+href+'"]')) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href; l.dataset.naZipHref = href;
+    document.head.appendChild(l);
+  }
+
+  loadCssOnce('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css');
+  loadCssOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+  const LEAFLET_SOURCES = [
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'
+  ];
+
+  const statusEl = root.querySelector('.na-zip-map__status');
+  const statusText = root.querySelector('.na-zip-map__status-text');
+  const barWrap = root.querySelector('.na-zip-map__bar');
+  const barFill = root.querySelector('.na-zip-map__bar-fill');
+
+  (async function loadLeafletThenInit(){
+    if(typeof window.L === 'undefined'){
+      let loaded = false;
+      for(const src of LEAFLET_SOURCES){
+        try{ await loadScriptOnce(src); if(typeof window.L !== 'undefined'){ loaded = true; break; } }
+        catch(e){ console.error(e); }
+      }
+      if(!loaded){
+        statusEl.classList.add('is-error');
+        barWrap.style.display = 'none';
+        statusText.textContent = 'The map library could not load from any source (cdnjs, unpkg, jsdelivr all blocked by this page or network).';
+        return;
+      }
+    }
+    initMap(root);
+  })();
+
+  function initMap(root){
+    const ZIPS = ["30004","30005","30008","30009","30022",
+    "30060","30062","30064","30066","30067","30068","30071","30075","30076",
+    "30080","30082","30090","30092","30093","30096","30097","30101",
+    "30102","30126","30144","30152","30188","30189","30305","30319","30324","30326","30327",
+    "30328","30329","30338","30339","30340","30341","30342","30346","30350","30360"];
+
+    const mapEl = root.querySelector('.na-zip-map__canvas');
+    const map = L.map(mapEl, {zoomControl:true}).setView([34.02, -84.35], 10);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+
+    const shapesLayer = L.layerGroup().addTo(map);
+    const labelsLayer = L.layerGroup().addTo(map);
+    const zipLayerIndex = {};
+    let allBounds = null;
+
+    function ringArea(ring){
+      let a=0;
+      for(let i=0;i<ring.length;i++){
+        const [x1,y1]=ring[i], [x2,y2]=ring[(i+1)%ring.length];
+        a += (x1*y2 - x2*y1);
+      }
+      return a/2;
+    }
+    function ringsToPolygons(rings){
+      const polys=[];
+      rings.forEach(ring=>{
+        const a=ringArea(ring);
+        if(a<0 || polys.length===0){ polys.push([ring]); }
+        else { polys[polys.length-1].push(ring); }
+      });
+      return polys;
+    }
+    function toLatLngRing(ring){ return ring.map(([lon,lat])=>[lat,lon]); }
+
+    function addZipFeature(zip, geometry, centLat, centLon){
+      if(!geometry || !geometry.rings || !geometry.rings.length) return null;
+      const polys = ringsToPolygons(geometry.rings);
+      const fg = L.featureGroup();
+      polys.forEach(poly=>{
+        const latlngRings = poly.map(toLatLngRing);
+        const layer = L.polygon(latlngRings, {
+          color:'#2f6fed', weight:1.75, opacity:0.9,
+          fillColor:'#2f6fed', fillOpacity:0.32
+        });
+        layer.bindPopup('<strong>ZIP ' + zip + '</strong>');
+        layer.on('mouseover', function(){ this.setStyle({fillOpacity:0.55, weight:2.5}); });
+        layer.on('mouseout', function(){ this.setStyle({fillOpacity:0.32, weight:1.75}); });
+        fg.addLayer(layer);
+      });
+      fg.addTo(shapesLayer);
+      const b = fg.getBounds();
+      allBounds = allBounds ? allBounds.extend(b) : L.latLngBounds(b.getSouthWest(), b.getNorthEast());
+
+      if(centLat && centLon){
+        const lbl = L.marker([centLat, centLon], {
+          icon: L.divIcon({className:'zip-label', html: zip, iconSize:[46,14], iconAnchor:[23,7]}),
+          interactive:false
+        });
+        lbl.addTo(labelsLayer);
+      }
+      zipLayerIndex[zip] = {fg, bounds:b};
+      return fg;
+    }
+
+    function chunk(arr, size){
+      const out=[];
+      for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+      return out;
+    }
+
+    const foundSet = new Set();
+    const missingSet = new Set(ZIPS);
+    const gridFound = root.querySelector('.na-zip-map__grid--found');
+    const gridMissing = root.querySelector('.na-zip-map__grid--missing');
+    const countFound = root.querySelector('.na-zip-map__count-found');
+    const countMissing = root.querySelector('.na-zip-map__count-missing');
+
+    function refreshLists(){
+      gridFound.innerHTML=''; gridMissing.innerHTML='';
+      ZIPS.forEach(z=>{
+        const chip=document.createElement('div');
+        chip.className='na-zip-map__chip'+(foundSet.has(z)?'':' is-missing');
+        chip.innerHTML='<span class="na-zip-map__dot"></span>'+z;
+        if(foundSet.has(z)){
+          chip.addEventListener('click', ()=>{
+            const entry = zipLayerIndex[z];
+            if(entry){ map.fitBounds(entry.bounds.pad(0.4)); entry.fg.eachLayer(l=>l.openPopup && l.openPopup()); }
+          });
+          gridFound.appendChild(chip);
+        } else {
+          gridMissing.appendChild(chip);
+        }
+      });
+      countFound.textContent = foundSet.size;
+      countMissing.textContent = missingSet.size;
+    }
+    refreshLists();
+
+    const CHUNKS = chunk(ZIPS, 12);
+    const base = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2/query';
+
+    async function fetchChunk(zipsChunk){
+      const where = "ZCTA5 IN (" + zipsChunk.map(z=>"'"+z+"'").join(',') + ")";
+      const url = base + '?where=' + encodeURIComponent(where) +
+        '&outFields=ZCTA5,CENTLAT,CENTLON&returnGeometry=true&f=json&outSR=4326';
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(data.error) throw new Error(data.error.message || 'query error');
+      return data.features || [];
+    }
+
+    (async function run(){
+      let done=0;
+      let errorCount=0;
+      for(const c of CHUNKS){
+        try{
+          const feats = await fetchChunk(c);
+          feats.forEach(f=>{
+            const zip = f.attributes.ZCTA5;
+            addZipFeature(zip, f.geometry, f.attributes.CENTLAT, f.attributes.CENTLON);
+            foundSet.add(zip);
+            missingSet.delete(zip);
+          });
+        }catch(e){
+          errorCount++;
+          console.error('Chunk failed', c, e);
+        }
+        done += c.length;
+        const pct = Math.round(done/ZIPS.length*100);
+        barFill.style.width = pct + '%';
+        statusText.textContent = 'Loaded ' + Math.min(done, ZIPS.length) + ' of ' + ZIPS.length + ' zip codes…';
+        refreshLists();
+      }
+      if(allBounds){ map.fitBounds(allBounds.pad(0.06)); }
+      if(errorCount>0 && foundSet.size===0){
+        statusEl.classList.add('is-error');
+        barWrap.style.display = 'none';
+        statusText.textContent = 'Could not reach the Census boundary service. Check your internet connection and reload this page.';
+      } else if(missingSet.size > 0){
+        barWrap.style.display = 'none';
+        statusText.textContent = 'Showing ' + foundSet.size + ' of ' + ZIPS.length + ' zip code boundaries (' +
+          missingSet.size + ' returned no boundary from the Census service).';
+      } else {
+        barWrap.style.display = 'none';
+        statusText.textContent = 'Showing all ' + foundSet.size + ' zip code boundaries.';
+      }
+    })();
+
+    root.querySelector('.na-zip-map__toggle-input').addEventListener('change', function(e){
+      if(e.target.checked){ map.addLayer(labelsLayer); } else { map.removeLayer(labelsLayer); }
+    });
+  }
+})();
+</script>
