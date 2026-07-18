@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Received — Sidecar Vending Services</title>
+<!-- Thank-you pages are normally kept out of search results since the only way in
+     is by completing the form. Remove this line if you'd rather have it indexed. -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- ────────────────────────────────────────────────────────────────
+  GOOGLE ADS / GA4 CONVERSION TRACKING
+  This page only loads after a real form submission succeeds, so it's the
+  right place to fire your conversion event. Two ways to use it — pick one:
+
+  OPTION A — "Destination URL" conversion action (no code needed here)
+    In Google Ads, create a conversion action of type "Page load" and set
+    the destination URL to a page containing "/thank-you.html". Google Ads
+    will count a conversion any time someone lands here. Nothing below is
+    required for this option.
+
+  OPTION B — gtag.js event snippet (more precise, recommended)
+    1) Make sure the base Google tag (gtag.js) is installed sitewide
+       (usually in the <head> of every page, including index.html).
+    2) Replace AW-CONVERSION_ID and AW-CONVERSION_LABEL below with the
+       values from Google Ads → Goals → Conversions → your action →
+       "Tag setup" → "Use Google tag directly".
+    Uncomment the block below once you've filled those in.
+──────────────────────────────────────────────────────────────────── -->
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-CONVERSION_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-CONVERSION_ID');
+  gtag('event', 'conversion', {
+    'send_to': 'AW-CONVERSION_ID/AW-CONVERSION_LABEL'
+  });
+</script>
+-->
+
+<style>
+:root {
+  --sky: #29ABE2;
+  --sky-light: #6DCAEE;
+  --sky-pale: #D4EEF9;
+  --sky-deep: #1A7EB5;
+  --sky-ink: #0D4D73;
+  --sky-whisper: #EBF7FD;
+  --charcoal: #3D3D3D;
+  --graphite: #5A5A5A;
+  --stone: #8C8C8C;
+  --fog: #EBEBEB;
+  --ghost: #F5F5F5;
+  --white: #FFFFFF;
+  --lime: #5DBF6A;
+  --font-display: 'Nunito', sans-serif;
+  --font-body: 'Nunito Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
+img { display: block; max-width: 100%; }
+.stripe {
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sky) 0px, var(--sky) 28px,
+    var(--sky-light) 28px, var(--sky-light) 46px,
+    var(--sky-pale) 46px, var(--sky-pale) 56px,
+    transparent 56px, transparent 68px
+  );
+}
+.btn-primary {
+  display: inline-block;
+  background: var(--sky);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--sky-deep); }
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--sky);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--sky);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-secondary:hover { background: var(--sky-pale); }
+/* ── NAV ── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fog);
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-logo img { height: 48px; }
+/* ── CONFIRMATION ── */
+.confirm-wrap {
+  background: var(--sky);
+  position: relative;
+  overflow: hidden;
+}
+.hero-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.confirm-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 88px 32px 96px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.confirm-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+  font-size: 36px;
+  color: #fff;
+}
+.confirm-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  display: block;
+  margin-bottom: 14px;
+}
+.confirm-h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+.confirm-sub {
+  font-size: 18px;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+.confirm-sub strong { color: #fff; }
+.confirm-phone {
+  margin-top: 28px;
+  font-size: 15px;
+  color: rgba(255,255,255,0.85);
+}
+.confirm-phone a {
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 2px solid rgba(255,255,255,0.5);
+}
+/* ── NEXT STEPS ── */
+.next-wrap { padding: 72px 32px; }
+.next-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.next-inner h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--charcoal);
+  text-align: center;
+  margin-bottom: 40px;
+}
+.next-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.next-card {
+  background: var(--ghost);
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  padding: 26px 22px;
+}
+.next-num {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--sky);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.next-card h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.next-card p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.back-home {
+  text-align: center;
+  margin-top: 44px;
+}
+/* ── FOOTER ── */
+.footer-wrap {
+  background: #3A3A3A;
+  padding: 36px 32px 28px;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.footer-contact {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 2;
+  margin-bottom: 12px;
+}
+.footer-contact a { color: var(--sky-light); text-decoration: none; }
+.footer-bottom {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+@media (max-width: 700px) {
+  .confirm-h1 { font-size: 32px; }
+  .next-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<div class="nav-wrap">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <img src="images/white-background.png" alt="Sidecar Vending Services" style="height:48px;">
+    </a>
+    <a class="btn-secondary" href="index.html">Back to Home</a>
+  </div>
+</div>
+
+<!-- CONFIRMATION -->
+<div class="confirm-wrap">
+  <div class="hero-bubble" style="width:420px;height:420px;top:-140px;right:-100px;"></div>
+  <div class="hero-bubble" style="width:220px;height:220px;bottom:-80px;left:6%;"></div>
+  <div class="confirm-inner">
+    <div class="confirm-icon">✓</div>
+    <span class="confirm-eyebrow">Request Received</span>
+    <h1 class="confirm-h1">You're all set.</h1>
+    <p class="confirm-sub">Thanks for requesting your free on-site evaluation.<br><strong>A member of the Sidecar team will contact you within 24 hours</strong> to schedule your visit.</p>
+    <div class="confirm-phone">
+      Need to talk sooner? Call us directly at <a href="tel:6783135619">(678) 313-5619</a>
+    </div>
+  </div>
+</div>
+<!-- STRIPE -->
+<div class="stripe"></div>
+
+<!-- WHAT HAPPENS NEXT -->
+<div class="next-wrap">
+  <div class="next-inner">
+    <h2>What happens next</h2>
+    <div class="next-grid">
+      <div class="next-card">
+        <div class="next-num">1</div>
+        <h3>We review your request</h3>
+        <p>Our team looks over the details you shared about your space and business right away.</p>
+      </div>
+      <div class="next-card">
+        <div class="next-num">2</div>
+        <h3>We reach out within 24 hours</h3>
+        <p>A Sidecar team member will call or email you to confirm a time for your free on-site evaluation.</p>
+      </div>
+      <div class="next-card">
+        <div class="next-num">3</div>
+        <h3>We come to you</h3>
+        <p>We visit your location, assess your space, and recommend the right machines — no cost, no commitment.</p>
+      </div>
+    </div>
+    <div class="back-home">
+      <a class="btn-primary" href="index.html">Return to Homepage</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-wrap">
+  <div class="footer-inner">
+    <div class="footer-contact">
+      Atlanta, GA · <a href="https://sidecarservices.com">sidecarservices.com</a> · <a href="tel:6783135619">(678) 313-5619</a>
+    </div>
+    <div class="footer-bottom">© 2025 Sidecar Vending Services · All rights reserved</div>
+  </div>
+</div>
+</body>
+</html>
