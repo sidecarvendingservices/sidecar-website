@@ -29,13 +29,11 @@
   --font-display: 'Nunito', sans-serif;
   --font-body: 'Nunito Sans', sans-serif;
 }
-
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
 img { display: block; max-width: 100%; }
-
 /* ── UTILITIES ── */
 .eyebrow {
   font-family: var(--font-body);
@@ -56,7 +54,6 @@ img { display: block; max-width: 100%; }
     transparent 56px, transparent 68px
   );
 }
-
 /* ── BUTTONS ── */
 .btn-primary {
   display: inline-block;
@@ -125,7 +122,7 @@ img { display: block; max-width: 100%; }
   margin-top: 8px;
 }
 .btn-full:hover { background: var(--sky-deep); }
-
+.btn-full:disabled { opacity: 0.7; cursor: not-allowed; }
 /* ── NAV ── */
 .nav-wrap {
   position: sticky;
@@ -153,7 +150,6 @@ img { display: block; max-width: 100%; }
   transition: color 0.15s;
 }
 .nav-links a:hover { color: var(--sky); }
-
 /* ── HERO ── */
 .hero-wrap {
   background: var(--sky);
@@ -233,7 +229,6 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center;
 }
-
 /* ── TRUST BAR ── */
 .trust-bar {
   background: var(--ghost);
@@ -260,7 +255,6 @@ img { display: block; max-width: 100%; }
   border-radius: 999px;
   white-space: nowrap;
 }
-
 /* ── SECTIONS SHARED ── */
 .section-wrap {
   padding: 88px 32px;
@@ -289,7 +283,6 @@ img { display: block; max-width: 100%; }
   max-width: 540px;
   line-height: 1.7;
 }
-
 /* ── WHY CARDS ── */
 .why-grid {
   display: grid;
@@ -331,7 +324,6 @@ img { display: block; max-width: 100%; }
   color: var(--graphite);
   line-height: 1.65;
 }
-
 /* ── HOW IT WORKS ── */
 .how-grid {
   display: grid;
@@ -377,7 +369,6 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center top;
 }
-
 /* ── WHO WE SERVE ── */
 .serve-grid {
   display: grid;
@@ -404,7 +395,6 @@ img { display: block; max-width: 100%; }
   color: var(--graphite);
   line-height: 1.6;
 }
-
 /* ── POSITIONING PULLQUOTE ── */
 .pullquote-wrap {
   background: var(--sky);
@@ -446,7 +436,6 @@ img { display: block; max-width: 100%; }
   margin-bottom: 28px;
   font-style: normal !important;
 }
-
 /* ── FORM SECTION ── */
 .form-section {
   background: var(--ghost);
@@ -516,29 +505,42 @@ img { display: block; max-width: 100%; }
   background: #fff;
 }
 .form-field textarea { resize: vertical; min-height: 100px; }
+.form-commitment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+.form-commitment .check-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--sky);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.form-commitment p {
+  font-size: 13.5px;
+  color: var(--sky-ink);
+  font-weight: 600;
+  line-height: 1.55;
+}
 .form-note {
   font-size: 12px;
   color: var(--stone);
   text-align: center;
   margin-top: 14px;
 }
-.form-success {
-  display: none;
-  text-align: center;
-  padding: 32px;
-}
-.form-success h3 {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--sky-ink);
-  margin-bottom: 10px;
-}
-.form-success p {
-  font-size: 15px;
-  color: var(--graphite);
-}
-
 /* ── GEOGRAPHY BAR ── */
 .geo-bar {
   background: var(--sky-pale);
@@ -549,7 +551,6 @@ img { display: block; max-width: 100%; }
   font-weight: 600;
   color: var(--sky-ink);
 }
-
 /* ── FOOTER ── */
 .footer-wrap {
   background: #3A3A3A;
@@ -589,7 +590,6 @@ img { display: block; max-width: 100%; }
   color: rgba(255,255,255,0.35);
   text-align: center;
 }
-
 /* ── MOBILE ── */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 32px; padding: 52px 24px 48px; }
@@ -617,7 +617,6 @@ img { display: block; max-width: 100%; }
 </style>
 </head>
 <body>
-
 <!-- NAV -->
 <div class="nav-wrap">
   <div class="nav-inner">
@@ -632,7 +631,6 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
-
 <!-- HERO -->
 <div class="hero-wrap">
   <div class="hero-bubble" style="width:500px;height:500px;top:-120px;right:-100px;"></div>
@@ -659,12 +657,9 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
-
 <!-- STRIPE -->
 <div class="stripe"></div>
-
 <!-- TRUST BAR -->
-
 <!-- WHY SIDECAR -->
 <div class="section-wrap" id="why">
   <div class="section-inner">
@@ -697,10 +692,8 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
-
 <!-- STRIPE -->
 <div class="stripe"></div>
-
 <!-- HOW IT WORKS -->
 <div class="section-wrap alt" id="how">
   <div class="section-inner">
@@ -741,10 +734,8 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
-
 <!-- STRIPE -->
 <div class="stripe"></div>
-
 <!-- WHO WE SERVE -->
 <div class="section-wrap" id="serve">
   <div class="section-inner">
@@ -799,15 +790,12 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
-
 <!-- STRIPE -->
 <div class="stripe"></div>
-
 <!-- GEOGRAPHY -->
 <div class="geo-bar">
   Proudly serving businesses across North Metro Atlanta
 </div>
-
 <!-- PULLQUOTE -->
 <div class="pullquote-wrap">
   <div class="pullquote">
@@ -815,17 +803,14 @@ img { display: block; max-width: 100%; }
     <a class="btn-white" href="#evaluation">Get My Free Assessment</a>
   </div>
 </div>
-
 <!-- STRIPE -->
 <div class="stripe"></div>
-
 <!-- FORM -->
 <div class="form-section" id="evaluation">
   <div class="form-card">
     <span class="eyebrow" style="color:var(--sky);">Free On-Site Evaluation</span>
     <h2>Request your free<br>on-site assessment</h2>
-    <p class="form-sub">We'll come to your location, evaluate your space, and recommend the right setup — no commitment, no pressure, no cost.</p>
-
+    <p class="form-sub">Tell us a bit about your space below. Once you submit, your request goes straight to our team — <strong>a member of Sidecar will call or email you within 24 hours</strong> to schedule your free on-site visit. No commitment, no pressure, no cost.</p>
     <form id="evaluation-form">
       <div class="form-grid">
         <div class="form-field">
@@ -866,48 +851,42 @@ img { display: block; max-width: 100%; }
           <textarea id="fi-additionalInfo" name="fi-text-additionalInfo"></textarea>
         </div>
       </div>
-
-      <button type="submit" class="btn-full">Book My Free Assessment →</button>
+      <div class="form-commitment">
+        <span class="check-dot">✓</span>
+        <p>By submitting this form, you agree to be contacted by a member of the Sidecar team — by phone or email — within 24 hours to schedule your free on-site evaluation.</p>
+      </div>
+      <button type="submit" class="btn-full">Submit My Request — Get Contacted Within 24 Hrs</button>
       <p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
     </form>
-
-    <div class="form-success" id="form-success">
-      <h3>✓ You're on the list.</h3>
-      <p>We'll be in touch within one business day to confirm your evaluation time.<br>
-      Questions? Call us directly: <a href="tel:6783135619" style="color:var(--sky);">(678) 313-5619</a></p>
-    </div>
   </div>
 </div>
-
 <script src="https://forminit.com/sdk/v1/forminit.js"></script>
 <script>
   const forminit = new Forminit();
   const FORM_ID = 'fiv8sb0l2wj';
-
   const form = document.getElementById('evaluation-form');
-  const successMessage = document.getElementById('form-success');
   const button = form.querySelector('button[type="submit"]');
+  const ORIGINAL_BUTTON_TEXT = button.textContent;
 
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
-
     button.disabled = true;
     button.textContent = 'Submitting...';
 
     const formData = new FormData(form);
     const { data, error } = await forminit.submit(FORM_ID, formData);
 
-    button.disabled = false;
-    button.textContent = 'Book My Free Assessment →';
-
     if (error) {
+      button.disabled = false;
+      button.textContent = ORIGINAL_BUTTON_TEXT;
       alert(error.message || 'Something went wrong. Please call us directly at (678) 313-5619.');
       return;
     }
 
-    form.style.display = 'none';
-    successMessage.style.display = 'block';
-    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Success: send the visitor to a dedicated confirmation page instead of
+    // showing an inline message. This gives Google Ads / GA4 a real page
+    // load to use as a conversion event (see thank-you.html).
+    window.location.href = 'thank-you.html';
   });
 </script>
 <!-- FOOTER -->
@@ -928,38 +907,5 @@ img { display: block; max-width: 100%; }
     <div class="footer-bottom">© 2025 Sidecar Vending Services · All rights reserved</div>
   </div>
 </div>
-
-<script>
-function handleSubmit(e) {
-  e.preventDefault();
-  const form = document.getElementById('eval-form');
-  const success = document.getElementById('form-success');
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const data = new FormData(form);
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Sending...';
-
-  fetch(form.action, {
-    method: form.method,
-    body: data,
-    headers: { 'Accept': 'application/json' }
-  })
-    .then((response) => {
-      if (response.ok) {
-        form.style.display = 'none';
-        success.style.display = 'block';
-        success.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        throw new Error('Submission failed');
-      }
-    })
-    .catch(() => {
-      alert('Sorry, something went wrong sending your request. Please call us directly at (678) 313-5619, or try again in a moment.');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Book My Free Assessment →';
-    });
-}
-</script>
 </body>
 </html>
