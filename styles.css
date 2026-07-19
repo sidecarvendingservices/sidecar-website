@@ -1,4 +1,4 @@
-/* â”€â”€ TOKENS â”€â”€ */
+/* ── TOKENS ── */
 :root {
   --sky: #29ABE2;
   --sky-light: #6DCAEE;
@@ -19,12 +19,12 @@
   --font-display: 'Nunito', sans-serif;
   --font-body: 'Nunito Sans', sans-serif;
 }
-/* â”€â”€ RESET â”€â”€ */
+/* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
 img { display: block; max-width: 100%; }
-/* â”€â”€ UTILITIES â”€â”€ */
+/* ── UTILITIES ── */
 .eyebrow {
   font-family: var(--font-body);
   font-size: 11px;
@@ -44,7 +44,7 @@ img { display: block; max-width: 100%; }
     transparent 56px, transparent 68px
   );
 }
-/* â”€â”€ BUTTONS â”€â”€ */
+/* ── BUTTONS ── */
 .btn-primary {
   display: inline-block;
   background: var(--sky);
@@ -113,7 +113,7 @@ img { display: block; max-width: 100%; }
 }
 .btn-full:hover { background: var(--sky-deep); }
 .btn-full:disabled { opacity: 0.7; cursor: not-allowed; }
-/* â”€â”€ NAV â”€â”€ */
+/* ── NAV ── */
 .nav-wrap {
   position: sticky;
   top: 0;
@@ -140,7 +140,74 @@ img { display: block; max-width: 100%; }
   transition: color 0.15s;
 }
 .nav-links a:hover { color: var(--sky); }
-/* â”€â”€ HERO â”€â”€ */
+/* ── MOBILE NAV (hamburger + tap-to-call) ── */
+.nav-mobile-actions { display: none; align-items: center; gap: 10px; }
+.nav-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--sky-pale);
+  color: var(--sky-deep);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--charcoal);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.nav-toggle.is-active span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.nav-toggle.is-active span:nth-child(2) { opacity: 0; }
+.nav-toggle.is-active span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: #fff;
+  border-top: 1px solid var(--fog);
+  padding: 4px 24px 20px;
+}
+.mobile-menu.is-open { display: flex; }
+.mobile-menu a {
+  padding: 14px 2px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  border-bottom: 1px solid var(--fog);
+}
+.mobile-menu a.btn-primary {
+  border-bottom: none;
+  margin-top: 14px;
+  padding: 15px 28px;
+}
+.mobile-menu a.mobile-menu-call {
+  border-bottom: none;
+  color: var(--sky-deep);
+  font-weight: 800;
+  text-align: center;
+  padding-top: 16px;
+}
+/* ── HERO ── */
 .hero-wrap {
   background: var(--sky);
   position: relative;
@@ -219,7 +286,7 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center;
 }
-/* â”€â”€ TRUST BAR â”€â”€ */
+/* ── TRUST BAR ── */
 .trust-bar {
   background: var(--ghost);
   border-bottom: 1px solid var(--fog);
@@ -245,7 +312,7 @@ img { display: block; max-width: 100%; }
   border-radius: 999px;
   white-space: nowrap;
 }
-/* â”€â”€ SECTIONS SHARED â”€â”€ */
+/* ── SECTIONS SHARED ── */
 .section-wrap {
   padding: 88px 32px;
 }
@@ -273,7 +340,7 @@ img { display: block; max-width: 100%; }
   max-width: 540px;
   line-height: 1.7;
 }
-/* â”€â”€ WHY CARDS â”€â”€ */
+/* ── WHY CARDS ── */
 .why-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -314,7 +381,7 @@ img { display: block; max-width: 100%; }
   color: var(--graphite);
   line-height: 1.65;
 }
-/* â”€â”€ HOW IT WORKS â”€â”€ */
+/* ── HOW IT WORKS ── */
 .how-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -359,7 +426,7 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center top;
 }
-/* â”€â”€ WHO WE SERVE â”€â”€ */
+/* ── WHO WE SERVE ── */
 .serve-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -399,7 +466,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--graphite);
   line-height: 1.6;
 }
-/* â”€â”€ POSITIONING PULLQUOTE â”€â”€ */
+/* ── POSITIONING PULLQUOTE ── */
 .pullquote-wrap {
   background: var(--sky);
   padding: 80px 32px;
@@ -440,7 +507,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   margin-bottom: 28px;
   font-style: normal !important;
 }
-/* â”€â”€ FORM SECTION â”€â”€ */
+/* ── FORM SECTION ── */
 .form-section {
   background: var(--ghost);
   padding: 88px 32px;
@@ -545,7 +612,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   text-align: center;
   margin-top: 14px;
 }
-/* â”€â”€ GEOGRAPHY BAR â”€â”€ */
+/* ── GEOGRAPHY BAR ── */
 .geo-bar {
   background: var(--sky-pale);
   padding: 16px 32px;
@@ -555,7 +622,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   font-weight: 600;
   color: var(--sky-ink);
 }
-/* â”€â”€ FOOTER â”€â”€ */
+/* ── FOOTER ── */
 .footer-wrap {
   background: #3A3A3A;
   padding: 48px 32px 32px;
@@ -594,7 +661,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: rgba(255,255,255,0.35);
   text-align: center;
 }
-/* â”€â”€ MOBILE â”€â”€ */
+/* ── MOBILE ── */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 32px; padding: 52px 24px 48px; }
   .hero-h1 { font-size: 42px; }
@@ -609,6 +676,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .footer-top { flex-direction: column; }
   .footer-contact { text-align: left; }
   .nav-links { display: none; }
+  .nav-mobile-actions { display: flex; }
 }
 @media (max-width: 600px) {
   .why-grid { grid-template-columns: 1fr; }
@@ -619,7 +687,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .pullquote p { font-size: 20px; }
 }
 
-/* â”€â”€ INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) â”€â”€ */
+/* ── INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) ── */
 .page-header {
   background: var(--sky);
   padding: 64px 32px 56px;
@@ -654,7 +722,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 .breadcrumb a { color: rgba(255,255,255,0.75); text-decoration: none; }
 .breadcrumb a:hover { color: #fff; text-decoration: underline; }
 
-/* â”€â”€ FAQ BLOCKS (reused on every page) â”€â”€ */
+/* ── FAQ BLOCKS (reused on every page) ── */
 .faq-block { display: grid; gap: 4px; }
 .faq-item {
   background: #fff;
@@ -675,7 +743,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   line-height: 1.7;
 }
 
-/* â”€â”€ RELATED LINKS ROW (internal linking CTA at bottom of interior pages) â”€â”€ */
+/* ── RELATED LINKS ROW (internal linking CTA at bottom of interior pages) ── */
 .related-links {
   display: flex;
   flex-wrap: wrap;
@@ -695,7 +763,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 .related-links a:hover { background: var(--sky-pale); }
 
-/* â”€â”€ INDUSTRIES HUB GRID â”€â”€ */
+/* ── INDUSTRIES HUB GRID ── */
 .industries-hub-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -732,7 +800,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--sky-deep);
 }
 
-/* â”€â”€ SERVICE AREA PAGE: city badges + map wrapper â”€â”€ */
+/* ── SERVICE AREA PAGE: city badges + map wrapper ── */
 .city-badge-row {
   display: flex;
   flex-wrap: wrap;

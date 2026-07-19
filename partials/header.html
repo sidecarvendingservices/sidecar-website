@@ -1,4 +1,3 @@
-
 <!-- NAV -->
 <div class="nav-wrap">
   <div class="nav-inner">
@@ -12,5 +11,45 @@
       <a href="/faq">FAQ</a>
       <a href="/#evaluation" class="btn-primary" style="color:#fff;font-weight:700;">Free Evaluation</a>
     </div>
+    <div class="nav-mobile-actions">
+      <a href="tel:4708393656" class="nav-call-btn" aria-label="Call Sidecar Vending Services at (470) 839-3656">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.2 1L6.6 10.8z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/#why">Why Sidecar</a>
+    <a href="/how-it-works">How It Works</a>
+    <a href="/industries">Industries</a>
+    <a href="/faq">FAQ</a>
+    <a href="/cost">Cost</a>
+    <a href="/service-area">Service Area</a>
+    <a href="/#evaluation" class="btn-primary" style="text-align:center;color:#fff;font-weight:700;">Free Evaluation</a>
+    <a href="tel:4708393656" class="mobile-menu-call">Call or Text (470) 839-3656</a>
   </div>
 </div>
+<script>
+(function(){
+  var toggle = document.querySelector('.nav-toggle');
+  var menu = document.getElementById('mobile-menu');
+  if (!toggle || !menu) return;
+  function closeMenu(){
+    menu.classList.remove('is-open');
+    toggle.classList.remove('is-active');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  toggle.addEventListener('click', function(){
+    var isOpen = menu.classList.toggle('is-open');
+    toggle.classList.toggle('is-active', isOpen);
+    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+  menu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeMenu);
+  });
+})();
+</script>
