@@ -140,6 +140,56 @@ img { display: block; max-width: 100%; }
   transition: color 0.15s;
 }
 .nav-links a:hover { color: var(--sky); }
+/* ── DESKTOP "MORE" DROPDOWN ── */
+.nav-dropdown { position: relative; }
+.nav-dropdown-trigger {
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.nav-dropdown-trigger:hover { color: var(--sky); }
+.nav-caret { font-size: 10px; transition: transform 0.15s; }
+.nav-dropdown-trigger.is-active .nav-caret { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+  padding: 8px;
+  min-width: 180px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 200;
+}
+.nav-dropdown-menu a {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-dropdown-menu a:hover { background: var(--sky-whisper); color: var(--sky-deep); }
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu,
+.nav-dropdown-menu.is-open {
+  display: flex;
+}
 /* ── MOBILE NAV (hamburger + tap-to-call) ── */
 .nav-mobile-actions { display: none; align-items: center; gap: 10px; }
 .nav-call-btn {
@@ -826,6 +876,37 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--stone);
   margin-top: 14px;
   line-height: 1.6;
+}
+
+/* ── HOMEPAGE "WANT MORE DETAIL" QUICK-LINKS GRID ── */
+.quicklinks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+.quicklink-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  padding: 20px 20px 22px;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.quicklink-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.quicklink-icon { font-size: 22px; margin-bottom: 10px; }
+.quicklink-card h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 6px;
+}
+.quicklink-card p {
+  font-size: 13px;
+  color: var(--graphite);
+  line-height: 1.55;
 }
 
 @media (max-width: 900px) {

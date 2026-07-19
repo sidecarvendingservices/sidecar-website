@@ -9,6 +9,17 @@
       <a href="/how-it-works">How It Works</a>
       <a href="/industries">Industries</a>
       <a href="/faq">FAQ</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+          More <span class="nav-caret">▾</span>
+        </button>
+        <div class="nav-dropdown-menu">
+          <a href="/cost">Cost</a>
+          <a href="/service-area">Service Area</a>
+          <a href="/smart-vending-machine">The Machine</a>
+          <a href="/about">About</a>
+        </div>
+      </div>
       <a href="/#evaluation" class="btn-primary" style="color:#fff;font-weight:700;">Free Evaluation</a>
     </div>
     <div class="nav-mobile-actions">
@@ -39,19 +50,46 @@
 (function(){
   var toggle = document.querySelector('.nav-toggle');
   var menu = document.getElementById('mobile-menu');
-  if (!toggle || !menu) return;
-  function closeMenu(){
-    menu.classList.remove('is-open');
-    toggle.classList.remove('is-active');
-    toggle.setAttribute('aria-expanded', 'false');
+  if (toggle && menu) {
+    var closeMenu = function(){
+      menu.classList.remove('is-open');
+      toggle.classList.remove('is-active');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', function(){
+      var isOpen = menu.classList.toggle('is-open');
+      toggle.classList.toggle('is-active', isOpen);
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    menu.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', closeMenu);
+    });
   }
-  toggle.addEventListener('click', function(){
-    var isOpen = menu.classList.toggle('is-open');
-    toggle.classList.toggle('is-active', isOpen);
-    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
-  menu.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click', closeMenu);
-  });
+
+  // Desktop "More" dropdown — click-toggle so it also works on touch
+  // devices at desktop widths (hover alone doesn't work there), with
+  // :focus-within in CSS handling basic keyboard access.
+  var dropdown = document.querySelector('.nav-dropdown');
+  var dropdownTrigger = document.querySelector('.nav-dropdown-trigger');
+  var dropdownMenu = document.querySelector('.nav-dropdown-menu');
+  if (dropdown && dropdownTrigger && dropdownMenu) {
+    var closeDropdown = function(){
+      dropdownMenu.classList.remove('is-open');
+      dropdownTrigger.classList.remove('is-active');
+      dropdownTrigger.setAttribute('aria-expanded', 'false');
+    };
+    dropdownTrigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = dropdownMenu.classList.toggle('is-open');
+      dropdownTrigger.classList.toggle('is-active', isOpen);
+      dropdownTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    document.addEventListener('click', function(e){
+      if (!dropdown.contains(e.target)) closeDropdown();
+    });
+    dropdownMenu.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', closeDropdown);
+    });
+  }
 })();
 </script>
