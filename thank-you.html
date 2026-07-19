@@ -3,6 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Google tag (gtag.js) — GA4 property for sidecarservices.com. Reaching
+     this page means a form was actually submitted, so it doubles as a
+     built-in lead conversion signal (separate from the in-page listener
+     on the homepage), with no extra setup required. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HXPDLD3WJX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-HXPDLD3WJX');
+  gtag('event', 'generate_lead', {
+    event_category: 'engagement',
+    event_label: 'Free Evaluation Form (thank-you page view)'
+  });
+</script>
+
 <title>Request Received — Sidecar Vending Services</title>
 <!-- Thank-you pages are normally kept out of search results since the only way in
      is by completing the form. Remove this line if you'd rather have it indexed. -->

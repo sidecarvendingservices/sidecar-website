@@ -23,3 +23,23 @@
      on the original page, so every page gets them consistently. -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"ffa36cb415694dec9d4c92509aaf2ccd","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a1d585133aa8bfdd',t:'MTc4NDQyMDAwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<!-- GA4 lead-tracking: fires a "generate_lead" event whenever the HubSpot
+     Free Evaluation form is actually submitted (not just viewed). HubSpot's
+     embedded form posts a window message when this happens; this listener
+     is harmless on pages that don't have the form at all. -->
+<script>
+  window.addEventListener('message', function (event) {
+    if (
+      event.data &&
+      event.data.type === 'hsFormCallback' &&
+      event.data.eventName === 'onFormSubmitted' &&
+      typeof gtag === 'function'
+    ) {
+      gtag('event', 'generate_lead', {
+        event_category: 'engagement',
+        event_label: 'Free Evaluation Form',
+        form_id: event.data.id || 'unknown',
+      });
+    }
+  });
+</script>
