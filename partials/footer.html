@@ -4,7 +4,7 @@
     <div class="stripe" style="margin-bottom:36px;opacity:0.5;"></div>
     <div class="footer-top">
       <div class="footer-brand">
-        <img src="/images/dark-background.png" alt="Sidecar Vending Services" style="height:105px;margin-bottom:12px;">
+        <img src="/images/dark-background.png" alt="Sidecar Vending Services" style="height:105px;margin-bottom:12px;" loading="lazy">
         <div class="footer-tagline">Always Stocked. Always On Time. One Call.</div>
       </div>
       <div class="footer-contact">
@@ -13,8 +13,23 @@
         <div><a href="tel:4708393656">(470) 839-3656</a></div>
         <div><a href="/service-area">Check Your Service Area →</a></div>
       </div>
+      <div class="footer-links">
+        <div class="footer-links-col">
+          <div class="footer-links-heading">Company</div>
+          <a href="/about">About</a>
+          <a href="/smart-vending-machine">The Machine</a>
+          <a href="/cost">Cost</a>
+        </div>
+        <div class="footer-links-col">
+          <div class="footer-links-heading">Explore</div>
+          <a href="/industries">Industries</a>
+          <a href="/how-it-works">How It Works</a>
+          <a href="/faq">FAQ</a>
+        </div>
+      </div>
     </div>
     <div class="footer-bottom">© 2026 Sidecar Vending Services · All rights reserved</div>
+    <button type="button" class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
   </div>
 </div>
 <!-- Site-wide scripts: Cloudflare analytics + bot-protection beacons.
@@ -42,4 +57,24 @@
       });
     }
   });
+</script>
+<!-- Back-to-top button: hidden until the visitor has scrolled down a bit,
+     then fades in. Present on every page via this shared footer. -->
+<script>
+(function(){
+  var btn = document.getElementById('back-to-top');
+  if (!btn) return;
+  var toggleVisibility = function(){
+    if (window.scrollY > 600) {
+      btn.classList.add('is-visible');
+    } else {
+      btn.classList.remove('is-visible');
+    }
+  };
+  window.addEventListener('scroll', toggleVisibility, { passive: true });
+  toggleVisibility();
+  btn.addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
 </script>
