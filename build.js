@@ -22,6 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const ROOT = __dirname;
 const SRC_DIR = path.join(ROOT, 'src');
@@ -147,6 +148,16 @@ function build() {
   const header = readPartial('header.html');
   const footer = readPartial('footer.html');
 
+  // Cache-busting version for styles.css, derived from the file's own
+  // content. This changes automatically whenever styles.css changes, and
+  // ONLY when it changes — so browsers (and any CDN edge cache) that
+  // already have an old copy are forced to fetch the new one instead of
+  // silently reusing a stale cached stylesheet against new page markup.
+  const stylesPath = path.join(ROOT, 'styles.css');
+  const stylesVersion = fs.existsSync(stylesPath)
+    ? crypto.createHash('md5').update(fs.readFileSync(stylesPath)).digest('hex').slice(0, 8)
+    : 'dev';
+
   const pages = fs.readdirSync(SRC_DIR).filter((f) => f.endsWith('.html'));
   const sitemapUrls = [];
 
@@ -166,6 +177,7 @@ function build() {
       .replace(/{{TITLE}}/g, title)
       .replace(/{{DESCRIPTION}}/g, description)
       .replace(/{{CANONICAL}}/g, canonicalUrl)
+      .replace(/{{STYLES_VERSION}}/g, stylesVersion)
       .replace('{{HEADER}}', header)
       .replace('{{CONTENT}}', content + breadcrumbSchema + faqSchema)
       .replace('{{FOOTER}}', footer);
