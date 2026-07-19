@@ -1,4 +1,4 @@
-/* ── TOKENS ── */
+/* â”€â”€ TOKENS â”€â”€ */
 :root {
   --sky: #29ABE2;
   --sky-light: #6DCAEE;
@@ -19,12 +19,12 @@
   --font-display: 'Nunito', sans-serif;
   --font-body: 'Nunito Sans', sans-serif;
 }
-/* ── RESET ── */
+/* â”€â”€ RESET â”€â”€ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
 img { display: block; max-width: 100%; }
-/* ── UTILITIES ── */
+/* â”€â”€ UTILITIES â”€â”€ */
 .eyebrow {
   font-family: var(--font-body);
   font-size: 11px;
@@ -44,7 +44,7 @@ img { display: block; max-width: 100%; }
     transparent 56px, transparent 68px
   );
 }
-/* ── BUTTONS ── */
+/* â”€â”€ BUTTONS â”€â”€ */
 .btn-primary {
   display: inline-block;
   background: var(--sky);
@@ -113,7 +113,7 @@ img { display: block; max-width: 100%; }
 }
 .btn-full:hover { background: var(--sky-deep); }
 .btn-full:disabled { opacity: 0.7; cursor: not-allowed; }
-/* ── NAV ── */
+/* â”€â”€ NAV â”€â”€ */
 .nav-wrap {
   position: sticky;
   top: 0;
@@ -140,7 +140,7 @@ img { display: block; max-width: 100%; }
   transition: color 0.15s;
 }
 .nav-links a:hover { color: var(--sky); }
-/* ── HERO ── */
+/* â”€â”€ HERO â”€â”€ */
 .hero-wrap {
   background: var(--sky);
   position: relative;
@@ -219,7 +219,7 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center;
 }
-/* ── TRUST BAR ── */
+/* â”€â”€ TRUST BAR â”€â”€ */
 .trust-bar {
   background: var(--ghost);
   border-bottom: 1px solid var(--fog);
@@ -245,7 +245,7 @@ img { display: block; max-width: 100%; }
   border-radius: 999px;
   white-space: nowrap;
 }
-/* ── SECTIONS SHARED ── */
+/* â”€â”€ SECTIONS SHARED â”€â”€ */
 .section-wrap {
   padding: 88px 32px;
 }
@@ -273,7 +273,7 @@ img { display: block; max-width: 100%; }
   max-width: 540px;
   line-height: 1.7;
 }
-/* ── WHY CARDS ── */
+/* â”€â”€ WHY CARDS â”€â”€ */
 .why-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -314,7 +314,7 @@ img { display: block; max-width: 100%; }
   color: var(--graphite);
   line-height: 1.65;
 }
-/* ── HOW IT WORKS ── */
+/* â”€â”€ HOW IT WORKS â”€â”€ */
 .how-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -359,7 +359,7 @@ img { display: block; max-width: 100%; }
   object-fit: cover;
   object-position: center top;
 }
-/* ── WHO WE SERVE ── */
+/* â”€â”€ WHO WE SERVE â”€â”€ */
 .serve-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -370,6 +370,20 @@ img { display: block; max-width: 100%; }
   border: 1px solid var(--fog);
   border-radius: 14px;
   overflow: hidden;
+}
+a.serve-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.serve-body .serve-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--sky-deep);
 }
 .serve-accent { height: 6px; }
 .serve-body { padding: 22px 22px 24px; }
@@ -385,7 +399,7 @@ img { display: block; max-width: 100%; }
   color: var(--graphite);
   line-height: 1.6;
 }
-/* ── POSITIONING PULLQUOTE ── */
+/* â”€â”€ POSITIONING PULLQUOTE â”€â”€ */
 .pullquote-wrap {
   background: var(--sky);
   padding: 80px 32px;
@@ -426,7 +440,7 @@ img { display: block; max-width: 100%; }
   margin-bottom: 28px;
   font-style: normal !important;
 }
-/* ── FORM SECTION ── */
+/* â”€â”€ FORM SECTION â”€â”€ */
 .form-section {
   background: var(--ghost);
   padding: 88px 32px;
@@ -531,7 +545,7 @@ img { display: block; max-width: 100%; }
   text-align: center;
   margin-top: 14px;
 }
-/* ── GEOGRAPHY BAR ── */
+/* â”€â”€ GEOGRAPHY BAR â”€â”€ */
 .geo-bar {
   background: var(--sky-pale);
   padding: 16px 32px;
@@ -541,7 +555,7 @@ img { display: block; max-width: 100%; }
   font-weight: 600;
   color: var(--sky-ink);
 }
-/* ── FOOTER ── */
+/* â”€â”€ FOOTER â”€â”€ */
 .footer-wrap {
   background: #3A3A3A;
   padding: 48px 32px 32px;
@@ -580,7 +594,7 @@ img { display: block; max-width: 100%; }
   color: rgba(255,255,255,0.35);
   text-align: center;
 }
-/* ── MOBILE ── */
+/* â”€â”€ MOBILE â”€â”€ */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 32px; padding: 52px 24px 48px; }
   .hero-h1 { font-size: 42px; }
@@ -603,4 +617,153 @@ img { display: block; max-width: 100%; }
   .section-header h2 { font-size: 30px; }
   .section-wrap { padding: 64px 20px; }
   .pullquote p { font-size: 20px; }
+}
+
+/* â”€â”€ INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) â”€â”€ */
+.page-header {
+  background: var(--sky);
+  padding: 64px 32px 56px;
+  text-align: left;
+}
+.page-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.page-header .eyebrow { color: rgba(255,255,255,0.65); }
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  max-width: 760px;
+}
+.page-header p {
+  font-size: 17px;
+  color: rgba(255,255,255,0.88);
+  max-width: 620px;
+  line-height: 1.65;
+}
+.breadcrumb {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.breadcrumb a { color: rgba(255,255,255,0.75); text-decoration: none; }
+.breadcrumb a:hover { color: #fff; text-decoration: underline; }
+
+/* â”€â”€ FAQ BLOCKS (reused on every page) â”€â”€ */
+.faq-block { display: grid; gap: 4px; }
+.faq-item {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  padding: 22px 26px;
+}
+.faq-item h3 {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.faq-item p {
+  font-size: 14.5px;
+  color: var(--graphite);
+  line-height: 1.7;
+}
+
+/* â”€â”€ RELATED LINKS ROW (internal linking CTA at bottom of interior pages) â”€â”€ */
+.related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.related-links a {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sky-deep);
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  padding: 10px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.related-links a:hover { background: var(--sky-pale); }
+
+/* â”€â”€ INDUSTRIES HUB GRID â”€â”€ */
+.industries-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.industry-hub-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.industry-hub-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.industry-hub-accent { height: 6px; }
+.industry-hub-body { padding: 24px 24px 26px; }
+.industry-hub-body h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.industry-hub-body p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+.industry-hub-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sky-deep);
+}
+
+/* â”€â”€ SERVICE AREA PAGE: city badges + map wrapper â”€â”€ */
+.city-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+.city-badge {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sky-ink);
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+.map-wrap {
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.zip-list-note {
+  font-size: 13px;
+  color: var(--stone);
+  margin-top: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .industries-hub-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .page-header h1 { font-size: 32px; }
+  .industries-hub-grid { grid-template-columns: 1fr; }
 }
