@@ -179,24 +179,35 @@ button:focus-visible,
 .nav-dropdown-trigger:hover { color: var(--sky); }
 .nav-caret { font-size: 10px; transition: transform 0.15s; }
 .nav-dropdown-trigger.is-active .nav-caret { transform: rotate(180deg); }
+/* The outer .nav-dropdown-menu box starts immediately below the trigger
+   (top: 100%, zero gap) so hovering never crosses a "dead" unhoverable
+   strip on the way down — that gap is what previously forced a click.
+   The visible white panel is a separate inner element pushed down by
+   padding-top, so there's still a clean visual gap (with a connecting
+   triangle) between the header and the panel, without breaking :hover. */
 .nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 68px);
+  top: 100%;
   left: 50%;
   transform: translateX(-50%);
+  padding-top: 68px;
+  min-width: 180px;
+  display: none;
+  z-index: 200;
+}
+.nav-dropdown-menu-inner {
+  position: relative;
   background: #fff;
   border: 1px solid var(--fog);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0,0,0,0.12);
   padding: 8px;
-  min-width: 180px;
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  z-index: 200;
 }
 /* Small pointer triangle connecting the dropdown panel back to its trigger */
-.nav-dropdown-menu::before {
+.nav-dropdown-menu-inner::before {
   content: '';
   position: absolute;
   top: -6px;
@@ -209,7 +220,7 @@ button:focus-visible,
   border-top: 1px solid var(--fog);
   border-radius: 2px;
 }
-.nav-dropdown-menu a {
+.nav-dropdown-menu-inner a {
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -218,11 +229,11 @@ button:focus-visible,
   text-decoration: none;
   white-space: nowrap;
 }
-.nav-dropdown-menu a:hover { background: var(--sky-whisper); color: var(--sky-deep); }
+.nav-dropdown-menu-inner a:hover { background: var(--sky-whisper); color: var(--sky-deep); }
 .nav-dropdown:hover .nav-dropdown-menu,
 .nav-dropdown:focus-within .nav-dropdown-menu,
 .nav-dropdown-menu.is-open {
-  display: flex;
+  display: block;
 }
 /* ── MOBILE NAV (hamburger + tap-to-call) ── */
 .nav-mobile-actions { display: none; align-items: center; gap: 10px; }

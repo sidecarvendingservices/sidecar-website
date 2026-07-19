@@ -44,6 +44,7 @@ const SITEMAP_PRIORITY = {
   'service-area.html': '0.8',
   'about.html': '0.6',
   'smart-vending-machine.html': '0.7',
+  'privacy.html': '0.2',
 };
 
 // Any top-level HTML files here are copied straight into dist/ without
