@@ -603,41 +603,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--graphite);
   line-height: 1.6;
 }
-/* ── POSITIONING PULLQUOTE ── */
-.pullquote-wrap {
-  background: var(--sky);
-  padding: 80px 32px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-.pullquote-wrap::before {
-  content: '"';
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-display);
-  font-size: 280px;
-  color: rgba(255,255,255,0.06);
-  line-height: 1;
-  pointer-events: none;
-}
-.pullquote {
-  max-width: 760px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 2;
-}
-.pullquote p {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.55;
-  margin-bottom: 32px;
-  font-style: italic;
-}
 /* ── FORM SECTION ── */
 .form-section {
   background: var(--ghost);
@@ -880,11 +845,31 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 @media (max-width: 600px) {
   .why-grid { grid-template-columns: 1fr; }
-  .serve-grid { grid-template-columns: 1fr; }
   .hero-cta { flex-direction: column; align-items: flex-start; }
   .section-header h2 { font-size: 30px; }
-  .section-wrap { padding: 64px 20px; }
-  .pullquote p { font-size: 20px; }
+  .section-wrap { padding: 44px 20px; }
+  .form-section { padding: 48px 20px; }
+
+  /* Horizontal swipe strips instead of stacking every card vertically —
+     by far the biggest contributor to mobile page length. Each card shows
+     a partial peek of the next one so it reads as scrollable at a glance. */
+  .serve-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 14px;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .serve-grid::-webkit-scrollbar { display: none; }
+  .serve-grid a.serve-card {
+    flex: 0 0 auto;
+    width: 78vw;
+    max-width: 300px;
+    scroll-snap-align: start;
+  }
 }
 
 /* ── INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) ── */
@@ -1067,6 +1052,28 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   font-size: 13px;
   color: var(--graphite);
   line-height: 1.55;
+}
+@media (max-width: 600px) {
+  /* Horizontal swipe strip on phones, same treatment as .serve-grid above —
+     placed after the base rule (not in the earlier MOBILE block) since this
+     selector's base rule lives here, later in the file; an equal-specificity
+     override earlier in the source would otherwise lose the cascade tie. */
+  .quicklinks-grid {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .quicklinks-grid::-webkit-scrollbar { display: none; }
+  .quicklinks-grid .quicklink-card {
+    flex: 0 0 auto;
+    width: 78vw;
+    max-width: 280px;
+    scroll-snap-align: start;
+  }
 }
 
 @media (max-width: 900px) {
