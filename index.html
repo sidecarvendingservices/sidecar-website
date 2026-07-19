@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -811,84 +812,15 @@ img { display: block; max-width: 100%; }
     <span class="eyebrow" style="color:var(--sky);">Free On-Site Evaluation</span>
     <h2>Request your free<br>on-site assessment</h2>
     <p class="form-sub">Tell us a bit about your space below. Once you submit, your request goes straight to our team — <strong>a member of Sidecar will call or email you within 24 hours</strong> to schedule your free on-site visit. No commitment, no pressure, no cost.</p>
-    <form id="evaluation-form">
-      <div class="form-grid">
-        <div class="form-field">
-          <label for="fi-businessName">Business Name</label>
-          <input type="text" id="fi-businessName" name="fi-text-businessName" required>
-        </div>
-        <div class="form-field">
-          <label for="fi-firstName">Your Name</label>
-          <input type="text" id="fi-firstName" name="fi-sender-firstName" required>
-        </div>
-<div class="form-field">
-  <label for="fi-phone">Phone Number</label>
-  <input type="tel" id="fi-phone" name="fi-text-phone" required>
-</div>
-        <div class="form-field">
-          <label for="fi-email">Email Address</label>
-          <input type="email" id="fi-email" name="fi-sender-email" required>
-        </div>
-        <div class="form-field form-full">
-          <label for="fi-spaceType">Type of Space</label>
-          <select id="fi-spaceType" name="fi-select-spaceType" required>
-            <option value="">Select your space...</option>
-            <option value="Office / Corporate">Office / Corporate</option>
-            <option value="Warehouse / Industrial">Warehouse / Industrial</option>
-            <option value="Apartment Community">Apartment Community</option>
-            <option value="Gym / Fitness Studio">Gym / Fitness Studio</option>
-            <option value="Medical / Healthcare">Medical / Healthcare</option>
-            <option value="Auto Dealership">Auto Dealership</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-field form-full">
-          <label for="fi-employeeCount">Approx. Employee / Resident Count</label>
-          <input type="text" id="fi-employeeCount" name="fi-text-employeeCount">
-        </div>
-        <div class="form-field form-full">
-          <label for="fi-additionalInfo">Anything else we should know?</label>
-          <textarea id="fi-additionalInfo" name="fi-text-additionalInfo"></textarea>
-        </div>
-      </div>
-      <div class="form-commitment">
-        <span class="check-dot">✓</span>
-        <p>By submitting this form, you agree to be contacted by a member of the Sidecar team — by phone or email — within 24 hours to schedule your free on-site evaluation.</p>
-      </div>
-      <button type="submit" class="btn-full">Submit My Request — Get Contacted Within 24 Hrs</button>
-      <p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
-    </form>
+    <div class="form-commitment">
+      <span class="check-dot">✓</span>
+      <p>By submitting this form, you agree to be contacted by a member of the Sidecar team — by phone or email — within 24 hours to schedule your free on-site evaluation.</p>
+    </div>
+    <script src="https://js-na2.hsforms.net/forms/embed/246795839.js" defer></script>
+    <div class="hs-form-frame" data-region="na2" data-form-id="68044fb4-5668-4d80-be92-56419423e982" data-portal-id="246795839"></div>
+    <p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
   </div>
 </div>
-<script src="https://forminit.com/sdk/v1/forminit.js"></script>
-<script>
-  const forminit = new Forminit();
-  const FORM_ID = 'fiv8sb0l2wj';
-  const form = document.getElementById('evaluation-form');
-  const button = form.querySelector('button[type="submit"]');
-  const ORIGINAL_BUTTON_TEXT = button.textContent;
-
-  form.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    button.disabled = true;
-    button.textContent = 'Submitting...';
-
-    const formData = new FormData(form);
-    const { data, error } = await forminit.submit(FORM_ID, formData);
-
-    if (error) {
-      button.disabled = false;
-      button.textContent = ORIGINAL_BUTTON_TEXT;
-      alert(error.message || 'Something went wrong. Please call us directly at (678) 313-5619.');
-      return;
-    }
-
-    // Success: send the visitor to a dedicated confirmation page instead of
-    // showing an inline message. This gives Google Ads / GA4 a real page
-    // load to use as a conversion event (see thank-you.html).
-    window.location.href = 'thank-you.html';
-  });
-</script>
 <!-- FOOTER -->
 <div class="footer-wrap">
   <div class="footer-inner">
@@ -901,11 +833,12 @@ img { display: block; max-width: 100%; }
       <div class="footer-contact">
         <div>Atlanta, GA</div>
         <div><a href="https://sidecarservices.com">sidecarservices.com</a></div>
-        <div><a href="tel:6783135619">(678) 313-5619</a></div>
+        <div><a href="tel:4708393656">(470) 839-3656</a></div>
       </div>
     </div>
     <div class="footer-bottom">© 2025 Sidecar Vending Services · All rights reserved</div>
   </div>
 </div>
-</body>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"ffa36cb415694dec9d4c92509aaf2ccd","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a1d585133aa8bfdd',t:'MTc4NDQyMDAwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
