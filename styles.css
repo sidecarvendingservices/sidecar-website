@@ -295,11 +295,42 @@ button:focus-visible,
   margin-top: 14px;
   padding: 15px 28px;
 }
-.mobile-menu-divider {
-  height: 1px;
-  background: var(--fog);
-  margin: 10px 0;
+/* Mobile "More" accordion — collapsed by default, tap to reveal the
+   secondary nav items (Cost/Machines/Service Area/About) indented beneath
+   it, mirroring the desktop dropdown instead of one long flat list. */
+.mobile-menu-more-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 14px 2px;
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  border-bottom: 1px solid var(--fog);
+  cursor: pointer;
+  text-align: left;
 }
+.mobile-menu-more-trigger .nav-caret { transition: transform 0.15s; }
+.mobile-menu-more-trigger.is-active .nav-caret { transform: rotate(180deg); }
+.mobile-menu-more {
+  display: none;
+  flex-direction: column;
+  background: var(--ghost);
+}
+.mobile-menu-more.is-open { display: flex; }
+.mobile-menu-more a {
+  padding: 14px 2px 14px 18px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  border-bottom: 1px solid var(--fog);
+}
+.mobile-menu-more a:last-child { border-bottom: none; }
 .mobile-menu a.mobile-menu-call {
   border-bottom: none;
   color: var(--sky-deep);
