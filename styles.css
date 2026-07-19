@@ -133,7 +133,7 @@ img { display: block; max-width: 100%; }
 .nav-links { display: flex; align-items: center; gap: 32px; }
 .nav-links a {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15.5px;
   font-weight: 600;
   color: var(--graphite);
   text-decoration: none;
