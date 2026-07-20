@@ -45,6 +45,7 @@ const SITEMAP_PRIORITY = {
   'service-area.html': '0.8',
   'about.html': '0.6',
   'smart-vending-machine.html': '0.7',
+  'careers.html': '0.3',
   'privacy.html': '0.2',
 };
 
