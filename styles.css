@@ -155,11 +155,6 @@ button:focus-visible,
   outline-offset: 3px;
   border-radius: 4px;
 }
-.form-field input:focus-visible,
-.form-field select:focus-visible,
-.form-field textarea:focus-visible {
-  outline: none;
-}
 /* ── DESKTOP "MORE" DROPDOWN ── */
 .nav-dropdown { position: relative; }
 .nav-dropdown-trigger {
@@ -613,7 +608,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   margin: 0 auto;
   background: #fff;
   border-radius: 24px;
-  padding: 48px 48px 44px;
+  padding: 40px 40px 36px;
   border: 1px solid var(--fog);
   box-shadow: 0 8px 40px rgba(41,171,226,0.09);
 }
@@ -630,77 +625,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--graphite);
   margin-bottom: 32px;
   line-height: 1.65;
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-.form-full { grid-column: 1 / -1; }
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.form-field label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--stone);
-}
-.form-field input,
-.form-field select,
-.form-field textarea {
-  font-family: var(--font-body);
-  font-size: 15px;
-  color: var(--charcoal);
-  background: var(--ghost);
-  border: 1px solid var(--fog);
-  border-radius: 10px;
-  padding: 13px 16px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
-}
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-  border-color: var(--sky);
-  box-shadow: 0 0 0 3px var(--sky-pale);
-  background: #fff;
-}
-.form-field textarea { resize: vertical; min-height: 100px; }
-.form-commitment {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: var(--sky-whisper);
-  border: 1px solid var(--sky-pale);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-top: 4px;
-  margin-bottom: 18px;
-}
-.form-commitment .check-dot {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: var(--sky);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.form-commitment p {
-  font-size: 13.5px;
-  color: var(--sky-ink);
-  font-weight: 600;
-  line-height: 1.55;
 }
 .form-note {
   font-size: 12px;
@@ -834,7 +758,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .how-grid { grid-template-columns: 1fr; }
   .how-photo { aspect-ratio: 16/9; }
   .serve-grid { grid-template-columns: 1fr 1fr; }
-  .form-grid { grid-template-columns: 1fr; }
   .form-card { padding: 32px 24px; }
   .footer-top { flex-direction: column; }
   .footer-contact { text-align: left; }
@@ -848,7 +771,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .hero-cta { flex-direction: column; align-items: flex-start; }
   .section-header h2 { font-size: 30px; }
   .section-wrap { padding: 44px 20px; }
-  .form-section { padding: 48px 20px; }
+  .form-section { padding: 40px 12px; }
+  .form-card { padding: 28px 20px 24px; }
 
   /* Horizontal swipe strips instead of stacking every card vertically —
      by far the biggest contributor to mobile page length. Each card shows
