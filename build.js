@@ -45,8 +45,13 @@ const SITEMAP_PRIORITY = {
   'service-area.html': '0.8',
   'about.html': '0.6',
   'smart-vending-machine.html': '0.7',
+  'switching-vending-companies.html': '0.7',
   'careers.html': '0.3',
   'privacy.html': '0.2',
+  'blog.html': '0.6',
+  'blog-dumb-vending-machines.html': '0.5',
+  'blog-non-food-vending-items.html': '0.5',
+  'blog-vending-machine-cost-atlanta.html': '0.5',
 };
 
 // Any top-level HTML files here are copied straight into dist/ without
