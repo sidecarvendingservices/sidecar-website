@@ -1058,12 +1058,22 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   border-radius: 16px;
   overflow: hidden;
   text-decoration: none;
-  display: block;
+  display: flex;
+  flex-direction: column;
   transition: box-shadow 0.15s, transform 0.15s;
 }
 .blog-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
-.blog-card-accent { height: 6px; background: var(--sky); }
-.blog-card-body { padding: 24px 24px 22px; }
+.blog-card-accent { height: 6px; background: var(--sky); flex-shrink: 0; }
+.blog-card-body {
+  padding: 24px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* Locks the byline to the card's bottom edge regardless of how much excerpt
+   text sits above it, so cards with less text don't leave the avatar/name
+   floating higher than cards with more text in the same row. */
+.blog-card-body .blog-byline { margin-top: auto; }
 .blog-card-meta {
   font-size: 11.5px;
   font-weight: 700;
