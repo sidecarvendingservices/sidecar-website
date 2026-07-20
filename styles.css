@@ -693,7 +693,12 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   margin-bottom: 24px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.footer-brand img { height: 48px; margin-bottom: 12px; }
+.footer-brand img {
+  display: block;
+  width: clamp(100px, 20vw, 360px);
+  height: auto;
+  margin-bottom: 12px;
+}
 .footer-tagline {
   font-size: 13px;
   color: rgba(255,255,255,0.55);
