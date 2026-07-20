@@ -632,6 +632,39 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   text-align: center;
   margin-top: 14px;
 }
+/* ── COMMITMENT / PROMISE CALLOUT ──
+   General-purpose highlighted box for a written promise or guarantee-style
+   statement — used on the why-sidecar page's "Our Promise" section. */
+.form-commitment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+.form-commitment .check-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--sky);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.form-commitment p {
+  font-size: 13.5px;
+  color: var(--sky-ink);
+  font-weight: 600;
+  line-height: 1.55;
+}
 /* ── GEOGRAPHY BAR ── */
 .geo-bar {
   background: var(--sky-pale);

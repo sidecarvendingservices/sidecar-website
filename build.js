@@ -38,6 +38,7 @@ const STATIC_COPY = ['styles.css', 'images', 'robots.txt'];
 // in the sitemap (e.g. thank-you.html is marked noindex and shouldn't be).
 const SITEMAP_PRIORITY = {
   'index.html': '1.0',
+  'why-sidecar.html': '0.8',
   'how-it-works.html': '0.8',
   'industries.html': '0.8',
   'faq.html': '0.8',
