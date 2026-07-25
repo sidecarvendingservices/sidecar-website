@@ -7,8 +7,8 @@
 //
 // It also auto-generates two kinds of SEO/AEO structured data (JSON-LD) from
 // content that's already on the page, so there's nothing extra to maintain:
-//   - FAQPage schema, built from any ".faq-item" blocks on the page
-//   - BreadcrumbList schema, built from the ".breadcrumb" trail on the page
+// - FAQPage schema, built from any ".faq-item" blocks on the page
+// - BreadcrumbList schema, built from the ".breadcrumb" trail on the page
 // If you edit the visible FAQ questions/answers or breadcrumb links in a
 // src/*.html file, the structured data updates automatically on next build —
 // you never need to hand-edit JSON-LD separately.
@@ -19,7 +19,6 @@
 // mechanical stitching, every time Cloudflare Pages builds the site.
 //
 // No npm packages required — only Node's built-in fs/path modules.
-
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -52,6 +51,8 @@ const SITEMAP_PRIORITY = {
   'blog-dumb-vending-machines.html': '0.5',
   'blog-non-food-vending-items.html': '0.5',
   'blog-vending-machine-cost-atlanta.html': '0.5',
+  'blog-apartment-vending-stocking.html': '0.5',
+  'support.html': '0.6',
 };
 
 // Any top-level HTML files here are copied straight into dist/ without
@@ -194,7 +195,6 @@ function build() {
 
     fs.writeFileSync(path.join(OUT_DIR, outName), page, 'utf8');
     console.log(`Built ${outName} from src/${file}`);
-
     sitemapUrls.push({ loc: canonicalUrl, priority: SITEMAP_PRIORITY[outName] || '0.6' });
   }
 
