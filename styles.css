@@ -173,7 +173,7 @@ img { display: block; max-width: 100%; }
   justify-content: space-between;
   align-items: center;
 }
-.nav-logo img { height: 48px; }
+.nav-logo img { height: 64px; }
 .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
 .nav-links a {
   font-family: var(--font-body);
@@ -229,7 +229,11 @@ button:focus-visible,
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  padding-top: 68px;
+  /* UX fix (2026-07-27): this 68px offset was sized for the old 105px-tall
+     logo/header. Now that the header is ~48-64px tall (logo shrink pass),
+     the same fixed offset left a disproportionately large, oddly-placed
+     gap between the nav and the dropdown panel. */
+  padding-top: 16px;
   min-width: 180px;
   display: none;
   z-index: 200;
@@ -243,7 +247,9 @@ button:focus-visible,
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* UX fix (2026-07-27): 2px read as items crowded together; more room
+     to breathe between rows. */
+  gap: 6px;
   list-style: none;
 }
 /* Small pointer triangle connecting the dropdown panel back to its trigger */
@@ -683,24 +689,17 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   line-height: 1.65;
 }
 /* Performance/UX fix (2026-07-27): reserves the form's approximate height
-   and shows a soft shimmer while the HubSpot iframe loads, instead of a
-   blank white box that can read as a broken page on a slow connection.
-   HubSpot injects its iframe as a child of this div and that iframe's own
-   background covers this once it renders, so the shimmer naturally
-   disappears the moment the real form is ready — no JS needed. */
+   with a plain placeholder color while the HubSpot iframe loads, instead
+   of a blank white box that can read as a broken page on a slow
+   connection. (An earlier version of this used an animated shimmer, but
+   HubSpot's injected iframe doesn't always fully cover this div, so the
+   animation kept running visibly behind/around the form — removed rather
+   than chasing that, since this whole form is being replaced with a
+   native one soon anyway.) */
 .hs-form-frame {
   min-height: 640px;
   border-radius: 12px;
-  background: linear-gradient(100deg, var(--ghost) 30%, #fff 50%, var(--ghost) 70%);
-  background-size: 400% 100%;
-  animation: hs-form-shimmer 1.6s ease-in-out infinite;
-}
-@keyframes hs-form-shimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hs-form-frame { animation: none; background: var(--ghost); }
+  background: var(--ghost);
 }
 .form-note {
   font-size: 12px;
@@ -893,8 +892,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 .footer-contact a {
   color: var(--sky-light);
   text-decoration: none;
-  display: inline-block;
-  padding: 10px 0;
 }
 .footer-links {
   display: flex;
@@ -922,8 +919,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   font-size: 13px;
   color: rgba(255,255,255,0.65);
   text-decoration: none;
-  display: inline-block;
-  padding: 10px 0;
 }
 .footer-links-col a:hover { color: var(--sky-light); }
 .footer-bottom {
@@ -1007,6 +1002,11 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .footer-top { flex-direction: column; }
   .footer-contact { text-align: left; }
   .footer-links { gap: 32px; }
+  /* Accessibility fix (2026-07-27): 44px touch targets, scoped to mobile
+     only — applying this padding on desktop too (where it isn't needed)
+     visibly bloated the footer's link spacing. */
+  .footer-contact a,
+  .footer-links-col a { display: inline-block; padding: 10px 0; }
   .nav-links { display: none; }
   .nav-mobile-actions { display: flex; }
   .back-to-top { right: 16px; bottom: 76px; width: 44px; height: 44px; }
@@ -1018,7 +1018,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
      hero's primary CTA to/below the fold. Tightened padding and a smaller
      logo bring it to roughly 72px. */
   .nav-inner { padding: 12px 20px; }
-  .nav-logo img { height: 40px; width: auto; }
+  .nav-logo img { height: 44px; width: auto; }
 }
 @media (max-width: 600px) {
   .why-grid { grid-template-columns: 1fr; }
