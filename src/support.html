@@ -92,29 +92,74 @@ to our team — no call center, no ticket number to track down.</p>
 
 <h2>Report a problem or send feedback</h2>
 
-<p class="form-sub">This goes directly to the Sidecar team, not a queue. Include your building or location name so we
+<p class="form-sub">This goes directly to the Sidecar team's phone, not a queue. Include your building or location name so we
 
 can find your machine fast — <strong>we respond within 24 hours, and same-day for anything urgent</strong>.</p>
 
+<div class="form-alert form-alert--error" id="support-form-alert" role="alert"></div>
+
 <!--
-
-SETUP NOTE FOR BRIAN: this mirrors the "Free Evaluation" form pattern already used on the homepage — a
-
-HubSpot embedded form — but it needs its own HubSpot form created first. In HubSpot, build a form with these
-
-fields: Name, Email, Phone, Location/Community Name, Reason (dropdown: Report a Problem / Request Service /
-
-Share Feedback / Suggest a Product), and Details (multi-line). Then swap the placeholder data-form-id below
-
-for the real one HubSpot gives you (same portal ID as the homepage form: 246795839). Until that's done, the
-
-mailto fallback link right below the embed still works so the page isn't broken.
-
+SETUP NOTE FOR BRIAN: this form posts to /api/support-request, a Cloudflare
+Pages Function (functions/api/support-request.js) that texts the details to
+your OpenPhone/Quo number the moment someone submits it — no HubSpot needed.
+One-time setup: add QUO_API_KEY, QUO_FROM_NUMBER, and SUPPORT_ALERT_TO as
+environment variables in Cloudflare Pages → Settings → Environment variables.
+Full instructions are in the comments at the top of that function file.
 -->
 
-<script src="https://js-na2.hsforms.net/forms/embed/246795839.js" defer></script>
+<form method="POST" action="/api/support-request" novalidate>
 
-<div class="hs-form-frame" data-region="na2" data-form-id="REPLACE_WITH_SUPPORT_FORM_ID" data-portal-id="246795839"></div>
+<div class="form-grid">
+
+<div class="form-field">
+<label for="support-name">Your Name</label>
+<input type="text" id="support-name" name="name" autocomplete="name" required>
+</div>
+
+<div class="form-field">
+<label for="support-phone">Phone Number</label>
+<input type="tel" id="support-phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(404) 555-1234" required>
+</div>
+
+<div class="form-field">
+<label for="support-location">Building / Location Name</label>
+<input type="text" id="support-location" name="location" autocomplete="organization" required>
+</div>
+
+<div class="form-field">
+<label for="support-machine">Machine ID <span class="optional">(if known)</span></label>
+<input type="text" id="support-machine" name="machineId" autocomplete="off">
+</div>
+
+<div class="form-field form-field--full">
+<label for="support-reason">What's This About?</label>
+<select id="support-reason" name="reason" required>
+<option value="" disabled selected>Choose one…</option>
+<option value="Report a Problem">Report a Problem</option>
+<option value="Request Service">Request Service</option>
+<option value="Share Feedback">Share Feedback</option>
+<option value="Suggest a Product">Suggest a Product</option>
+<option value="Other">Other</option>
+</select>
+</div>
+
+<div class="form-field form-field--full">
+<label for="support-details">Details</label>
+<textarea id="support-details" name="details" rows="5" placeholder="What's going on? The more detail, the faster we can help." required></textarea>
+</div>
+
+</div>
+
+<!-- Honeypot — left blank by real visitors, invisible via CSS. If a bot
+     fills this in, the backend silently discards the submission. -->
+<div class="hp-field" aria-hidden="true">
+<label for="support-company">Company</label>
+<input type="text" id="support-company" name="company" tabindex="-1" autocomplete="off">
+</div>
+
+<button type="submit" class="btn-primary btn-primary--block">Send To Sidecar</button>
+
+</form>
 
 <p class="form-note">Prefer email or a call? Reach us directly at
 
@@ -125,6 +170,26 @@ or <a href="tel:4708393656" style="color:var(--sky-deep);font-weight:700;">(470)
 </div>
 
 </div>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var error = params.get('error');
+  if (!error) return;
+  var messages = {
+    missing: "Please fill in all required fields before submitting.",
+    phone: "That phone number doesn't look right — please double-check it and try again.",
+    send: "Something went wrong sending your request. Please call or text us directly at (470) 839-3656.",
+    config: "This form isn't fully set up yet — please call or text us directly at (470) 839-3656.",
+    invalid: "Something went wrong — please try again."
+  };
+  var box = document.getElementById('support-form-alert');
+  if (box) {
+    box.textContent = messages[error] || 'Something went wrong — please try again or contact us directly.';
+    box.classList.add('is-visible');
+  }
+})();
+</script>
 
 <div class="section-wrap alt">
 

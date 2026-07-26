@@ -632,6 +632,78 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   text-align: center;
   margin-top: 14px;
 }
+/* ── NATIVE FORM FIELDS (e.g. the support page's text-alert form) ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.form-field--full { grid-column: 1 / -1; }
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.form-field label .optional {
+  font-weight: 600;
+  color: var(--stone);
+}
+.form-field input,
+.form-field select,
+.form-field textarea {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--charcoal);
+  border: 1.5px solid var(--fog);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--white);
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.form-field textarea { resize: vertical; min-height: 110px; }
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--sky);
+}
+.btn-primary--block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border: none;
+  font-family: var(--font-body);
+}
+/* Honeypot spam-trap field — invisible to real visitors, still reachable by
+   bots that fill in every field regardless of CSS display. */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  height: 0;
+  width: 0;
+  overflow: hidden;
+}
+.form-alert {
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  display: none;
+}
+.form-alert.is-visible { display: block; }
+.form-alert--error { background: #FCEBEA; color: #B23A2E; border: 1px solid #F3C6C1; }
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
 /* ── COMMITMENT / PROMISE CALLOUT ──
    General-purpose highlighted box for a written promise or guarantee-style
    statement — used on the why-sidecar page's "Our Promise" section. */

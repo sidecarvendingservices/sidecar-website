@@ -1,0 +1,14 @@
+# Copy this file to .dev.vars (already gitignored) for local `wrangler pages dev`
+# testing of the support form's text-message trigger. In production, set these
+# same three values as environment variables/secrets in the Cloudflare dashboard:
+# Workers & Pages → sidecar-website → Settings → Environment variables.
+
+# OpenPhone/Quo API key — Quo app → Settings → API. Mark as "Secret" in Cloudflare.
+QUO_API_KEY=
+
+# The OpenPhone number to send FROM, in E.164 format (e.g. +14708393656).
+QUO_FROM_NUMBER=
+
+# Phone number(s) that should receive a text when the support form is
+# submitted, in E.164 format. Comma-separate multiple numbers.
+SUPPORT_ALERT_TO=
