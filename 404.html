@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/images/favicon.png">
+<link rel="apple-touch-icon" href="/images/favicon.png">
+
+<!-- Google tag (gtag.js) — GA4 property for sidecarservices.com. Landing
+     here means a link was broken or mistyped somewhere, which is worth
+     knowing about, so this fires a lightweight event for that. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HXPDLD3WJX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-HXPDLD3WJX');
+  gtag('event', 'page_not_found', {
+    event_category: 'engagement',
+    page_location: window.location.href,
+    page_referrer: document.referrer || '(none)'
+  });
+</script>
+
+<title>Page Not Found — Sidecar Vending Services</title>
+<!-- SETUP NOTE FOR BRIAN: this file lives at the repo root (same as
+     thank-you.html) and build.js copies it straight to dist/404.html
+     without going through the header/footer template — it needs to be
+     fully self-contained so it still renders correctly even if something
+     else on the site is broken. Cloudflare Pages automatically serves
+     dist/404.html (with a real HTTP 404 status) for any URL that doesn't
+     match a page — no extra configuration needed, it "just works" once
+     this file exists in the deployed output. Because the response is a
+     real 404 status, this page doesn't need a noindex meta tag the way
+     thank-you.html does — search engines already know not to index a 404. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky: #29ABE2;
+  --sky-light: #6DCAEE;
+  --sky-pale: #D4EEF9;
+  --sky-deep: #1A7EB5;
+  --charcoal: #3D3D3D;
+  --graphite: #5A5A5A;
+  --stone: #8C8C8C;
+  --fog: #EBEBEB;
+  --ghost: #F5F5F5;
+  --white: #FFFFFF;
+  --font-display: 'Nunito', sans-serif;
+  --font-body: 'Nunito Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
+img { display: block; max-width: 100%; }
+.stripe {
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sky) 0px, var(--sky) 28px,
+    var(--sky-light) 28px, var(--sky-light) 46px,
+    var(--sky-pale) 46px, var(--sky-pale) 56px,
+    transparent 56px, transparent 68px
+  );
+}
+.btn-primary {
+  display: inline-block;
+  background: var(--sky);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--sky-deep); }
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--sky);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--sky);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-secondary:hover { background: var(--sky-pale); }
+/* ── NAV ── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fog);
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-logo img { height: 48px; }
+/* ── 404 HERO ── */
+.confirm-wrap {
+  background: var(--sky);
+  position: relative;
+  overflow: hidden;
+}
+.hero-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.confirm-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 88px 32px 96px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.confirm-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+  font-size: 32px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #fff;
+}
+.confirm-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  display: block;
+  margin-bottom: 14px;
+}
+.confirm-h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+.confirm-sub {
+  font-size: 18px;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+.confirm-actions {
+  margin-top: 32px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.confirm-actions .btn-secondary {
+  color: #fff;
+  border-color: rgba(255,255,255,0.6);
+}
+.confirm-actions .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+/* ── QUICK LINKS ── */
+.next-wrap { padding: 72px 32px; }
+.next-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.next-inner h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--charcoal);
+  text-align: center;
+  margin-bottom: 40px;
+}
+.next-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.next-card {
+  background: var(--ghost);
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  padding: 24px 22px;
+  text-decoration: none;
+  display: block;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.next-card:hover { border-color: var(--sky); transform: translateY(-2px); }
+.next-card h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.next-card p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+/* ── FOOTER ── */
+.footer-wrap {
+  background: #3A3A3A;
+  padding: 36px 32px 28px;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.footer-contact {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 2;
+  margin-bottom: 12px;
+}
+.footer-contact a { color: var(--sky-light); text-decoration: none; }
+.footer-bottom {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+@media (max-width: 700px) {
+  .confirm-h1 { font-size: 32px; }
+  .next-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<div class="nav-wrap">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="/images/transparent_1.png" alt="Sidecar Vending Services" style="height:48px;width:auto;" width="3958" height="2038">
+    </a>
+    <a class="btn-secondary" href="/" style="color:var(--sky);border-color:var(--sky);">Back to Home</a>
+  </div>
+</div>
+<!-- 404 HERO -->
+<div class="confirm-wrap">
+  <div class="hero-bubble" style="width:420px;height:420px;top:-140px;right:-100px;"></div>
+  <div class="hero-bubble" style="width:220px;height:220px;bottom:-80px;left:6%;"></div>
+  <div class="confirm-inner">
+    <div class="confirm-icon">404</div>
+    <span class="confirm-eyebrow">Page Not Found</span>
+    <h1 class="confirm-h1">That page took a wrong turn.</h1>
+    <p class="confirm-sub">The link you followed may be broken, or the page may have moved.<br>Let's get you back on route.</p>
+    <div class="confirm-actions">
+      <a class="btn-primary" href="/" style="background:#fff;color:var(--sky-deep);">Return to Homepage</a>
+      <a class="btn-secondary" href="/support">Contact Support</a>
+    </div>
+  </div>
+</div>
+<!-- STRIPE -->
+<div class="stripe"></div>
+<!-- QUICK LINKS -->
+<div class="next-wrap">
+  <div class="next-inner">
+    <h2>Where you might have been headed</h2>
+    <div class="next-grid">
+      <a class="next-card" href="/why-sidecar">
+        <h3>Why Sidecar</h3>
+        <p>What actually makes our vending service different — not the pitch, the operational version.</p>
+      </a>
+      <a class="next-card" href="/how-it-works">
+        <h3>How It Works</h3>
+        <p>The 3-step process from free evaluation to installed machine.</p>
+      </a>
+      <a class="next-card" href="/cost">
+        <h3>What It Costs</h3>
+        <p>Spoiler: nothing. See exactly what's included.</p>
+      </a>
+      <a class="next-card" href="/industries">
+        <h3>Industries We Serve</h3>
+        <p>Offices, gyms, warehouses, apartments, and more.</p>
+      </a>
+      <a class="next-card" href="/faq">
+        <h3>FAQ</h3>
+        <p>Answers to the questions we hear most.</p>
+      </a>
+      <a class="next-card" href="/service-area">
+        <h3>Service Area</h3>
+        <p>Check if your zip code is covered with our interactive map.</p>
+      </a>
+    </div>
+  </div>
+</div>
+<!-- FOOTER -->
+<div class="footer-wrap">
+  <div class="footer-inner">
+    <div class="footer-contact">
+      <div>Atlanta, GA</div>
+      <div><a href="https://sidecarservices.com">sidecarservices.com</a></div>
+      <div><a href="tel:4708393656">(470) 839-3656</a></div>
+    </div>
+    <div class="footer-bottom">© 2026 Sidecar Vending Services · All rights reserved</div>
+  </div>
+</div>
+</body>
+</html>

@@ -58,7 +58,7 @@ const SITEMAP_PRIORITY = {
 // Any top-level HTML files here are copied straight into dist/ without
 // going through the header/footer template (useful for one-off pages like
 // a HubSpot/ad "thank you" page that shouldn't have the normal nav).
-const PASSTHROUGH_PAGES = ['thank-you.html', 'support-thank-you.html'];
+const PASSTHROUGH_PAGES = ['thank-you.html', 'support-thank-you.html', '404.html'];
 
 function readPartial(name) {
   return fs.readFileSync(path.join(PARTIALS_DIR, name), 'utf8');
@@ -151,6 +151,73 @@ function buildBreadcrumbSchema(content) {
   return `\n<script type="application/ld+json">${JSON.stringify(schema)}</script>\n`;
 }
 
+// First-name -> full-name lookup for blog byline schema. The visible byline
+// only shows a first name (e.g. "Brian") to keep posts feeling personal, but
+// BlogPosting schema wants a full name. Add new authors here as needed.
+const AUTHOR_FULL_NAMES = {
+  Brian: 'Brian Morris',
+  Vala: 'Vala Renfro Araujo',
+};
+
+// Turns "July 8, 2026" into "2026-07-08". Built by hand (no Date object)
+// so it can't drift a day from timezone conversion during Date -> ISO
+// string parsing.
+const MONTH_NUMS = {
+  january: '01', february: '02', march: '03', april: '04', may: '05', june: '06',
+  july: '07', august: '08', september: '09', october: '10', november: '11', december: '12',
+};
+function parseByLineDate(str) {
+  const m = str.match(/([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/);
+  if (!m) return null;
+  const month = MONTH_NUMS[m[1].toLowerCase()];
+  if (!month) return null;
+  return `${m[3]}-${month}-${m[2].padStart(2, '0')}`;
+}
+
+// Builds BlogPosting JSON-LD for actual blog post pages (identified by the
+// ".blog-post-body" wrapper — the /blog listing page itself doesn't have
+// one, so it's skipped automatically). Pulls the headline from the page's
+// <h1>, and the author name + publish date from the existing byline markup
+// that's already on the page for human readers — nothing new to maintain.
+// Returns '' if the page isn't a blog post, or the byline can't be parsed.
+function buildArticleSchema(content, description, canonicalUrl) {
+  if (!content.includes('class="blog-post-body"')) return '';
+
+  const h1Match = content.match(/<h1>([\s\S]*?)<\/h1>/);
+  if (!h1Match) return '';
+  const headline = stripTags(h1Match[1]);
+
+  const bylineBlockMatch = content.match(/<div class="blog-byline blog-post-byline">[\s\S]*?<\/div>\s*<\/div>/);
+  if (!bylineBlockMatch) return '';
+  const bylineBlock = bylineBlockMatch[0];
+
+  const nameMatch = bylineBlock.match(/<span class="blog-byline-name">([\s\S]*?)<\/span>/);
+  const dateLineMatch = bylineBlock.match(/<span class="blog-byline-date">([\s\S]*?)<\/span>/);
+  if (!nameMatch || !dateLineMatch) return '';
+
+  const firstName = stripTags(nameMatch[1]);
+  const authorName = AUTHOR_FULL_NAMES[firstName] || firstName;
+  const datePublished = parseByLineDate(stripTags(dateLineMatch[1]));
+  if (!datePublished) return '';
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline,
+    description,
+    image: `${BASE_URL}/images/hero.jpg`,
+    datePublished,
+    author: { '@type': 'Person', name: authorName },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Sidecar Vending Services',
+      logo: { '@type': 'ImageObject', url: `${BASE_URL}/images/transparent_1.png` },
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+  };
+  return `\n<script type="application/ld+json">${JSON.stringify(schema)}</script>\n`;
+}
+
 function build() {
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -183,6 +250,7 @@ function build() {
 
     const breadcrumbSchema = buildBreadcrumbSchema(content);
     const faqSchema = buildFaqSchema(content);
+    const articleSchema = buildArticleSchema(content, description, canonicalUrl);
 
     const page = shell
       .replace(/{{TITLE}}/g, title)
@@ -190,7 +258,7 @@ function build() {
       .replace(/{{CANONICAL}}/g, canonicalUrl)
       .replace(/{{STYLES_VERSION}}/g, stylesVersion)
       .replace('{{HEADER}}', header)
-      .replace('{{CONTENT}}', content + breadcrumbSchema + faqSchema)
+      .replace('{{CONTENT}}', content + breadcrumbSchema + faqSchema + articleSchema)
       .replace('{{FOOTER}}', footer);
 
     fs.writeFileSync(path.join(OUT_DIR, outName), page, 'utf8');
