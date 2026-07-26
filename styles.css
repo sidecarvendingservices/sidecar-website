@@ -173,7 +173,11 @@ img { display: block; max-width: 100%; }
   justify-content: space-between;
   align-items: center;
 }
-.nav-logo img { height: 64px; }
+/* Bug fix (2026-07-27): the img carries width/height HTML attributes
+   (for layout-shift prevention); when only CSS height is set alongside
+   those, Chromium doesn't auto-derive a proportional width — it needs
+   width:auto stated explicitly, or the logo renders badly stretched. */
+.nav-logo img { height: 64px; width: auto; }
 .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
 .nav-links a {
   font-family: var(--font-body);
@@ -244,14 +248,21 @@ button:focus-visible,
   border: 1px solid var(--fog);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0,0,0,0.12);
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   /* UX fix (2026-07-27): 2px read as items crowded together; more room
      to breathe between rows. */
-  gap: 6px;
+  gap: 4px;
   list-style: none;
 }
+/* Bug fix (2026-07-27): converting this menu from <div><a> to <ul><li><a>
+   for semantic-landmarks work left the <li> stretching full-width (as a
+   flex child) while the <a> inside it stayed inline and content-width —
+   so the actual hover highlight didn't match the row's clickable area and
+   looked inconsistent/cramped against the panel edge. Making both
+   explicitly full-width with matching padding fixes it. */
+.nav-dropdown-menu-inner li { display: flex; }
 /* Small pointer triangle connecting the dropdown panel back to its trigger */
 .nav-dropdown-menu-inner::before {
   content: '';
@@ -267,6 +278,9 @@ button:focus-visible,
   border-radius: 2px;
 }
 .nav-dropdown-menu-inner a {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
