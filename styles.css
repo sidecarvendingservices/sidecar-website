@@ -3,7 +3,17 @@
   --sky: #29ABE2;
   --sky-light: #6DCAEE;
   --sky-pale: #D4EEF9;
-  --sky-deep: #1A7EB5;
+  /* Accessibility fix (2026-07-27): --sky-deep was #1A7EB5 (4.47:1 with
+     white text — fails the 4.5:1 AA minimum by a hair, and several hero
+     tints layered on top of it fell further short). Darkened to #166F9B,
+     which reaches 5.55:1 with white and pulls every tint built on top of
+     it comfortably over the line too. */
+  --sky-deep: #166F9B;
+  /* NEW: for eyebrow/link text and the primary button fill, which were
+     using --sky (#29ABE2) directly at only 2.4-2.6:1 against white/grey —
+     nowhere close to AA. #0574A3 reaches 5.21:1 on white and 4.78:1 on
+     --ghost (#F5F5F5). */
+  --sky-text: #0574A3;
   --sky-ink: #0D4D73;
   --sky-whisper: #EBF7FD;
   --charcoal: #3D3D3D;
@@ -22,8 +32,34 @@
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
+/* Accessibility/UX fix (2026-07-27): the sticky header sits on top of the
+   page, so any in-page anchor (like #evaluation, which every "Free
+   Evaluation" link on the site points to) landed with its heading tucked
+   behind the nav bar. This gives every anchor target room to clear it. The
+   mobile value is larger because the sticky header is taller relative to
+   the viewport there. */
+[id] { scroll-margin-top: 120px; }
+@media (max-width: 600px) {
+  [id] { scroll-margin-top: 160px; }
+}
 body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
 img { display: block; max-width: 100%; }
+/* Accessibility fix (2026-07-27): first focusable element on the page was
+   the logo, forcing screen reader/keyboard users to tab through the whole
+   nav on every page load. Visually hidden until it receives focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--sky-ink);
+  padding: 0.75rem 1.25rem;
+  z-index: 9999;
+  font-weight: 700;
+  border-radius: 0 0 6px 0;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
 /* ── UTILITIES ── */
 .eyebrow {
   font-family: var(--font-body);
@@ -47,7 +83,10 @@ img { display: block; max-width: 100%; }
 /* ── BUTTONS ── */
 .btn-primary {
   display: inline-block;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): was var(--sky) #29ABE2 — white text on
+     it measured ~2.6:1, well under the 4.5:1 AA minimum, on the site's
+     single most important button. --sky-text (#0574A3) reaches 5.21:1. */
+  background: var(--sky-text);
   color: #fff;
   font-family: var(--font-body);
   font-size: 13px;
@@ -101,7 +140,8 @@ img { display: block; max-width: 100%; }
 .btn-full {
   display: block;
   width: 100%;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): white text on --sky measured ~2.6:1. */
+  background: var(--sky-text);
   color: #fff;
   font-family: var(--font-body);
   font-size: 14px;
@@ -134,7 +174,7 @@ img { display: block; max-width: 100%; }
   align-items: center;
 }
 .nav-logo img { height: 48px; }
-.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
 .nav-links a {
   font-family: var(--font-body);
   font-size: 15.5px;
@@ -204,6 +244,7 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 2px;
+  list-style: none;
 }
 /* Small pointer triangle connecting the dropdown panel back to its trigger */
 .nav-dropdown-menu-inner::before {
@@ -365,7 +406,9 @@ button:focus-visible,
   position: relative;
   z-index: 2;
 }
-.hero-eyebrow { color: rgba(255,255,255,0.85); }
+/* Accessibility fix (2026-07-27): 0.85 opacity measured 4.48:1 against the
+   darkened --sky-deep — a hair under 4.5:1 AA. 0.9 reaches 4.85:1. */
+.hero-eyebrow { color: rgba(255,255,255,0.9); }
 .hero-h1 {
   font-family: var(--font-display);
   font-size: 62px;
@@ -537,7 +580,8 @@ button:focus-visible,
 .step-num {
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): white text on --sky measured ~2.6:1. */
+  background: var(--sky-text);
   color: #fff;
   font-family: var(--font-display);
   font-size: 16px;
@@ -638,6 +682,26 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   margin-bottom: 32px;
   line-height: 1.65;
 }
+/* Performance/UX fix (2026-07-27): reserves the form's approximate height
+   and shows a soft shimmer while the HubSpot iframe loads, instead of a
+   blank white box that can read as a broken page on a slow connection.
+   HubSpot injects its iframe as a child of this div and that iframe's own
+   background covers this once it renders, so the shimmer naturally
+   disappears the moment the real form is ready — no JS needed. */
+.hs-form-frame {
+  min-height: 640px;
+  border-radius: 12px;
+  background: linear-gradient(100deg, var(--ghost) 30%, #fff 50%, var(--ghost) 70%);
+  background-size: 400% 100%;
+  animation: hs-form-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes hs-form-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-form-frame { animation: none; background: var(--ghost); }
+}
 .form-note {
   font-size: 12px;
   /* Accessibility fix: --stone on white is 3.36:1, under the 4.5:1 small
@@ -683,10 +747,15 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   width: 100%;
 }
 .form-field textarea { resize: vertical; min-height: 110px; }
+/* Accessibility fix (2026-07-27): outline:none here removed the site's
+   focus-visible ring for every form field, leaving only a 1px border-color
+   shift — not a reliable focus indicator per WCAG 2.4.11. Restored a
+   visible outline and kept the border-color change as reinforcement. */
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
-  outline: none;
+  outline: 3px solid var(--sky-text);
+  outline-offset: 2px;
   border-color: var(--sky);
 }
 .btn-primary--block {
@@ -736,7 +805,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 .form-commitment .check-dot {
   width: 20px; height: 20px;
   border-radius: 50%;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): white on --sky measured ~2.6:1. */
+  background: var(--sky-text);
   color: #fff;
   font-size: 10px;
   font-weight: 900;
@@ -796,9 +866,11 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   gap: 10px;
   margin-top: 16px;
 }
+/* Accessibility fix (2026-07-27): 36px was under the 44px WCAG 2.5.8
+   minimum touch-target size. */
 .social-links a {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255,255,255,0.08);
   display: flex;
@@ -807,16 +879,22 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: rgba(255,255,255,0.7);
   transition: background 0.15s, color 0.15s;
 }
-.social-links a:hover { background: var(--sky); color: #fff; }
+/* Accessibility fix (2026-07-27): white icon on --sky measured ~2.6:1,
+   under the 3:1 minimum for graphical UI objects. */
+.social-links a:hover { background: var(--sky-text); color: #fff; }
 .footer-contact {
   text-align: right;
   font-size: 13px;
   color: rgba(255,255,255,0.65);
   line-height: 2;
 }
+/* Accessibility fix (2026-07-27): these measured 18-21px tall on mobile —
+   under the 44px WCAG 2.5.8 minimum touch-target size. */
 .footer-contact a {
   color: var(--sky-light);
   text-decoration: none;
+  display: inline-block;
+  padding: 10px 0;
 }
 .footer-links {
   display: flex;
@@ -838,17 +916,23 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: rgba(255,255,255,0.55);
   margin-bottom: 2px;
 }
+/* Accessibility fix (2026-07-27): these measured 21px tall on mobile —
+   under the 44px WCAG 2.5.8 minimum touch-target size. */
 .footer-links-col a {
   font-size: 13px;
   color: rgba(255,255,255,0.65);
   text-decoration: none;
+  display: inline-block;
+  padding: 10px 0;
 }
 .footer-links-col a:hover { color: var(--sky-light); }
 .footer-bottom {
   font-size: 12px;
-  /* Accessibility fix: was 0.35 opacity (2.84:1) — bumped to 0.5 (4.0:1+),
-     in line with the other low-emphasis footer text. */
-  color: rgba(255,255,255,0.5);
+  /* Accessibility fix (2026-07-27): the earlier 0.5-opacity fix measured
+     4.14:1 against the #3A3A3A footer background — still short of the
+     4.5:1 AA minimum for this size text. 0.6 opacity (#B0B0B0 effective)
+     reaches 5.24:1. */
+  color: rgba(255,255,255,0.6);
   text-align: center;
 }
 /* ── BACK TO TOP ── */
@@ -859,7 +943,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): white "↑" on --sky measured ~2.6:1. */
+  background: var(--sky-text);
   color: #fff;
   border: none;
   font-size: 18px;
@@ -878,6 +963,36 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   transform: translateY(0);
 }
 .back-to-top:hover { background: var(--sky-deep); }
+/* ── STICKY MOBILE ACTION BAR ── */
+.mobile-action-bar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+}
+.mobile-action-bar-btn {
+  flex: 1 1 50%;
+  text-align: center;
+  padding: 16px 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+.mobile-action-bar-btn--call { background: #fff; color: var(--sky-text); border-top: 1px solid var(--fog); }
+.mobile-action-bar-btn--cta { background: var(--sky-text); color: #fff; }
+/* ── INTERMEDIATE (13" laptops at scaled resolution, iPad Pro landscape,
+   split-screen browser windows) — the site previously jumped straight
+   from a full desktop layout to the 900px mobile breakpoint, leaving
+   901-1200px squeezed. */
+@media (max-width: 1180px) and (min-width: 901px) {
+  .serve-grid { grid-template-columns: repeat(2, 1fr); }
+  .why-grid { grid-template-columns: repeat(2, 1fr); }
+}
 /* ── MOBILE ── */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 32px; padding: 52px 24px 48px; }
@@ -894,7 +1009,16 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .footer-links { gap: 32px; }
   .nav-links { display: none; }
   .nav-mobile-actions { display: flex; }
-  .back-to-top { right: 16px; bottom: 16px; width: 42px; height: 42px; }
+  .back-to-top { right: 16px; bottom: 76px; width: 44px; height: 44px; }
+  .mobile-action-bar { display: flex; }
+  body { padding-bottom: 58px; }
+  /* Performance/UX fix (2026-07-27): the sticky header was ~138px tall on
+     phones (driven by a 105px-tall logo that ignored viewport size),
+     eating ~16% of a typical phone screen permanently and pushing the
+     hero's primary CTA to/below the fold. Tightened padding and a smaller
+     logo bring it to roughly 72px. */
+  .nav-inner { padding: 12px 20px; }
+  .nav-logo img { height: 40px; width: auto; }
 }
 @media (max-width: 600px) {
   .why-grid { grid-template-columns: 1fr; }
@@ -938,7 +1062,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   max-width: 1200px;
   margin: 0 auto;
 }
-.page-header .eyebrow { color: rgba(255,255,255,0.85); }
+/* Accessibility fix (2026-07-27): same 0.85→0.9 bump as .hero-eyebrow. */
+.page-header .eyebrow { color: rgba(255,255,255,0.9); }
 .page-header h1 {
   font-family: var(--font-display);
   font-size: 44px;
@@ -999,10 +1124,13 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--sky-deep);
   background: var(--sky-whisper);
   border: 1px solid var(--sky-pale);
-  padding: 10px 18px;
+  /* Accessibility fix (2026-07-27): bumped vertical padding so these hit
+     the 44px WCAG 2.5.8 minimum touch-target height. */
+  padding: 14px 18px;
   border-radius: 999px;
   text-decoration: none;
   transition: background 0.15s;
+  display: inline-block;
 }
 .related-links a:hover { background: var(--sky-pale); }
 
@@ -1073,10 +1201,14 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 
 /* ── HOMEPAGE "WANT MORE DETAIL" QUICK-LINKS GRID ── */
+/* Design fix (2026-07-27): flex-wrap left the row count up to how many
+   220-260px cards happened to fit at a given width, which produced an
+   orphaned, off-center row (5 across, 2 stranded) at common desktop
+   widths. An explicit 4-column grid means the (now 8-item, since
+   "Switching Vendors" was added) set balances evenly at 4+4. */
 .quicklinks-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   text-align: left;
 }
@@ -1087,8 +1219,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   padding: 20px 20px 22px;
   text-decoration: none;
   display: block;
-  flex: 1 1 220px;
-  max-width: 260px;
   transition: box-shadow 0.15s, transform 0.15s;
 }
 .quicklink-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
@@ -1118,6 +1248,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
      selector's base rule lives here, later in the file; an equal-specificity
      override earlier in the source would otherwise lose the cascade tie. */
   .quicklinks-grid {
+    display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
@@ -1210,7 +1341,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--sky);
+  /* Accessibility fix (2026-07-27): white initials on --sky measured ~2.6:1. */
+  background: var(--sky-text);
   color: #fff;
   font-family: var(--font-display);
   font-weight: 800;

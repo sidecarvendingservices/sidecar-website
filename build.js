@@ -30,7 +30,7 @@ const OUT_DIR = path.join(ROOT, 'dist');
 const BASE_URL = 'https://sidecarservices.com';
 
 // Any top-level files/folders here get copied into dist/ as-is.
-const STATIC_COPY = ['styles.css', 'images', 'robots.txt'];
+const STATIC_COPY = ['styles.css', 'images', 'robots.txt', 'llms.txt'];
 
 // Priority hints for sitemap.xml, keyed by the OUTPUT filename. Anything not
 // listed here defaults to 0.6. Pages in PASSTHROUGH_PAGES are never included

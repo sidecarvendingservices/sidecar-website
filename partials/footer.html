@@ -1,6 +1,6 @@
 <!-- FOOTER -->
 
-<div class="footer-wrap">
+<footer class="footer-wrap">
 
 <div class="footer-inner">
 
@@ -10,7 +10,7 @@
 
 <div class="footer-brand">
 
-<img src="/images/sidecar_logo_white_cropped.png" alt="Sidecar Vending Services" loading="lazy" width="400" height="200">
+<img src="/images/sidecar_logo_white_cropped.png" alt="" loading="lazy" width="400" height="200">
 
 <div class="footer-tagline">Always Stocked. Always On Time. One Call.</div>
 
@@ -82,12 +82,23 @@
 
 </div>
 
-<div class="footer-bottom">© 2026 Sidecar Vending Services LLC · All rights reserved · <a href="/privacy" style="color:inherit;text-decoration:underline;">Privacy Policy</a></div>
+<div class="footer-bottom">© 2026 Sidecar Vending Services LLC · All rights reserved · <a href="/privacy" style="color:inherit;text-decoration:underline;display:inline-block;padding:10px 2px;">Privacy Policy</a></div>
 
 <button type="button" class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
 
 </div>
 
+</footer>
+
+<!-- Sticky mobile action bar (2026-07-27): the phone number and "Free
+Evaluation" link both exist elsewhere on the page, but on a local-service
+site like this, phone is often the highest-converting channel — and on
+mobile it was buried as a bare icon in the header or an 18px-tall footer
+line. This keeps both conversion paths one thumb-tap away at all times on
+phones, without touching the desktop layout. -->
+<div class="mobile-action-bar">
+  <a href="tel:4708393656" class="mobile-action-bar-btn mobile-action-bar-btn--call">Call (470) 839-3656</a>
+  <a href="/#evaluation" class="mobile-action-bar-btn mobile-action-bar-btn--cta">Get Free Evaluation</a>
 </div>
 
 <!-- Site-wide scripts: Cloudflare analytics + bot-protection beacons.

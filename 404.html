@@ -41,7 +41,8 @@
   --sky: #29ABE2;
   --sky-light: #6DCAEE;
   --sky-pale: #D4EEF9;
-  --sky-deep: #1A7EB5;
+  --sky-deep: #166F9B;
+  --sky-text: #0574A3;
   --charcoal: #3D3D3D;
   --graphite: #5A5A5A;
   --stone: #8C8C8C;
@@ -67,7 +68,7 @@ img { display: block; max-width: 100%; }
 }
 .btn-primary {
   display: inline-block;
-  background: var(--sky);
+  background: var(--sky-text);
   color: #fff;
   font-family: var(--font-body);
   font-size: 13px;
@@ -101,6 +102,21 @@ img { display: block; max-width: 100%; }
   transition: background 0.2s, color 0.2s;
 }
 .btn-secondary:hover { background: var(--sky-pale); }
+/* Accessibility fix (2026-07-27): first focusable element was the logo;
+   this adds a visually-hidden skip link that appears on focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--sky-ink);
+  padding: 0.75rem 1.25rem;
+  z-index: 9999;
+  font-weight: 700;
+  border-radius: 0 0 6px 0;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
 /* ── NAV ── */
 .nav-wrap {
   position: sticky;
@@ -158,7 +174,8 @@ img { display: block; max-width: 100%; }
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.85);
+  /* Accessibility fix (2026-07-27): bumped 0.85→0.9 for margin over 4.5:1. */
+  color: rgba(255,255,255,0.9);
   display: block;
   margin-bottom: 14px;
 }
@@ -251,8 +268,9 @@ img { display: block; max-width: 100%; }
 .footer-contact a { color: var(--sky-light); text-decoration: none; }
 .footer-bottom {
   font-size: 12px;
-  /* Accessibility fix: was 0.35 opacity (2.84:1) — bumped to 0.5. */
-  color: rgba(255,255,255,0.5);
+  /* Accessibility fix (2026-07-27): 0.5 opacity only reached 4.14:1 against
+     this bg — still short of 4.5:1 AA. 0.6 reaches 5.24:1. */
+  color: rgba(255,255,255,0.6);
 }
 @media (max-width: 700px) {
   .confirm-h1 { font-size: 32px; }
@@ -270,15 +288,17 @@ img { display: block; max-width: 100%; }
 </style>
 </head>
 <body>
+<a href="#main" class="skip-link">Skip to main content</a>
 <!-- NAV -->
-<div class="nav-wrap">
-  <div class="nav-inner">
+<header class="nav-wrap">
+  <nav class="nav-inner" aria-label="Main">
     <a class="nav-logo" href="/">
-      <img src="/images/transparent_1.png" alt="Sidecar Vending Services" style="height:48px;width:auto;" width="3958" height="2038">
+      <img src="/images/transparent_1-nav.png" alt="Sidecar Vending Services" style="height:48px;width:auto;" width="420" height="216">
     </a>
     <a class="btn-secondary" href="/" style="color:var(--sky-deep);border-color:var(--sky-deep);">Back to Home</a>
-  </div>
-</div>
+  </nav>
+</header>
+<main id="main">
 <!-- 404 HERO -->
 <div class="confirm-wrap">
   <div class="hero-bubble" style="width:420px;height:420px;top:-140px;right:-100px;"></div>
@@ -328,8 +348,9 @@ img { display: block; max-width: 100%; }
     </div>
   </div>
 </div>
+</main>
 <!-- FOOTER -->
-<div class="footer-wrap">
+<footer class="footer-wrap">
   <div class="footer-inner">
     <div class="footer-contact">
       <div>Atlanta, GA</div>
@@ -338,6 +359,6 @@ img { display: block; max-width: 100%; }
     </div>
     <div class="footer-bottom">© 2026 Sidecar Vending Services · All rights reserved</div>
   </div>
-</div>
+</footer>
 </body>
 </html>
