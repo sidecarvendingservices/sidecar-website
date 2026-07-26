@@ -1242,6 +1242,19 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   padding: 8px 16px;
   border-radius: 999px;
 }
+/* Linked variant — used once a city has its own location page (see
+   vending-machines-<slug>-ga.html). Plain <span> badges have no href and
+   stay unstyled-for-links; this one gets a visible hover/focus state since
+   it's actually clickable. */
+.city-badge--link {
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.city-badge--link:hover,
+.city-badge--link:focus-visible {
+  background: var(--sky-pale);
+  border-color: var(--sky);
+}
 .map-wrap {
   margin-top: 12px;
   border-radius: 16px;

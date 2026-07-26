@@ -47,6 +47,7 @@ const SITEMAP_PRIORITY = {
   'smart-vending-machine.html': '0.7',
   'switching-vending-companies.html': '0.7',
   'vending-company-comparison.html': '0.7',
+  'vending-machines-sandy-springs-ga.html': '0.7',
   'careers.html': '0.3',
   'privacy.html': '0.2',
   'blog.html': '0.6',
