@@ -110,7 +110,10 @@ img { display: block; max-width: 100%; }
 .btn-secondary {
   display: inline-block;
   background: transparent;
-  color: var(--sky);
+  /* Accessibility fix (2026-07-26): was var(--sky) — only 2.62:1 against
+     white. --sky-deep gets to 4.47:1. Same fix applied sitewide in
+     styles.css. */
+  color: var(--sky-deep);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
@@ -119,7 +122,7 @@ img { display: block; max-width: 100%; }
   padding: 15px 28px;
   border-radius: 999px;
   text-decoration: none;
-  border: 2px solid var(--sky);
+  border: 2px solid var(--sky-deep);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -143,7 +146,9 @@ img { display: block; max-width: 100%; }
 .nav-logo img { height: 48px; }
 /* ── CONFIRMATION ── */
 .confirm-wrap {
-  background: var(--sky);
+  /* Accessibility fix: was var(--sky) — 2.62:1 with white text, fails WCAG
+     AA even for large text. --sky-deep reaches 4.47:1. */
+  background: var(--sky-deep);
   position: relative;
   overflow: hidden;
 }
@@ -177,7 +182,7 @@ img { display: block; max-width: 100%; }
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.85);
   display: block;
   margin-bottom: 14px;
 }
@@ -192,7 +197,9 @@ img { display: block; max-width: 100%; }
 }
 .confirm-sub {
   font-size: 18px;
-  color: rgba(255,255,255,0.9);
+  /* Accessibility fix: was rgba(255,255,255,0.9) — solid white on the new
+     --sky-deep background reaches 4.47:1 (was 2.4:1 against the old bg). */
+  color: #fff;
   line-height: 1.65;
   margin-bottom: 8px;
 }
@@ -200,7 +207,7 @@ img { display: block; max-width: 100%; }
 .confirm-phone {
   margin-top: 28px;
   font-size: 15px;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.95);
 }
 .confirm-phone a {
   color: #fff;
@@ -281,11 +288,20 @@ img { display: block; max-width: 100%; }
 .footer-contact a { color: var(--sky-light); text-decoration: none; }
 .footer-bottom {
   font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  /* Accessibility fix: was rgba(255,255,255,0.35), 2.84:1 — bumped to 0.5. */
+  color: rgba(255,255,255,0.5);
 }
 @media (max-width: 700px) {
   .confirm-h1 { font-size: 32px; }
   .next-grid { grid-template-columns: 1fr; }
+}
+/* Reduced motion — matches the same block in the main styles.css */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 </style>
 </head>
@@ -304,7 +320,7 @@ img { display: block; max-width: 100%; }
   <div class="hero-bubble" style="width:420px;height:420px;top:-140px;right:-100px;"></div>
   <div class="hero-bubble" style="width:220px;height:220px;bottom:-80px;left:6%;"></div>
   <div class="confirm-inner">
-    <div class="confirm-icon">✓</div>
+    <div class="confirm-icon" aria-hidden="true">✓</div>
     <span class="confirm-eyebrow">Request Received</span>
     <h1 class="confirm-h1">You're all set.</h1>
     <p class="confirm-sub">Thanks for requesting your free on-site evaluation.<br><strong>A member of the Sidecar team will contact you within 24 hours</strong> to schedule your visit.</p>
@@ -321,17 +337,17 @@ img { display: block; max-width: 100%; }
     <h2>What happens next</h2>
     <div class="next-grid">
       <div class="next-card">
-        <div class="next-num">1</div>
+        <div class="next-num" aria-hidden="true">1</div>
         <h3>We review your request</h3>
         <p>Our team looks over the details you shared about your space and business right away.</p>
       </div>
       <div class="next-card">
-        <div class="next-num">2</div>
+        <div class="next-num" aria-hidden="true">2</div>
         <h3>We reach out within 24 hours</h3>
         <p>A Sidecar team member will call or email you to confirm a time for your free on-site evaluation.</p>
       </div>
       <div class="next-card">
-        <div class="next-num">3</div>
+        <div class="next-num" aria-hidden="true">3</div>
         <h3>We come to you</h3>
         <p>We visit your location, assess your space, and recommend the right machines — no cost, no commitment.</p>
       </div>

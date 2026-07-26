@@ -65,7 +65,10 @@ img { display: block; max-width: 100%; }
 .btn-secondary {
   display: inline-block;
   background: transparent;
-  color: var(--sky);
+  /* Accessibility fix (2026-07-26): was var(--sky) — only 2.62:1 against
+     white, which fails for real button-label text. --sky-deep gets to
+     4.47:1. */
+  color: var(--sky-deep);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
@@ -74,7 +77,7 @@ img { display: block; max-width: 100%; }
   padding: 15px 28px;
   border-radius: 999px;
   text-decoration: none;
-  border: 2px solid var(--sky);
+  border: 2px solid var(--sky-deep);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -82,7 +85,8 @@ img { display: block; max-width: 100%; }
 .btn-white {
   display: inline-block;
   background: #fff;
-  color: var(--sky);
+  /* Accessibility fix: same reasoning as .btn-secondary above. */
+  color: var(--sky-deep);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
@@ -335,7 +339,12 @@ button:focus-visible,
 }
 /* ── HERO ── */
 .hero-wrap {
-  background: var(--sky);
+  /* Accessibility fix (2026-07-26): was var(--sky), which only gives white
+     text a 2.62:1 contrast ratio — fails WCAG AA even for large text
+     (needs 3:1). --sky-deep gives 4.47:1, which passes. Same reasoning
+     applied to .page-header below, and to the standalone confirm-wrap
+     panels in thank-you.html / support-thank-you.html / 404.html. */
+  background: var(--sky-deep);
   position: relative;
   overflow: hidden;
 }
@@ -356,7 +365,7 @@ button:focus-visible,
   position: relative;
   z-index: 2;
 }
-.hero-eyebrow { color: rgba(255,255,255,0.65); }
+.hero-eyebrow { color: rgba(255,255,255,0.85); }
 .hero-h1 {
   font-family: var(--font-display);
   font-size: 62px;
@@ -368,7 +377,10 @@ button:focus-visible,
 }
 .hero-sub {
   font-size: 18px;
-  color: rgba(255,255,255,0.85);
+  /* Accessibility fix: was rgba(255,255,255,0.85), only 2.28:1 against the
+     old --sky background. Solid white against the new --sky-deep bg
+     reaches 4.47:1. */
+  color: #fff;
   line-height: 1.65;
   margin-bottom: 32px;
   max-width: 480px;
@@ -628,7 +640,10 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 .form-note {
   font-size: 12px;
-  color: var(--stone);
+  /* Accessibility fix: --stone on white is 3.36:1, under the 4.5:1 small
+     text needs. --graphite (6.9:1) is already used successfully elsewhere
+     on the site for body copy. */
+  color: var(--graphite);
   text-align: center;
   margin-top: 14px;
 }
@@ -817,7 +832,10 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
+  /* Accessibility fix: was 0.4 opacity (3.24:1 against the footer
+     background) — bumped to match .footer-tagline's already-passing 0.55
+     (4.69:1). */
+  color: rgba(255,255,255,0.55);
   margin-bottom: 2px;
 }
 .footer-links-col a {
@@ -828,7 +846,9 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 .footer-links-col a:hover { color: var(--sky-light); }
 .footer-bottom {
   font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  /* Accessibility fix: was 0.35 opacity (2.84:1) — bumped to 0.5 (4.0:1+),
+     in line with the other low-emphasis footer text. */
+  color: rgba(255,255,255,0.5);
   text-align: center;
 }
 /* ── BACK TO TOP ── */
@@ -908,7 +928,9 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 
 /* ── INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) ── */
 .page-header {
-  background: var(--sky);
+  /* Accessibility fix: see .hero-wrap comment above — same 2.62:1 issue,
+     same fix. */
+  background: var(--sky-deep);
   padding: 64px 32px 56px;
   text-align: left;
 }
@@ -916,7 +938,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   max-width: 1200px;
   margin: 0 auto;
 }
-.page-header .eyebrow { color: rgba(255,255,255,0.65); }
+.page-header .eyebrow { color: rgba(255,255,255,0.85); }
 .page-header h1 {
   font-family: var(--font-display);
   font-size: 44px;
@@ -929,7 +951,9 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 .page-header p {
   font-size: 17px;
-  color: rgba(255,255,255,0.88);
+  /* Accessibility fix: was rgba(255,255,255,0.88), 2.34:1 against the old
+     background. Solid white on --sky-deep reaches 4.47:1. */
+  color: #fff;
   max-width: 620px;
   line-height: 1.65;
 }
@@ -938,7 +962,7 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   font-weight: 600;
   margin-bottom: 18px;
 }
-.breadcrumb a { color: rgba(255,255,255,0.75); text-decoration: none; }
+.breadcrumb a { color: rgba(255,255,255,0.92); text-decoration: none; }
 .breadcrumb a:hover { color: #fff; text-decoration: underline; }
 
 /* ── FAQ BLOCKS (reused on every page) ── */
@@ -1042,7 +1066,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
 }
 .zip-list-note {
   font-size: 13px;
-  color: var(--stone);
+  /* Accessibility fix: same reasoning as .form-note above. */
+  color: var(--graphite);
   margin-top: 14px;
   line-height: 1.6;
 }
@@ -1257,4 +1282,27 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--graphite);
   line-height: 1.75;
   margin-bottom: 10px;
+}
+
+/* ── REDUCED MOTION (2026-07-26) ──
+   Respects the OS-level "reduce motion" preference: turns off smooth-
+   scrolling and shortens/removes the hover-lift and fade transitions used
+   on cards, buttons, and the back-to-top control. Nothing on the site was
+   flashing or seizure-risk to begin with — this is about not making the
+   page move around for people who've explicitly asked their system to
+   minimize animation. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  a.serve-card:hover,
+  .industry-hub-card:hover,
+  .quicklink-card:hover,
+  .blog-card:hover {
+    transform: none;
+  }
 }
