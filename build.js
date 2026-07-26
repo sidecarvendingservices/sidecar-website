@@ -30,9 +30,10 @@ const OUT_DIR = path.join(ROOT, 'dist');
 const BASE_URL = 'https://sidecarservices.com';
 
 // Any top-level files/folders here get copied into dist/ as-is.
-const STATIC_COPY = ['styles.css', 'images', 'robots.txt', 'llms.txt'];
+const STATIC_COPY = ['styles.css', 'images', 'robots.txt', 'llms.txt', '_redirects'];
 
-// Priority hints for sitemap.xml, keyed by the OUTPUT filename. Anything not
+// Priority hints for sitemap.xml, keyed by the page's OUTPUT path relative to
+// dist/ (e.g. 'index.html', 'blog/dumb-vending-machines.html'). Anything not
 // listed here defaults to 0.6. Pages in PASSTHROUGH_PAGES are never included
 // in the sitemap (e.g. thank-you.html is marked noindex and shouldn't be).
 const SITEMAP_PRIORITY = {
@@ -48,12 +49,22 @@ const SITEMAP_PRIORITY = {
   'careers.html': '0.3',
   'privacy.html': '0.2',
   'blog.html': '0.6',
-  'blog-dumb-vending-machines.html': '0.5',
-  'blog-non-food-vending-items.html': '0.5',
-  'blog-vending-machine-cost-atlanta.html': '0.5',
-  'blog-apartment-vending-stocking.html': '0.5',
+  'blog/dumb-vending-machines.html': '0.5',
+  'blog/non-food-vending-items.html': '0.5',
+  'blog/vending-machine-cost-atlanta.html': '0.5',
+  'blog/apartment-vending-stocking.html': '0.5',
   'support.html': '0.6',
 };
+
+// Blog post source files (src/blog-<slug>.html, excluding the /blog listing
+// page itself) are now output at blog/<slug>.html instead of a flat
+// blog-<slug>.html, so post URLs read as /blog/<slug>. A 301 from every old
+// flat URL to its new nested URL lives in the top-level `_redirects` file —
+// update that file too if a blog post is renamed or a new one is added.
+function blogSlug(file) {
+  const m = file.match(/^blog-(.+)\.html$/);
+  return m ? m[1] : null;
+}
 
 // Any top-level HTML files here are copied straight into dist/ without
 // going through the header/footer template (useful for one-off pages like
@@ -243,8 +254,12 @@ function build() {
     const raw = fs.readFileSync(path.join(SRC_DIR, file), 'utf8');
     const { title, description, content } = extractMeta(raw);
 
-    // src/home.html always becomes the site's real homepage: index.html
-    const outName = file === 'home.html' ? 'index.html' : file;
+    // src/home.html always becomes the site's real homepage: index.html.
+    // src/blog-<slug>.html becomes blog/<slug>.html (see blogSlug() above),
+    // so blog post URLs read as /blog/<slug> instead of the old flat
+    // /blog-<slug>.
+    const slug = blogSlug(file);
+    const outName = file === 'home.html' ? 'index.html' : slug ? `blog/${slug}.html` : file;
     const canonicalPath = outName === 'index.html' ? '' : `/${outName.replace(/\.html$/, '')}`;
     const canonicalUrl = `${BASE_URL}${canonicalPath || '/'}`;
 
@@ -261,6 +276,7 @@ function build() {
       .replace('{{CONTENT}}', content + breadcrumbSchema + faqSchema + articleSchema)
       .replace('{{FOOTER}}', footer);
 
+    fs.mkdirSync(path.join(OUT_DIR, path.dirname(outName)), { recursive: true });
     fs.writeFileSync(path.join(OUT_DIR, outName), page, 'utf8');
     console.log(`Built ${outName} from src/${file}`);
     sitemapUrls.push({ loc: canonicalUrl, priority: SITEMAP_PRIORITY[outName] || '0.6' });

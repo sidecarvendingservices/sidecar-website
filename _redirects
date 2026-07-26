@@ -1,0 +1,7 @@
+# 301s from the old flat blog URLs to the new nested /blog/<slug> structure
+# (build.js now outputs src/blog-<slug>.html to blog/<slug>.html — update
+# this file too whenever a blog post is renamed).
+/blog-apartment-vending-stocking     /blog/apartment-vending-stocking     301
+/blog-vending-machine-cost-atlanta   /blog/vending-machine-cost-atlanta   301
+/blog-non-food-vending-items         /blog/non-food-vending-items         301
+/blog-dumb-vending-machines          /blog/dumb-vending-machines          301
