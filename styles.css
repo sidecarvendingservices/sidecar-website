@@ -177,7 +177,7 @@ img { display: block; max-width: 100%; }
    (for layout-shift prevention); when only CSS height is set alongside
    those, Chromium doesn't auto-derive a proportional width — it needs
    width:auto stated explicitly, or the logo renders badly stretched. */
-.nav-logo img { height: 64px; width: auto; }
+.nav-logo img { height: 96px; width: auto; }
 .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
 .nav-links a {
   font-family: var(--font-body);
