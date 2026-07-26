@@ -548,6 +548,47 @@ button:focus-visible,
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
+/* Comparison table (e.g. /vending-company-comparison). Horizontal scroll on
+   narrow viewports rather than squeezing 3 columns of prose into ~350px. */
+.compare-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  font-size: 15px;
+}
+.compare-table th,
+.compare-table td {
+  padding: 16px 20px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--fog);
+  line-height: 1.6;
+}
+.compare-table thead th {
+  background: var(--sky-whisper);
+  color: var(--charcoal);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+}
+.compare-table tbody th[scope="row"] {
+  font-weight: 700;
+  color: var(--charcoal);
+  background: var(--ghost);
+  white-space: nowrap;
+}
+.compare-table tbody td {
+  color: var(--graphite);
+}
+.compare-table tbody tr:last-child th,
+.compare-table tbody tr:last-child td {
+  border-bottom: none;
+}
 /* Modifier for pages with 6 cards (e.g. the machine page) — 3 columns so
    every row is full, instead of leaving a lonely 2-card row under a 4-col
    grid. Kept as its own class (not an inline style) so the existing
