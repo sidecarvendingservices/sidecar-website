@@ -185,7 +185,10 @@ or <a href="tel:4708393656" style="color:var(--sky-deep);font-weight:700;">(470)
   };
   var box = document.getElementById('support-form-alert');
   if (box) {
-    box.textContent = messages[error] || 'Something went wrong — please try again or contact us directly.';
+    var text = messages[error] || 'Something went wrong — please try again or contact us directly.';
+    var detail = params.get('detail');
+    if (detail) { text += ' (debug: ' + detail + ')'; }
+    box.textContent = text;
     box.classList.add('is-visible');
   }
 })();

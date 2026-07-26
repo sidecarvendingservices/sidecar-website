@@ -108,11 +108,18 @@ export async function onRequestPost(context) {
     if (!quoResponse.ok) {
       const errBody = await quoResponse.text().catch(() => '');
       console.error(`Quo/OpenPhone API returned ${quoResponse.status}: ${errBody}`);
-      return redirectTo(request, '/support?error=send#support-form');
+      // TEMP DIAGNOSTIC (Brian, 2026-07-26): surfacing the status code and a
+      // short slice of the response body in the redirect so we can see why
+      // the send failed without needing to dig through Cloudflare's log
+      // viewer. Safe to remove once the SMS path is confirmed working —
+      // nothing sensitive (no API key, no phone numbers) is included.
+      const debugDetail = encodeURIComponent(`${quoResponse.status}:${errBody.slice(0, 150)}`);
+      return redirectTo(request, `/support?error=send&detail=${debugDetail}#support-form`);
     }
   } catch (err) {
     console.error('Quo/OpenPhone API request failed:', err);
-    return redirectTo(request, '/support?error=send#support-form');
+    const debugDetail = encodeURIComponent(String(err && err.message ? err.message : err).slice(0, 150));
+    return redirectTo(request, `/support?error=send&detail=${debugDetail}#support-form`);
   }
 
   return redirectTo(request, '/support-thank-you.html');
