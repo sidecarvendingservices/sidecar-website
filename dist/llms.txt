@@ -1,0 +1,29 @@
+# Sidecar Vending Services
+
+> Sidecar Vending Services installs, stocks, monitors, and maintains smart vending
+> machines at no cost to businesses across North Metro Atlanta. Locally owned and
+> operated by Vala Renfroe and Brian Morris.
+
+Service model: free installation, free stocking, free maintenance and repairs.
+No capital outlay, no rental fees, no monthly charges. Revenue comes from product sales.
+
+Machines: AI-powered smart vending coolers with touchscreens and cashless
+payment (Apple Pay, Google Pay, tap-to-pay cards).
+
+Service area: North Metro Atlanta. See the Service Area page for the full list of
+covered zip codes and an interactive map.
+
+Industries: offices and coworking, warehouses and industrial, apartment communities,
+gyms and fitness studios, medical and healthcare, auto dealerships.
+
+Contact: (470) 839-3656 - https://sidecarservices.com/#evaluation
+
+## Key pages
+
+- [How It Works](https://sidecarservices.com/how-it-works): The 3-step process from free evaluation to installed machine.
+- [What It Costs](https://sidecarservices.com/cost): Why the service is free to the host business and what's included.
+- [FAQ](https://sidecarservices.com/faq): Answers on contracts, cost, space requirements, and service response times.
+- [Service Area](https://sidecarservices.com/service-area): Covered zip codes with an interactive map.
+- [Switching Vendors](https://sidecarservices.com/switching-vending-companies): How to replace an existing vending provider.
+- [Industries](https://sidecarservices.com/industries): Vending programs by industry.
+- [Support](https://sidecarservices.com/support): Contact an existing customer's account team.

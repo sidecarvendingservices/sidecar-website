@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/images/favicon.png">
+<link rel="apple-touch-icon" href="/images/favicon.png">
+
+<!-- Google tag (gtag.js) — GA4 property for sidecarservices.com. Reaching
+     this page means a form was actually submitted, so it doubles as a
+     built-in lead conversion signal (separate from the in-page listener
+     on the homepage), with no extra setup required. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HXPDLD3WJX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-HXPDLD3WJX');
+  gtag('event', 'generate_lead', {
+    event_category: 'engagement',
+    event_label: 'Free Evaluation Form (thank-you page view)'
+  });
+</script>
+
+<title>Request Received — Sidecar Vending Services</title>
+<!-- Thank-you pages are normally kept out of search results since the only way in
+     is by completing the form. Remove this line if you'd rather have it indexed. -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- ────────────────────────────────────────────────────────────────
+  GOOGLE ADS / GA4 CONVERSION TRACKING
+  This page only loads after a real form submission succeeds, so it's the
+  right place to fire your conversion event. Two ways to use it — pick one:
+  OPTION A — "Destination URL" conversion action (no code needed here)
+    In Google Ads, create a conversion action of type "Page load" and set
+    the destination URL to a page containing "/thank-you.html". Google Ads
+    will count a conversion any time someone lands here. Nothing below is
+    required for this option.
+  OPTION B — gtag.js event snippet (more precise, recommended)
+    1) Make sure the base Google tag (gtag.js) is installed sitewide
+       (usually in the <head> of every page, including index.html).
+    2) Replace AW-CONVERSION_ID and AW-CONVERSION_LABEL below with the
+       values from Google Ads → Goals → Conversions → your action →
+       "Tag setup" → "Use Google tag directly".
+    Uncomment the block below once you've filled those in.
+──────────────────────────────────────────────────────────────────── -->
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-CONVERSION_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-CONVERSION_ID');
+  gtag('event', 'conversion', {
+    'send_to': 'AW-CONVERSION_ID/AW-CONVERSION_LABEL'
+  });
+</script>
+-->
+<style>
+:root {
+  --sky: #29ABE2;
+  --sky-light: #6DCAEE;
+  --sky-pale: #D4EEF9;
+  --sky-deep: #166F9B;
+  --sky-text: #0574A3;
+  --sky-ink: #0D4D73;
+  --sky-whisper: #EBF7FD;
+  --charcoal: #3D3D3D;
+  --graphite: #5A5A5A;
+  --stone: #8C8C8C;
+  --fog: #EBEBEB;
+  --ghost: #F5F5F5;
+  --white: #FFFFFF;
+  --lime: #5DBF6A;
+  --font-display: 'Nunito', sans-serif;
+  --font-body: 'Nunito Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
+img { display: block; max-width: 100%; }
+.stripe {
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sky) 0px, var(--sky) 28px,
+    var(--sky-light) 28px, var(--sky-light) 46px,
+    var(--sky-pale) 46px, var(--sky-pale) 56px,
+    transparent 56px, transparent 68px
+  );
+}
+.btn-primary {
+  display: inline-block;
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--sky-deep); }
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  /* Accessibility fix (2026-07-26): was var(--sky) — only 2.62:1 against
+     white. --sky-deep gets to 4.47:1. Same fix applied sitewide in
+     styles.css. */
+  color: var(--sky-deep);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--sky-deep);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-secondary:hover { background: var(--sky-pale); }
+/* Accessibility fix (2026-07-27): first focusable element was the logo;
+   this adds a visually-hidden skip link that appears on focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--sky-ink);
+  padding: 0.75rem 1.25rem;
+  z-index: 9999;
+  font-weight: 700;
+  border-radius: 0 0 6px 0;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+/* ── NAV ── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fog);
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-logo img { height: 48px; }
+/* ── CONFIRMATION ── */
+.confirm-wrap {
+  /* Accessibility fix: was var(--sky) — 2.62:1 with white text, fails WCAG
+     AA even for large text. --sky-deep reaches 4.47:1. */
+  background: var(--sky-deep);
+  position: relative;
+  overflow: hidden;
+}
+.hero-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.confirm-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 88px 32px 96px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.confirm-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+  font-size: 36px;
+  color: #fff;
+}
+.confirm-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  /* Accessibility fix (2026-07-27): bumped 0.85→0.9 for margin over 4.5:1. */
+  color: rgba(255,255,255,0.9);
+  display: block;
+  margin-bottom: 14px;
+}
+.confirm-h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+.confirm-sub {
+  font-size: 18px;
+  /* Accessibility fix: was rgba(255,255,255,0.9) — solid white on the new
+     --sky-deep background reaches 4.47:1 (was 2.4:1 against the old bg). */
+  color: #fff;
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+.confirm-sub strong { color: #fff; }
+.confirm-phone {
+  margin-top: 28px;
+  font-size: 15px;
+  color: rgba(255,255,255,0.95);
+}
+.confirm-phone a {
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 2px solid rgba(255,255,255,0.5);
+}
+/* ── NEXT STEPS ── */
+.next-wrap { padding: 72px 32px; }
+.next-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.next-inner h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--charcoal);
+  text-align: center;
+  margin-bottom: 40px;
+}
+.next-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.next-card {
+  background: var(--ghost);
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  padding: 26px 22px;
+}
+.next-num {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  /* Accessibility fix (2026-07-27): white text on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.next-card h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.next-card p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.back-home {
+  text-align: center;
+  margin-top: 44px;
+}
+/* ── FOOTER ── */
+.footer-wrap {
+  background: #3A3A3A;
+  padding: 36px 32px 28px;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.footer-contact {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 2;
+  margin-bottom: 12px;
+}
+.footer-contact a { color: var(--sky-light); text-decoration: none; }
+.footer-bottom {
+  font-size: 12px;
+  /* Accessibility fix (2026-07-27): 0.5 opacity only reached 4.14:1 against
+     this bg — still short of 4.5:1 AA. 0.6 reaches 5.24:1. */
+  color: rgba(255,255,255,0.6);
+}
+@media (max-width: 700px) {
+  .confirm-h1 { font-size: 32px; }
+  .next-grid { grid-template-columns: 1fr; }
+}
+/* Reduced motion — matches the same block in the main styles.css */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<!-- NAV -->
+<header class="nav-wrap">
+  <nav class="nav-inner" aria-label="Main">
+    <a class="nav-logo" href="index.html">
+      <img src="images/transparent_1-nav.png" alt="Sidecar Vending Services" style="height:48px;width:auto;" width="480" height="247">
+    </a>
+    <a class="btn-secondary" href="index.html">Back to Home</a>
+  </nav>
+</header>
+<main id="main">
+<!-- CONFIRMATION -->
+<div class="confirm-wrap">
+  <div class="hero-bubble" style="width:420px;height:420px;top:-140px;right:-100px;"></div>
+  <div class="hero-bubble" style="width:220px;height:220px;bottom:-80px;left:6%;"></div>
+  <div class="confirm-inner">
+    <div class="confirm-icon" aria-hidden="true">✓</div>
+    <span class="confirm-eyebrow">Request Received</span>
+    <h1 class="confirm-h1">You're all set.</h1>
+    <p class="confirm-sub">Thanks for requesting your free on-site evaluation.<br><strong>A member of the Sidecar team will contact you within 24 hours</strong> to schedule your visit.</p>
+    <div class="confirm-phone">
+      Need to talk sooner? Call or text us directly at <a href="tel:4708393656">(470) 839-3656</a>
+    </div>
+  </div>
+</div>
+<!-- STRIPE -->
+<div class="stripe"></div>
+<!-- WHAT HAPPENS NEXT -->
+<div class="next-wrap">
+  <div class="next-inner">
+    <h2>What happens next</h2>
+    <div class="next-grid">
+      <div class="next-card">
+        <div class="next-num" aria-hidden="true">1</div>
+        <h3>We review your request</h3>
+        <p>Our team looks over the details you shared about your space and business right away.</p>
+      </div>
+      <div class="next-card">
+        <div class="next-num" aria-hidden="true">2</div>
+        <h3>We reach out within 24 hours</h3>
+        <p>A Sidecar team member will call or email you to confirm a time for your free on-site evaluation.</p>
+      </div>
+      <div class="next-card">
+        <div class="next-num" aria-hidden="true">3</div>
+        <h3>We come to you</h3>
+        <p>We visit your location, assess your space, and recommend the right machines — no cost, no commitment.</p>
+      </div>
+    </div>
+    <div class="back-home">
+      <a class="btn-primary" href="index.html">Return to Homepage</a>
+    </div>
+  </div>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="footer-wrap">
+  <div class="footer-inner">
+    <div class="footer-contact">
+      <div>Atlanta, GA</div>
+      <div><a href="https://sidecarservices.com">sidecarservices.com</a></div>
+      <div><a href="tel:4708393656">(470) 839-3656</a></div>
+    </div>
+    <div class="footer-bottom">© 2026 Sidecar Vending Services · All rights reserved</div>
+  </div>
+</footer>
+</body>
+</html>

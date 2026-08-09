@@ -1,0 +1,1503 @@
+/* ── TOKENS ── */
+:root {
+  --sky: #29ABE2;
+  --sky-light: #6DCAEE;
+  --sky-pale: #D4EEF9;
+  /* Accessibility fix (2026-07-27): --sky-deep was #1A7EB5 (4.47:1 with
+     white text — fails the 4.5:1 AA minimum by a hair, and several hero
+     tints layered on top of it fell further short). Darkened to #166F9B,
+     which reaches 5.55:1 with white and pulls every tint built on top of
+     it comfortably over the line too. */
+  --sky-deep: #166F9B;
+  /* NEW: for eyebrow/link text and the primary button fill, which were
+     using --sky (#29ABE2) directly at only 2.4-2.6:1 against white/grey —
+     nowhere close to AA. #0574A3 reaches 5.21:1 on white and 4.78:1 on
+     --ghost (#F5F5F5). */
+  --sky-text: #0574A3;
+  --sky-ink: #0D4D73;
+  --sky-whisper: #EBF7FD;
+  --charcoal: #3D3D3D;
+  --graphite: #5A5A5A;
+  --stone: #8C8C8C;
+  --fog: #EBEBEB;
+  --ghost: #F5F5F5;
+  --white: #FFFFFF;
+  --tangerine: #FF6B2B;
+  --lime: #5DBF6A;
+  --navy: #1A3A5C;
+  --cream: #FFF8F0;
+  --font-display: 'Nunito', sans-serif;
+  --font-body: 'Nunito Sans', sans-serif;
+}
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+/* Accessibility/UX fix (2026-07-27): the sticky header sits on top of the
+   page, so any in-page anchor (like #evaluation, which every "Free
+   Evaluation" link on the site points to) landed with its heading tucked
+   behind the nav bar. This gives every anchor target room to clear it. The
+   mobile value is larger because the sticky header is taller relative to
+   the viewport there. */
+[id] { scroll-margin-top: 120px; }
+@media (max-width: 600px) {
+  [id] { scroll-margin-top: 160px; }
+}
+body { font-family: var(--font-body); color: var(--charcoal); line-height: 1.6; background: var(--white); }
+img { display: block; max-width: 100%; }
+/* Accessibility fix (2026-07-27): first focusable element on the page was
+   the logo, forcing screen reader/keyboard users to tab through the whole
+   nav on every page load. Visually hidden until it receives focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--sky-ink);
+  padding: 0.75rem 1.25rem;
+  z-index: 9999;
+  font-weight: 700;
+  border-radius: 0 0 6px 0;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+/* ── UTILITIES ── */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: block;
+}
+.stripe {
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sky) 0px, var(--sky) 28px,
+    var(--sky-light) 28px, var(--sky-light) 46px,
+    var(--sky-pale) 46px, var(--sky-pale) 56px,
+    transparent 56px, transparent 68px
+  );
+}
+/* ── BUTTONS ── */
+.btn-primary {
+  display: inline-block;
+  /* Accessibility fix (2026-07-27): was var(--sky) #29ABE2 — white text on
+     it measured ~2.6:1, well under the 4.5:1 AA minimum, on the site's
+     single most important button. --sky-text (#0574A3) reaches 5.21:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--sky-deep); }
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  /* Accessibility fix (2026-07-26): was var(--sky) — only 2.62:1 against
+     white, which fails for real button-label text. --sky-deep gets to
+     4.47:1. */
+  color: var(--sky-deep);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--sky-deep);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-secondary:hover { background: var(--sky-pale); }
+.btn-white {
+  display: inline-block;
+  background: #fff;
+  /* Accessibility fix: same reasoning as .btn-secondary above. */
+  color: var(--sky-deep);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+.btn-full {
+  display: block;
+  width: 100%;
+  /* Accessibility fix (2026-07-27): white text on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 18px 28px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+.btn-full:hover { background: var(--sky-deep); }
+.btn-full:disabled { opacity: 0.7; cursor: not-allowed; }
+/* ── NAV ── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fog);
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+/* Bug fix (2026-07-27): the img carries width/height HTML attributes
+   (for layout-shift prevention); when only CSS height is set alongside
+   those, Chromium doesn't auto-derive a proportional width — it needs
+   width:auto stated explicitly, or the logo renders badly stretched. */
+.nav-logo img { height: 96px; width: auto; }
+.nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+.nav-links a {
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--sky); }
+/* ── KEYBOARD FOCUS STATES ──
+   Only shows for keyboard navigation (:focus-visible), not mouse clicks, so
+   it doesn't add a visible outline to every button tap on touch/mouse. */
+a:focus-visible,
+button:focus-visible,
+.nav-toggle:focus-visible,
+.nav-dropdown-trigger:focus-visible,
+.quicklink-card:focus-visible,
+.why-card:focus-visible,
+.serve-card:focus-visible,
+.industry-hub-card:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+/* ── DESKTOP "MORE" DROPDOWN ── */
+.nav-dropdown { position: relative; }
+.nav-dropdown-trigger {
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.nav-dropdown-trigger:hover { color: var(--sky); }
+.nav-caret { font-size: 10px; transition: transform 0.15s; }
+.nav-dropdown-trigger.is-active .nav-caret { transform: rotate(180deg); }
+/* The outer .nav-dropdown-menu box starts immediately below the trigger
+   (top: 100%, zero gap) so hovering never crosses a "dead" unhoverable
+   strip on the way down — that gap is what previously forced a click.
+   The visible white panel is a separate inner element pushed down by
+   padding-top, so there's still a clean visual gap (with a connecting
+   triangle) between the header and the panel, without breaking :hover. */
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  /* UX fix (2026-07-27): this 68px offset was sized for the old 105px-tall
+     logo/header. Now that the header is ~48-64px tall (logo shrink pass),
+     the same fixed offset left a disproportionately large, oddly-placed
+     gap between the nav and the dropdown panel. */
+  padding-top: 16px;
+  min-width: 180px;
+  display: none;
+  z-index: 200;
+}
+.nav-dropdown-menu-inner {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  /* UX fix (2026-07-27): 2px read as items crowded together; more room
+     to breathe between rows. */
+  gap: 4px;
+  list-style: none;
+}
+/* Bug fix (2026-07-27): converting this menu from <div><a> to <ul><li><a>
+   for semantic-landmarks work left the <li> stretching full-width (as a
+   flex child) while the <a> inside it stayed inline and content-width —
+   so the actual hover highlight didn't match the row's clickable area and
+   looked inconsistent/cramped against the panel edge. Making both
+   explicitly full-width with matching padding fixes it. */
+.nav-dropdown-menu-inner li { display: flex; }
+/* Small pointer triangle connecting the dropdown panel back to its trigger */
+.nav-dropdown-menu-inner::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-left: 1px solid var(--fog);
+  border-top: 1px solid var(--fog);
+  border-radius: 2px;
+}
+.nav-dropdown-menu-inner a {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-dropdown-menu-inner a:hover { background: var(--sky-whisper); color: var(--sky-deep); }
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu,
+.nav-dropdown-menu.is-open {
+  display: block;
+}
+/* ── MOBILE NAV (hamburger + tap-to-call) ── */
+.nav-mobile-actions { display: none; align-items: center; gap: 10px; }
+.nav-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--sky-pale);
+  color: var(--sky-deep);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--charcoal);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.nav-toggle.is-active span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.nav-toggle.is-active span:nth-child(2) { opacity: 0; }
+.nav-toggle.is-active span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: #fff;
+  border-top: 1px solid var(--fog);
+  padding: 4px 24px 20px;
+}
+.mobile-menu.is-open { display: flex; }
+.mobile-menu a {
+  padding: 14px 2px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  border-bottom: 1px solid var(--fog);
+}
+.mobile-menu a.btn-primary {
+  border-bottom: none;
+  margin-top: 14px;
+  padding: 15px 28px;
+}
+/* Mobile "More" accordion — collapsed by default, tap to reveal the
+   secondary nav items (Cost/Machines/Service Area/About) indented beneath
+   it, mirroring the desktop dropdown instead of one long flat list. */
+.mobile-menu-more-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 14px 2px;
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  border-bottom: 1px solid var(--fog);
+  cursor: pointer;
+  text-align: left;
+}
+.mobile-menu-more-trigger .nav-caret { transition: transform 0.15s; }
+.mobile-menu-more-trigger.is-active .nav-caret { transform: rotate(180deg); }
+.mobile-menu-more {
+  display: none;
+  flex-direction: column;
+  background: var(--ghost);
+}
+.mobile-menu-more.is-open { display: flex; }
+.mobile-menu-more a {
+  padding: 14px 2px 14px 18px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--graphite);
+  text-decoration: none;
+  border-bottom: 1px solid var(--fog);
+}
+.mobile-menu-more a:last-child { border-bottom: none; }
+.mobile-menu a.mobile-menu-call {
+  border-bottom: none;
+  color: var(--sky-deep);
+  font-weight: 800;
+  text-align: center;
+  padding-top: 16px;
+}
+/* ── HERO ── */
+.hero-wrap {
+  /* Accessibility fix (2026-07-26): was var(--sky), which only gives white
+     text a 2.62:1 contrast ratio — fails WCAG AA even for large text
+     (needs 3:1). --sky-deep gives 4.47:1, which passes. Same reasoning
+     applied to .page-header below, and to the standalone confirm-wrap
+     panels in thank-you.html / support-thank-you.html / 404.html. */
+  background: var(--sky-deep);
+  position: relative;
+  overflow: hidden;
+}
+.hero-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 32px 64px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+/* Accessibility fix (2026-07-27): 0.85 opacity measured 4.48:1 against the
+   darkened --sky-deep — a hair under 4.5:1 AA. 0.9 reaches 4.85:1. */
+.hero-eyebrow { color: rgba(255,255,255,0.9); }
+.hero-h1 {
+  font-family: var(--font-display);
+  font-size: 62px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.hero-sub {
+  font-size: 18px;
+  /* Accessibility fix: was rgba(255,255,255,0.85), only 2.28:1 against the
+     old --sky background. Solid white against the new --sky-deep bg
+     reaches 4.47:1. */
+  color: #fff;
+  line-height: 1.65;
+  margin-bottom: 32px;
+  max-width: 480px;
+}
+.hero-checks {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+.hero-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.9);
+  font-size: 15px;
+  font-weight: 600;
+}
+.check-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #fff;
+  font-weight: 900;
+}
+.hero-cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.hero-img-wrap {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+  aspect-ratio: 4/3;
+}
+.hero-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+/* ── TRUST BAR ── */
+.trust-bar {
+  background: var(--ghost);
+  border-bottom: 1px solid var(--fog);
+  box-shadow: inset 0 6px 12px -10px rgba(0,0,0,0.15), inset 0 -6px 12px -10px rgba(0,0,0,0.15);
+}
+.trust-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.trust-item {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--graphite);
+  padding: 6px 16px;
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+/* ── SECTIONS SHARED ── */
+.section-wrap {
+  padding: 88px 32px;
+}
+.section-wrap.alt { background: var(--ghost); }
+.section-wrap.dark { background: #3A3A3A; }
+.section-wrap.sky { background: var(--sky); }
+.section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section-header { margin-bottom: 48px; }
+.section-header h2 {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--charcoal);
+  letter-spacing: -0.01em;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+.section-header p {
+  font-size: 16px;
+  color: var(--graphite);
+  max-width: 540px;
+  line-height: 1.7;
+}
+/* ── WHY CARDS ── */
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+/* Comparison table (e.g. /vending-company-comparison). Horizontal scroll on
+   narrow viewports rather than squeezing 3 columns of prose into ~350px. */
+.compare-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  font-size: 15px;
+}
+.compare-table th,
+.compare-table td {
+  padding: 16px 20px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--fog);
+  line-height: 1.6;
+}
+.compare-table thead th {
+  background: var(--sky-whisper);
+  color: var(--charcoal);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+}
+.compare-table tbody th[scope="row"] {
+  font-weight: 700;
+  color: var(--charcoal);
+  background: var(--ghost);
+  white-space: nowrap;
+}
+.compare-table tbody td {
+  color: var(--graphite);
+}
+.compare-table tbody tr:last-child th,
+.compare-table tbody tr:last-child td {
+  border-bottom: none;
+}
+/* Modifier for pages with 6 cards (e.g. the machine page) — 3 columns so
+   every row is full, instead of leaving a lonely 2-card row under a 4-col
+   grid. Kept as its own class (not an inline style) so the existing
+   @media overrides below still apply at narrower widths. */
+.why-grid--thirds { grid-template-columns: repeat(3, 1fr); }
+.why-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.why-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--sky);
+}
+.why-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--sky-pale);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+.why-card h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.why-card p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.65;
+}
+/* ── HOW IT WORKS ── */
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.how-steps { display: grid; gap: 32px; }
+.how-step { display: flex; gap: 20px; align-items: flex-start; }
+.step-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  /* Accessibility fix (2026-07-27): white text on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.how-step h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 6px;
+}
+.how-step p {
+  font-size: 15px;
+  color: var(--graphite);
+  line-height: 1.65;
+}
+.how-photo {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.16);
+  aspect-ratio: 3/4;
+}
+.how-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+/* ── WHO WE SERVE ── */
+.serve-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.serve-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  overflow: hidden;
+}
+a.serve-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.serve-body .serve-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--sky-deep);
+}
+.serve-accent { height: 6px; }
+.serve-body { padding: 22px 22px 24px; }
+.serve-card h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.serve-card p {
+  font-size: 13px;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+/* ── FORM SECTION ── */
+.form-section {
+  background: var(--ghost);
+  padding: 88px 32px;
+}
+.form-card {
+  max-width: 780px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 40px 36px;
+  border: 1px solid var(--fog);
+  box-shadow: 0 8px 40px rgba(41,171,226,0.09);
+}
+.form-card h2 {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--charcoal);
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.form-card .form-sub {
+  font-size: 15px;
+  color: var(--graphite);
+  margin-bottom: 32px;
+  line-height: 1.65;
+}
+/* Performance/UX fix (2026-07-27): reserves the form's approximate height
+   with a plain placeholder color while the HubSpot iframe loads, instead
+   of a blank white box that can read as a broken page on a slow
+   connection. (An earlier version of this used an animated shimmer, but
+   HubSpot's injected iframe doesn't always fully cover this div, so the
+   animation kept running visibly behind/around the form — removed rather
+   than chasing that, since this whole form is being replaced with a
+   native one soon anyway.) */
+.form-note {
+  font-size: 12px;
+  /* Accessibility fix: --stone on white is 3.36:1, under the 4.5:1 small
+     text needs. --graphite (6.9:1) is already used successfully elsewhere
+     on the site for body copy. */
+  color: var(--graphite);
+  text-align: center;
+  margin-top: 14px;
+}
+/* ── NATIVE FORM FIELDS (e.g. the support page's text-alert form) ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.form-field--full { grid-column: 1 / -1; }
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.form-field label .optional {
+  font-weight: 600;
+  color: var(--stone);
+}
+.form-field input,
+.form-field select,
+.form-field textarea {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--charcoal);
+  border: 1.5px solid var(--fog);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--white);
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.form-field textarea { resize: vertical; min-height: 110px; }
+/* Accessibility fix (2026-07-27): outline:none here removed the site's
+   focus-visible ring for every form field, leaving only a 1px border-color
+   shift — not a reliable focus indicator per WCAG 2.4.11. Restored a
+   visible outline and kept the border-color change as reinforcement. */
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: 3px solid var(--sky-text);
+  outline-offset: 2px;
+  border-color: var(--sky);
+}
+.btn-primary--block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border: none;
+  font-family: var(--font-body);
+}
+/* Honeypot spam-trap field — invisible to real visitors, still reachable by
+   bots that fill in every field regardless of CSS display. */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  height: 0;
+  width: 0;
+  overflow: hidden;
+}
+.form-alert {
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  display: none;
+}
+.form-alert.is-visible { display: block; }
+.form-alert--error { background: #FCEBEA; color: #B23A2E; border: 1px solid #F3C6C1; }
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+/* ── COMMITMENT / PROMISE CALLOUT ──
+   General-purpose highlighted box for a written promise or guarantee-style
+   statement — used on the why-sidecar page's "Our Promise" section. */
+.form-commitment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+.form-commitment .check-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  /* Accessibility fix (2026-07-27): white on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.form-commitment p {
+  font-size: 13.5px;
+  color: var(--sky-ink);
+  font-weight: 600;
+  line-height: 1.55;
+}
+/* ── GEOGRAPHY BAR ── */
+.geo-bar {
+  background: var(--sky-pale);
+  padding: 16px 32px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sky-ink);
+}
+/* ── FOOTER ── */
+.footer-wrap {
+  background: #3A3A3A;
+  padding: 48px 32px 32px;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  padding-bottom: 32px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.footer-brand img {
+  display: block;
+  width: clamp(100px, 20vw, 360px);
+  height: auto;
+  margin-bottom: 12px;
+}
+.footer-tagline {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  font-style: italic;
+}
+.social-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+/* Accessibility fix (2026-07-27): 36px was under the 44px WCAG 2.5.8
+   minimum touch-target size. */
+.social-links a {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  transition: background 0.15s, color 0.15s;
+}
+/* Accessibility fix (2026-07-27): white icon on --sky measured ~2.6:1,
+   under the 3:1 minimum for graphical UI objects. */
+.social-links a:hover { background: var(--sky-text); color: #fff; }
+.footer-contact {
+  text-align: right;
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 2;
+}
+/* Accessibility fix (2026-07-27): these measured 18-21px tall on mobile —
+   under the 44px WCAG 2.5.8 minimum touch-target size. */
+.footer-contact a {
+  color: var(--sky-light);
+  text-decoration: none;
+}
+.footer-links {
+  display: flex;
+  gap: 40px;
+}
+.footer-links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.footer-links-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  /* Accessibility fix: was 0.4 opacity (3.24:1 against the footer
+     background) — bumped to match .footer-tagline's already-passing 0.55
+     (4.69:1). */
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 2px;
+}
+/* Accessibility fix (2026-07-27): these measured 21px tall on mobile —
+   under the 44px WCAG 2.5.8 minimum touch-target size. */
+.footer-links-col a {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  text-decoration: none;
+}
+.footer-links-col a:hover { color: var(--sky-light); }
+.footer-bottom {
+  font-size: 12px;
+  /* Accessibility fix (2026-07-27): the earlier 0.5-opacity fix measured
+     4.14:1 against the #3A3A3A footer background — still short of the
+     4.5:1 AA minimum for this size text. 0.6 opacity (#B0B0B0 effective)
+     reaches 5.24:1. */
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+}
+/* ── BACK TO TOP ── */
+.back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  /* Accessibility fix (2026-07-27): white "↑" on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  z-index: 150;
+}
+.back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.back-to-top:hover { background: var(--sky-deep); }
+/* ── STICKY MOBILE ACTION BAR ── */
+.mobile-action-bar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+}
+.mobile-action-bar-btn {
+  flex: 1 1 50%;
+  text-align: center;
+  padding: 16px 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+.mobile-action-bar-btn--call { background: #fff; color: var(--sky-text); border-top: 1px solid var(--fog); }
+.mobile-action-bar-btn--cta { background: var(--sky-text); color: #fff; }
+/* ── INTERMEDIATE (13" laptops at scaled resolution, iPad Pro landscape,
+   split-screen browser windows) — the site previously jumped straight
+   from a full desktop layout to the 900px mobile breakpoint, leaving
+   901-1200px squeezed. */
+@media (max-width: 1180px) and (min-width: 901px) {
+  .serve-grid { grid-template-columns: repeat(2, 1fr); }
+  .why-grid { grid-template-columns: repeat(2, 1fr); }
+}
+/* ── MOBILE ── */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 32px; padding: 52px 24px 48px; }
+  .hero-h1 { font-size: 42px; }
+  .hero-img-wrap { aspect-ratio: 16/9; order: 2; }
+  .hero-inner > div:first-child { order: 1; }
+  .why-grid { grid-template-columns: 1fr 1fr; }
+  .how-grid { grid-template-columns: 1fr; }
+  .how-photo { aspect-ratio: 16/9; }
+  .serve-grid { grid-template-columns: 1fr 1fr; }
+  .form-card { padding: 32px 24px; }
+  .footer-top { flex-direction: column; }
+  .footer-contact { text-align: left; }
+  .footer-links { gap: 32px; }
+  /* Accessibility fix (2026-07-27): 44px touch targets, scoped to mobile
+     only — applying this padding on desktop too (where it isn't needed)
+     visibly bloated the footer's link spacing. */
+  .footer-contact a,
+  .footer-links-col a { display: inline-block; padding: 10px 0; }
+  .nav-links { display: none; }
+  .nav-mobile-actions { display: flex; }
+  .back-to-top { right: 16px; bottom: 76px; width: 44px; height: 44px; }
+  .mobile-action-bar { display: flex; }
+  body { padding-bottom: 58px; }
+  /* Performance/UX fix (2026-07-27): the sticky header was ~138px tall on
+     phones (driven by a 105px-tall logo that ignored viewport size),
+     eating ~16% of a typical phone screen permanently and pushing the
+     hero's primary CTA to/below the fold. Tightened padding and a smaller
+     logo bring it to roughly 72px. */
+  .nav-inner { padding: 12px 20px; }
+  .nav-logo img { height: 44px; width: auto; }
+}
+@media (max-width: 600px) {
+  .why-grid { grid-template-columns: 1fr; }
+  .hero-cta { flex-direction: column; align-items: flex-start; }
+  .section-header h2 { font-size: 30px; }
+  .section-wrap { padding: 44px 20px; }
+  .form-section { padding: 40px 12px; }
+  .form-card { padding: 28px 20px 24px; }
+
+  /* Horizontal swipe strips instead of stacking every card vertically —
+     by far the biggest contributor to mobile page length. Each card shows
+     a partial peek of the next one so it reads as scrollable at a glance. */
+  .serve-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 14px;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .serve-grid::-webkit-scrollbar { display: none; }
+  .serve-grid a.serve-card {
+    flex: 0 0 auto;
+    width: 78vw;
+    max-width: 300px;
+    scroll-snap-align: start;
+  }
+}
+
+/* ── INTERIOR PAGE HEADER (industries, FAQ, how-it-works, service-area) ── */
+.page-header {
+  /* Accessibility fix: see .hero-wrap comment above — same 2.62:1 issue,
+     same fix. */
+  background: var(--sky-deep);
+  padding: 64px 32px 56px;
+  text-align: left;
+}
+.page-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+/* Accessibility fix (2026-07-27): same 0.85→0.9 bump as .hero-eyebrow. */
+.page-header .eyebrow { color: rgba(255,255,255,0.9); }
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  max-width: 760px;
+}
+.page-header p {
+  font-size: 17px;
+  /* Accessibility fix: was rgba(255,255,255,0.88), 2.34:1 against the old
+     background. Solid white on --sky-deep reaches 4.47:1. */
+  color: #fff;
+  max-width: 620px;
+  line-height: 1.65;
+}
+.breadcrumb {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.breadcrumb a { color: rgba(255,255,255,0.92); text-decoration: none; }
+.breadcrumb a:hover { color: #fff; text-decoration: underline; }
+
+/* ── FAQ BLOCKS (reused on every page) ── */
+.faq-block { display: grid; gap: 4px; }
+.faq-item {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  padding: 22px 26px;
+}
+.faq-item h3 {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.faq-item p {
+  font-size: 14.5px;
+  color: var(--graphite);
+  line-height: 1.7;
+}
+
+/* ── RELATED LINKS ROW (internal linking CTA at bottom of interior pages) ── */
+.related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.related-links a {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sky-deep);
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  /* Accessibility fix (2026-07-27): bumped vertical padding so these hit
+     the 44px WCAG 2.5.8 minimum touch-target height. */
+  padding: 14px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.15s;
+  display: inline-block;
+}
+.related-links a:hover { background: var(--sky-pale); }
+
+/* ── INDUSTRIES HUB GRID ── */
+.industries-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.industry-hub-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.industry-hub-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.industry-hub-accent { height: 6px; }
+.industry-hub-body { padding: 24px 24px 26px; }
+.industry-hub-body h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.industry-hub-body p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+.industry-hub-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sky-deep);
+}
+
+/* ── SERVICE AREA PAGE: city badges + map wrapper ── */
+.city-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+.city-badge {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sky-ink);
+  background: var(--sky-whisper);
+  border: 1px solid var(--sky-pale);
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+/* Linked variant — used once a city has its own location page (see
+   vending-machines-<slug>-ga.html). Plain <span> badges have no href and
+   stay unstyled-for-links; this one gets a visible hover/focus state since
+   it's actually clickable. */
+.city-badge--link {
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.city-badge--link:hover,
+.city-badge--link:focus-visible {
+  background: var(--sky-pale);
+  border-color: var(--sky);
+}
+.map-wrap {
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.zip-list-note {
+  font-size: 13px;
+  /* Accessibility fix: same reasoning as .form-note above. */
+  color: var(--graphite);
+  margin-top: 14px;
+  line-height: 1.6;
+}
+
+/* ── HOMEPAGE "WANT MORE DETAIL" QUICK-LINKS GRID ── */
+/* Design fix (2026-07-27): flex-wrap left the row count up to how many
+   220-260px cards happened to fit at a given width, which produced an
+   orphaned, off-center row (5 across, 2 stranded) at common desktop
+   widths. An explicit 4-column grid means the (now 8-item, since
+   "Switching Vendors" was added) set balances evenly at 4+4. */
+.quicklinks-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  text-align: left;
+}
+.quicklink-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 14px;
+  padding: 20px 20px 22px;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.quicklink-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.quicklink-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--sky-pale);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+.quicklink-card h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 6px;
+}
+.quicklink-card p {
+  font-size: 13px;
+  color: var(--graphite);
+  line-height: 1.55;
+}
+@media (max-width: 600px) {
+  /* Horizontal swipe strip on phones, same treatment as .serve-grid above —
+     placed after the base rule (not in the earlier MOBILE block) since this
+     selector's base rule lives here, later in the file; an equal-specificity
+     override earlier in the source would otherwise lose the cascade tie. */
+  .quicklinks-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .quicklinks-grid::-webkit-scrollbar { display: none; }
+  .quicklinks-grid .quicklink-card {
+    flex: 0 0 auto;
+    width: 78vw;
+    max-width: 280px;
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 900px) {
+  .industries-hub-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .page-header h1 { font-size: 32px; }
+  .industries-hub-grid { grid-template-columns: 1fr; }
+}
+
+/* ── BLOG INDEX GRID ── */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.blog-card {
+  background: #fff;
+  border: 1px solid var(--fog);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.blog-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.blog-card-accent { height: 6px; background: var(--sky); flex-shrink: 0; }
+.blog-card-body {
+  padding: 24px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* Locks the byline to the card's bottom edge regardless of how much excerpt
+   text sits above it, so cards with less text don't leave the avatar/name
+   floating higher than cards with more text in the same row. */
+.blog-card-body .blog-byline { margin-top: auto; }
+.blog-card-meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--sky-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.blog-card-body h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.blog-card-body p {
+  font-size: 14px;
+  color: var(--graphite);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+@media (max-width: 900px) {
+  .blog-grid { grid-template-columns: 1fr; }
+}
+
+/* ── BLOG BYLINE (avatar bubble + name/date) ──
+   .blog-avatar holds initials for now; swap in a headshot <img> later by
+   replacing the text content with an <img style="width:100%;height:100%;
+   border-radius:50%;object-fit:cover;"> — the circle sizing stays the same. */
+.blog-byline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.blog-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  /* Accessibility fix (2026-07-27): white initials on --sky measured ~2.6:1. */
+  background: var(--sky-text);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.blog-avatar--lg {
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
+}
+.blog-byline-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+.blog-byline-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.blog-byline-date {
+  font-size: 11.5px;
+  color: var(--stone);
+}
+
+/* ── BLOG POST BODY ── */
+.blog-post-byline {
+  margin-bottom: 28px;
+}
+.blog-post-byline .blog-byline-name {
+  font-size: 14.5px;
+}
+.blog-post-byline .blog-byline-date {
+  font-size: 13px;
+}
+.blog-post-body { max-width: 780px; }
+.blog-post-body p {
+  font-size: 16px;
+  color: var(--graphite);
+  line-height: 1.85;
+  margin-bottom: 20px;
+}
+.blog-post-body h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin: 36px 0 14px;
+  line-height: 1.25;
+}
+.blog-post-body h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--charcoal);
+  margin: 28px 0 10px;
+}
+.blog-post-body ul {
+  margin: 0 0 20px;
+  padding-left: 22px;
+}
+.blog-post-body li {
+  font-size: 16px;
+  color: var(--graphite);
+  line-height: 1.75;
+  margin-bottom: 10px;
+}
+
+/* ── REDUCED MOTION (2026-07-26) ──
+   Respects the OS-level "reduce motion" preference: turns off smooth-
+   scrolling and shortens/removes the hover-lift and fade transitions used
+   on cards, buttons, and the back-to-top control. Nothing on the site was
+   flashing or seizure-risk to begin with — this is about not making the
+   page move around for people who've explicitly asked their system to
+   minimize animation. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  a.serve-card:hover,
+  .industry-hub-card:hover,
+  .quicklink-card:hover,
+  .blog-card:hover {
+    transform: none;
+  }
+}

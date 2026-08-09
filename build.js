@@ -75,6 +75,7 @@ const SITEMAP_PRIORITY = {
   'blog/non-food-vending-items.html': '0.5',
   'blog/vending-machine-cost-atlanta.html': '0.5',
   'blog/apartment-vending-stocking.html': '0.5',
+  'blog/margie-salon-marietta.html': '0.5',
   'support.html': '0.6',
 };
 
