@@ -492,11 +492,99 @@
 
 <p class="form-sub">Tell us a bit about your space below. Once you submit, your request goes straight to our team — <strong>a member of Sidecar will call or email you within 24 hours</strong> to schedule your free on-site visit. No commitment, no pressure, no cost.</p>
 
-<script src="https://js-na2.hsforms.net/forms/embed/246795839.js" defer></script>
+<div class="form-alert form-alert--error" id="evaluation-form-alert" role="alert"></div>
 
-<div class="hs-form-frame" data-region="na2" data-form-id="68044fb4-5668-4d80-be92-56419423e982" data-portal-id="246795839"></div>
+<!--
+SETUP NOTE FOR BRIAN: this form posts to /api/evaluation-request, a
+Cloudflare Pages Function (functions/api/evaluation-request.js) that emails
+the details to your team the moment someone submits it — no HubSpot needed.
+One-time setup: add RESEND_API_KEY, EVAL_ALERT_TO, and EVAL_FROM as
+environment variables in Cloudflare Pages → Settings → Environment
+variables. Full instructions are in the comments at the top of that
+function file.
+-->
+
+<form method="POST" action="/api/evaluation-request" novalidate>
+
+<div class="form-grid">
+
+<div class="form-field">
+<label for="eval-name">Your Name</label>
+<input type="text" id="eval-name" name="name" autocomplete="name" required>
+</div>
+
+<div class="form-field">
+<label for="eval-email">Email Address</label>
+<input type="email" id="eval-email" name="email" autocomplete="email" required>
+</div>
+
+<div class="form-field">
+<label for="eval-phone">Phone Number</label>
+<input type="tel" id="eval-phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(404) 555-1234" required>
+</div>
+
+<div class="form-field">
+<label for="eval-address">Property Address / Location</label>
+<input type="text" id="eval-address" name="address" autocomplete="street-address" required>
+</div>
+
+<div class="form-field form-field--full">
+<label for="eval-property-type">Property Type</label>
+<select id="eval-property-type" name="propertyType" required>
+<option value="" disabled selected>Choose one…</option>
+<option value="Apartment Community">Apartment Community</option>
+<option value="Gym / Fitness Center">Gym / Fitness Center</option>
+<option value="Office">Office</option>
+<option value="Medical Facility">Medical Facility</option>
+<option value="Auto Dealership">Auto Dealership</option>
+<option value="Warehouse / Distribution">Warehouse / Distribution</option>
+<option value="Other">Other</option>
+</select>
+</div>
+
+<div class="form-field form-field--full">
+<label for="eval-details">Anything else we should know? <span class="optional">(optional)</span></label>
+<textarea id="eval-details" name="details" rows="4" placeholder="Approximate number of employees or residents, best time to reach you, etc."></textarea>
+</div>
+
+</div>
+
+<!-- Honeypot — left blank by real visitors, invisible via CSS. If a bot
+     fills this in, the backend silently discards the submission. -->
+<div class="hp-field" aria-hidden="true">
+<label for="eval-company">Company</label>
+<input type="text" id="eval-company" name="company" tabindex="-1" autocomplete="off">
+</div>
+
+<button type="submit" class="btn-primary btn-primary--block">Request My Free Evaluation</button>
+
+</form>
 
 <p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var error = params.get('error');
+  if (!error) return;
+  var messages = {
+    missing: "Please fill in all required fields before submitting.",
+    email: "That email address doesn't look right — please double-check it and try again.",
+    phone: "That phone number doesn't look right — please double-check it and try again.",
+    send: "Something went wrong sending your request. Please call or text us directly at (470) 839-3656.",
+    config: "This form isn't fully set up yet — please call or text us directly at (470) 839-3656.",
+    invalid: "Something went wrong — please try again."
+  };
+  var box = document.getElementById('evaluation-form-alert');
+  if (box) {
+    var text = messages[error] || 'Something went wrong — please try again or contact us directly.';
+    var detail = params.get('detail');
+    if (detail) { text += ' (debug: ' + detail + ')'; }
+    box.textContent = text;
+    box.classList.add('is-visible');
+  }
+})();
+</script>
 
 </div>
 

@@ -751,11 +751,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
    animation kept running visibly behind/around the form — removed rather
    than chasing that, since this whole form is being replaced with a
    native one soon anyway.) */
-.hs-form-frame {
-  min-height: 640px;
-  border-radius: 12px;
-  background: var(--ghost);
-}
 .form-note {
   font-size: 12px;
   /* Accessibility fix: --stone on white is 3.36:1, under the 4.5:1 small

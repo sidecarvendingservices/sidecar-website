@@ -12,3 +12,21 @@ QUO_FROM_NUMBER=
 # Phone number(s) that should receive a text when the support form is
 # submitted, in E.164 format. Comma-separate multiple numbers.
 SUPPORT_ALERT_TO=
+
+# ── Free Evaluation form (functions/api/evaluation-request.js) ─────────────
+# Same idea as above, but for the homepage "Free On-Site Evaluation" form,
+# which replaced the old HubSpot embed. Uses Resend to send email instead
+# of Quo/OpenPhone to send SMS.
+
+# Resend API key — resend.com → API Keys. Mark as "Secret" in Cloudflare.
+RESEND_API_KEY=
+
+# Email address(es) that should receive a notification when the evaluation
+# form is submitted. Comma-separate multiple addresses.
+EVAL_ALERT_TO=brian@sidecarservices.com,support@sidecarservices.com,vala@sidecarservices.com
+
+# The verified "from" address Resend sends as (must be on a domain you've
+# verified with Resend, e.g. leads@sidecarservices.com). If unset, falls
+# back to onboarding@resend.dev, which only delivers to your own Resend
+# account email — fine for a quick test, not for production.
+EVAL_FROM=

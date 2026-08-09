@@ -34,13 +34,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-<!-- Performance fix (2026-07-27): the homepage's HubSpot form embed loaded
-     into a blank iframe for several seconds with no visual placeholder,
-     which read as a broken page on slower connections. Preconnecting here
-     shaves the DNS/TLS handshake off that wait; the skeleton style is in
-     styles.css (.hs-form-frame). Harmless on pages without the form. -->
-<link rel="preconnect" href="https://js-na2.hsforms.net" crossorigin>
-<link rel="preconnect" href="https://forms-na2.hsforms.com" crossorigin>
 <link rel="stylesheet" href="/styles.css?v={{STYLES_VERSION}}">
 
 <!-- Sitewide business schema — identical on every page. If your Google
