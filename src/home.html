@@ -524,8 +524,13 @@ function file.
 </div>
 
 <div class="form-field">
-<label for="eval-address">Property Address / Location</label>
-<input type="text" id="eval-address" name="address" autocomplete="street-address" required>
+<label for="eval-zip">ZIP Code</label>
+<input type="text" id="eval-zip" name="zip" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}(-[0-9]{4})?" placeholder="30305" required>
+</div>
+
+<div class="form-field">
+<label for="eval-business-name">Business / Property Name <span class="optional">(optional)</span></label>
+<input type="text" id="eval-business-name" name="businessName" autocomplete="organization">
 </div>
 
 <div class="form-field form-field--full">
@@ -571,6 +576,7 @@ function file.
     missing: "Please fill in all required fields before submitting.",
     email: "That email address doesn't look right — please double-check it and try again.",
     phone: "That phone number doesn't look right — please double-check it and try again.",
+    zip: "That ZIP code doesn't look right — please double-check it and try again.",
     send: "Something went wrong sending your request. Please call or text us directly at (470) 839-3656.",
     config: "This form isn't fully set up yet — please call or text us directly at (470) 839-3656.",
     invalid: "Something went wrong — please try again."

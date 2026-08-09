@@ -64,11 +64,12 @@ export async function onRequestPost(context) {
   const name = (formData.get('name') || '').toString().trim();
   const email = (formData.get('email') || '').toString().trim();
   const phoneRaw = (formData.get('phone') || '').toString().trim();
-  const address = (formData.get('address') || '').toString().trim();
+  const zip = (formData.get('zip') || '').toString().trim();
+  const businessName = (formData.get('businessName') || '').toString().trim();
   const propertyType = (formData.get('propertyType') || '').toString().trim();
   const details = (formData.get('details') || '').toString().trim();
 
-  if (!name || !email || !phoneRaw || !address || !propertyType) {
+  if (!name || !email || !phoneRaw || !zip || !propertyType) {
     return redirectTo(request, '/?error=missing#evaluation');
   }
 
@@ -79,6 +80,10 @@ export async function onRequestPost(context) {
   const phoneE164 = toE164(phoneRaw);
   if (!phoneE164) {
     return redirectTo(request, '/?error=phone#evaluation');
+  }
+
+  if (!isValidZip(zip)) {
+    return redirectTo(request, '/?error=zip#evaluation');
   }
 
   const alertRecipients = (env.EVAL_ALERT_TO || '')
@@ -96,14 +101,15 @@ export async function onRequestPost(context) {
 
   const fromAddress = env.EVAL_FROM || 'onboarding@resend.dev';
 
-  const subject = `New Free Evaluation Request — ${name} (${propertyType})`;
+  const subject = `New Free Evaluation Request — ${businessName || name} (${propertyType})`;
   const textBody = [
     'New free on-site evaluation request from sidecarservices.com',
     '',
     `Name: ${name}`,
     `Email: ${email}`,
     `Phone: ${phoneE164}`,
-    `Address / Location: ${address}`,
+    `ZIP Code: ${zip}`,
+    businessName ? `Business / Property Name: ${businessName}` : null,
     `Property Type: ${propertyType}`,
     details ? `Additional Details: ${details}` : null,
   ]
@@ -155,6 +161,11 @@ function isValidEmail(email) {
   // Simple, permissive check — good enough to catch typos without rejecting
   // valid addresses. Real deliverability is enforced by Resend anyway.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Accepts 5-digit ZIP or ZIP+4 (e.g. 30305 or 30305-1234).
+function isValidZip(zip) {
+  return /^\d{5}(-\d{4})?$/.test(zip);
 }
 
 // Normalizes a user-typed US/Canada phone number to E.164 (+1XXXXXXXXXX).
