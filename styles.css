@@ -636,6 +636,15 @@ button:focus-visible,
   gap: 64px;
   align-items: center;
 }
+/* Text + a smaller supporting photo, side by side and vertically centered —
+   for sections where a full 1fr/1fr split leaves the image too large (e.g.
+   a product-mix photo next to a short paragraph). */
+.media-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 48px;
+  align-items: center;
+}
 .how-steps { display: grid; gap: 32px; }
 .how-step { display: flex; gap: 20px; align-items: flex-start; }
 .step-num {
@@ -1047,6 +1056,8 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   .why-grid { grid-template-columns: 1fr 1fr; }
   .how-grid { grid-template-columns: 1fr; }
   .how-photo { aspect-ratio: 16/9; }
+  .media-grid { grid-template-columns: 1fr; }
+  .blog-post-photo { float: none; width: 100%; max-width: 100%; margin: 0 0 24px; }
   .serve-grid { grid-template-columns: 1fr 1fr; }
   .form-card { padding: 32px 24px; }
   .footer-top { flex-direction: column; }
@@ -1477,6 +1488,17 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   color: var(--graphite);
   line-height: 1.75;
   margin-bottom: 10px;
+}
+/* A supporting photo that floats beside body copy on desktop, and drops to
+   full-width, unfloated, above the text on mobile — used on blog posts. */
+.blog-post-photo {
+  float: right;
+  width: 280px;
+  max-width: 40%;
+  margin: 4px 0 20px 24px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
 }
 
 /* ── REDUCED MOTION (2026-07-26) ──
