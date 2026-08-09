@@ -645,6 +645,17 @@ button:focus-visible,
   gap: 48px;
   align-items: center;
 }
+/* A supporting photo that floats beside body copy on desktop, and drops to
+   full-width, unfloated, above the text on mobile — used on blog posts. */
+.blog-post-photo {
+  float: right;
+  width: 280px;
+  max-width: 40%;
+  margin: 4px 0 20px 24px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
 .how-steps { display: grid; gap: 32px; }
 .how-step { display: flex; gap: 20px; align-items: flex-start; }
 .step-num {
@@ -1489,18 +1500,6 @@ a.serve-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: transl
   line-height: 1.75;
   margin-bottom: 10px;
 }
-/* A supporting photo that floats beside body copy on desktop, and drops to
-   full-width, unfloated, above the text on mobile — used on blog posts. */
-.blog-post-photo {
-  float: right;
-  width: 280px;
-  max-width: 40%;
-  margin: 4px 0 20px 24px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-}
-
 /* ── REDUCED MOTION (2026-07-26) ──
    Respects the OS-level "reduce motion" preference: turns off smooth-
    scrolling and shortens/removes the hover-lift and fade transitions used
