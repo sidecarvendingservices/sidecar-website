@@ -1,5 +1,8 @@
 // Cloudflare Pages Function — handles the native "Free On-Site Evaluation"
-// form on the homepage (replaces the old HubSpot embed).
+// form (replaces the old HubSpot embed). Shared by every page that has a
+// copy of the form — the homepage's #evaluation section, and per-industry
+// pages like apartment-vending.html, each with their own #evaluation
+// section further down the page.
 //
 // Route: this file lives at functions/api/evaluation-request.js, which
 // Cloudflare Pages automatically maps to POST /api/evaluation-request. No
@@ -9,8 +12,10 @@
 //
 // What it does: validates the submitted fields, then calls the Resend API
 // to email the details to the Sidecar team. On success it redirects the
-// browser to /thank-you.html; on failure it redirects back to
-// /#evaluation with an ?error= code so the page can show a message.
+// browser to /thank-you.html; on failure it redirects back to whichever
+// page the form was actually submitted from (using the Referer header),
+// with an ?error= code so that page can show a message — this is what
+// lets one function serve forms on multiple pages correctly.
 //
 // ── ONE-TIME SETUP (Brian) ──────────────────────────────────────────────
 // This function reads two values from environment variables / secrets.
@@ -51,11 +56,12 @@ export async function onRequestPost(context) {
   try {
     formData = await request.formData();
   } catch (err) {
-    return redirectTo(request, '/?error=invalid#evaluation');
+    return errorRedirect(request, 'invalid');
   }
 
-  // Honeypot: a real visitor never sees or fills this field (see home.html).
-  // If it's filled, silently pretend success so bots don't learn anything.
+  // Honeypot: a real visitor never sees or fills this field (see home.html
+  // and the per-industry page forms). If it's filled, silently pretend
+  // success so bots don't learn anything.
   const honeypot = (formData.get('company') || '').toString().trim();
   if (honeypot !== '') {
     return redirectTo(request, '/thank-you.html');
@@ -70,20 +76,20 @@ export async function onRequestPost(context) {
   const details = (formData.get('details') || '').toString().trim();
 
   if (!name || !email || !phoneRaw || !zip || !propertyType) {
-    return redirectTo(request, '/?error=missing#evaluation');
+    return errorRedirect(request, 'missing');
   }
 
   if (!isValidEmail(email)) {
-    return redirectTo(request, '/?error=email#evaluation');
+    return errorRedirect(request, 'email');
   }
 
   const phoneE164 = toE164(phoneRaw);
   if (!phoneE164) {
-    return redirectTo(request, '/?error=phone#evaluation');
+    return errorRedirect(request, 'phone');
   }
 
   if (!isValidZip(zip)) {
-    return redirectTo(request, '/?error=zip#evaluation');
+    return errorRedirect(request, 'zip');
   }
 
   const alertRecipients = (env.EVAL_ALERT_TO || '')
@@ -96,7 +102,7 @@ export async function onRequestPost(context) {
       'Evaluation form is not fully configured — missing RESEND_API_KEY or EVAL_ALERT_TO. ' +
         'Set these in Cloudflare Pages → Settings → Environment variables.'
     );
-    return redirectTo(request, '/?error=config#evaluation');
+    return errorRedirect(request, 'config');
   }
 
   const fromAddress = env.EVAL_FROM || 'onboarding@resend.dev';
@@ -135,13 +141,11 @@ export async function onRequestPost(context) {
     if (!resendResponse.ok) {
       const errBody = await resendResponse.text().catch(() => '');
       console.error(`Resend API returned ${resendResponse.status}: ${errBody}`);
-      const debugDetail = encodeURIComponent(`${resendResponse.status}:${errBody.slice(0, 150)}`);
-      return redirectTo(request, `/?error=send&detail=${debugDetail}#evaluation`);
+      return errorRedirect(request, 'send', `${resendResponse.status}:${errBody.slice(0, 150)}`);
     }
   } catch (err) {
     console.error('Resend API request failed:', err);
-    const debugDetail = encodeURIComponent(String(err && err.message ? err.message : err).slice(0, 150));
-    return redirectTo(request, `/?error=send&detail=${debugDetail}#evaluation`);
+    return errorRedirect(request, 'send', String(err && err.message ? err.message : err).slice(0, 150));
   }
 
   return redirectTo(request, '/thank-you.html');
@@ -155,6 +159,26 @@ export async function onRequestGet() {
 
 function redirectTo(request, path) {
   return Response.redirect(new URL(path, request.url), 303);
+}
+
+// Sends the visitor back to whichever page their form was actually on
+// (read from the Referer header), with an ?error= code and #evaluation
+// anchor so that page's alert box + JS can show the right message. Falls
+// back to the homepage if a Referer isn't present (some privacy settings
+// strip it, which is rare but shouldn't break the redirect).
+function errorRedirect(request, code, detail) {
+  const referer = request.headers.get('Referer');
+  let pathname = '/';
+  if (referer) {
+    try {
+      pathname = new URL(referer).pathname;
+    } catch (err) {
+      // Malformed Referer header — fall back to homepage.
+    }
+  }
+  const params = new URLSearchParams({ error: code });
+  if (detail) params.set('detail', detail);
+  return redirectTo(request, `${pathname}?${params.toString()}#evaluation`);
 }
 
 function isValidEmail(email) {

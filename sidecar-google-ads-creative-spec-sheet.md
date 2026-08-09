@@ -52,7 +52,7 @@ Matches the property types already in your website's evaluation form — build o
 
 | Industry | Source carousel | Suggested angle | Landing link (with UTM) |
 |---|---|---|---|
-| Apartment Community | Apartment product-mix carousel | "Snacks, drinks, meal replacements & essentials — free for your residents" | `/#evaluation?utm_source=google&utm_medium=display&utm_campaign=apartment` |
+| Apartment Community | Apartment product-mix carousel | "Snacks, drinks, meal replacements & essentials — free for your residents" | `/apartment-vending?utm_source=google&utm_medium=display&utm_campaign=apartment#evaluation` |
 | Gym / Fitness Center | (build if not yet made) | Protein, hydration, recovery items | `/#evaluation?utm_source=google&utm_medium=display&utm_campaign=gym` |
 | Office | (build if not yet made) | Snacks/drinks for break rooms, zero-cost perk | `/#evaluation?utm_source=google&utm_medium=display&utm_campaign=office` |
 | Medical Facility | (build if not yet made) | Convenience for staff/visitors, 24/7 access | `/#evaluation?utm_source=google&utm_medium=display&utm_campaign=medical` |
@@ -61,7 +61,30 @@ Matches the property types already in your website's evaluation form — build o
 
 Start with whichever 1–2 industries you already have finished carousel art for (apartment, based on our earlier conversation), confirm the format works and converts, then extend to the rest.
 
-## 7. Before You Launch
+## 7. Apartment Community — Finalized Ad Copy
+
+Assets: `sidecar-apartment-square-1.jpg` (1200×1200), `sidecar-apartment-landscape-1.jpg` (1200×628) — both built from the apartment product-mix photography.
+
+**Short headlines** (pick 3–5, 30 char max):
+1. More Than Chips & Soda
+2. Late-Night Cravings? Covered
+3. Essentials, Right Downstairs
+4. A Better Community Amenity
+5. Free Vending, Fully Stocked
+
+**Long headline** (90 char max):
+A Free, Fully-Stocked Vending Amenity Curated for Your Apartment Community
+
+**Descriptions** (pick 2–5, 90 char max):
+1. Snacks, drinks, meal replacements & essentials — stocked free, on us.
+2. From late-night cravings to quick meals, residents get it without leaving the building.
+3. Request a free on-site evaluation — no cost, no commitment, just a better amenity.
+
+**Business name:** Sidecar Vending Services
+
+Note: source carousel used a "swipe to see" hook, which doesn't apply to a static display ad — reworded as direct statements above instead.
+
+## 8. Before You Launch
 
 - Confirm your Google Ads account has conversion tracking wired to the `/thank-you.html` page (this is the same page your new evaluation form already redirects to) so Display campaign results are measurable.
 - Each ad group's headline/description copy should roughly match the on-page content it links to, for Google's Quality Score and so visitors aren't confused by a mismatch between ad and landing page.

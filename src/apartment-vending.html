@@ -105,8 +105,112 @@
       <a href="/faq">Read the full FAQ →</a>
       <a href="/service-area">Check your service area →</a>
     </div>
-    <div style="margin-top:32px;">
-      <a class="btn-primary" href="/#evaluation">Schedule My Free Evaluation</a>
-    </div>
   </div>
+</div>
+
+<div class="stripe"></div>
+
+<!-- FORM -->
+
+<div class="form-section" id="evaluation">
+
+<div class="form-card">
+
+<span class="eyebrow" style="color:var(--sky-text);">Free On-Site Evaluation</span>
+
+<h2>A better amenity for<br>your community</h2>
+
+<p class="form-sub">Tell us a bit about your property below. Once you submit, your request goes straight to our team — <strong>a member of Sidecar will call or email you within 24 hours</strong> to schedule your free on-site visit. No commitment, no pressure, no cost.</p>
+
+<div class="form-alert form-alert--error" id="evaluation-form-alert" role="alert"></div>
+
+<!--
+SETUP NOTE FOR BRIAN: this form posts to /api/evaluation-request, the same
+Cloudflare Pages Function used by the homepage evaluation form
+(functions/api/evaluation-request.js) — no separate backend needed here.
+Property Type defaults to "Apartment Community" and is hidden since this
+page is already apartment-specific.
+-->
+
+<form method="POST" action="/api/evaluation-request" novalidate>
+
+<div class="form-grid">
+
+<div class="form-field">
+<label for="eval-name">Your Name</label>
+<input type="text" id="eval-name" name="name" autocomplete="name" required>
+</div>
+
+<div class="form-field">
+<label for="eval-email">Email Address</label>
+<input type="email" id="eval-email" name="email" autocomplete="email" required>
+</div>
+
+<div class="form-field">
+<label for="eval-phone">Phone Number</label>
+<input type="tel" id="eval-phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(404) 555-1234" required>
+</div>
+
+<div class="form-field">
+<label for="eval-zip">ZIP Code</label>
+<input type="text" id="eval-zip" name="zip" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}(-[0-9]{4})?" placeholder="30305" required>
+</div>
+
+<div class="form-field form-field--full">
+<label for="eval-business-name">Community / Property Name <span class="optional">(optional)</span></label>
+<input type="text" id="eval-business-name" name="businessName" autocomplete="organization">
+</div>
+
+<div class="form-field form-field--full">
+<label for="eval-details">Anything else we should know? <span class="optional">(optional)</span></label>
+<textarea id="eval-details" name="details" rows="4" placeholder="Approximate number of units, best time to reach you, etc."></textarea>
+</div>
+
+</div>
+
+<!-- Property Type is preset to Apartment Community since this page is
+     industry-specific — keeps the form shorter for visitors who arrived
+     here already knowing what they want. -->
+<input type="hidden" name="propertyType" value="Apartment Community">
+
+<!-- Honeypot — left blank by real visitors, invisible via CSS. If a bot
+     fills this in, the backend silently discards the submission. -->
+<div class="hp-field" aria-hidden="true">
+<label for="eval-company">Company</label>
+<input type="text" id="eval-company" name="company" tabindex="-1" autocomplete="off">
+</div>
+
+<button type="submit" class="btn-primary btn-primary--block">Request My Free Evaluation</button>
+
+</form>
+
+<p class="form-note">No spam. No sales pressure. Just a local expert who shows up.</p>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var error = params.get('error');
+  if (!error) return;
+  var messages = {
+    missing: "Please fill in all required fields before submitting.",
+    email: "That email address doesn't look right — please double-check it and try again.",
+    phone: "That phone number doesn't look right — please double-check it and try again.",
+    zip: "That ZIP code doesn't look right — please double-check it and try again.",
+    send: "Something went wrong sending your request. Please call or text us directly at (470) 839-3656.",
+    config: "This form isn't fully set up yet — please call or text us directly at (470) 839-3656.",
+    invalid: "Something went wrong — please try again."
+  };
+  var box = document.getElementById('evaluation-form-alert');
+  if (box) {
+    var text = messages[error] || 'Something went wrong — please try again or contact us directly.';
+    var detail = params.get('detail');
+    if (detail) { text += ' (debug: ' + detail + ')'; }
+    box.textContent = text;
+    box.classList.add('is-visible');
+  }
+})();
+</script>
+
+</div>
+
 </div>
