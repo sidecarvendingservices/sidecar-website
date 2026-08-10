@@ -51,9 +51,9 @@
     flex-wrap: wrap;
   }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { height: 34px; width: auto; display: block; }
+  .brand img { height: 52px; width: auto; display: block; }
   .brand-fallback {
-    font-weight: 800; font-size: 20px; color: var(--charcoal); letter-spacing: -0.02em;
+    font-weight: 800; font-size: 26px; color: var(--charcoal); letter-spacing: -0.02em;
   }
   .brand-sub { font-size: 12px; color: var(--graphite); margin-top: 1px; }
   .header-actions { display: flex; gap: 8px; align-items: center; }
@@ -82,6 +82,13 @@
   /* ---------- cards / grid ---------- */
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
   @media (max-width: 860px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .app { padding: 14px 12px 50px; }
+    .kpi-value { font-size: 22px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .btn { padding: 11px 16px; } /* larger touch target */
+  }
   .kpi-card {
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 16px 18px;
@@ -183,6 +190,7 @@
   <div class="tabbar" id="tabbar">
     <button class="tab-btn active" data-tab="overview">Overview</button>
     <button class="tab-btn" data-tab="machines">Machines</button>
+    <button class="tab-btn" data-tab="health">Machine Health</button>
     <button class="tab-btn" data-tab="sales">Sales</button>
     <button class="tab-btn" data-tab="expenses">Expenses</button>
     <button class="tab-btn" data-tab="commission">Commission</button>
@@ -272,6 +280,62 @@
     </div>
   </div>
 
+  <!-- ============ MACHINE HEALTH ============ -->
+  <div class="tab-panel" id="panel-health">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Online Now</div>
+        <div class="kpi-value accent" id="healthOnline">0</div>
+        <div class="kpi-sub" id="healthOnlineSub">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Offline Now</div>
+        <div class="kpi-value" id="healthOffline">0</div>
+        <div class="kpi-sub">check these first</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Temp Out of Range</div>
+        <div class="kpi-value" id="healthTempAlerts">0</div>
+        <div class="kpi-sub">refrigerated units only</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Last Checked</div>
+        <div class="kpi-value" id="healthLastChecked" style="font-size:16px;">—</div>
+        <div class="kpi-sub">most recent poll, any machine</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Current Status</div>
+        <button class="btn btn-secondary" onclick="checkHealthNow()">Check Now</button>
+      </div>
+      <div class="card-desc">Online status + temperature update automatically on the same schedule as the HAHA sales sync. "Check Now" polls immediately instead of waiting for the next run.</div>
+      <div id="healthCheckStatus" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px;"></div>
+      <div class="table-wrap"><table id="healthTable"></table></div>
+      <div id="healthEmpty" class="empty-state" style="display:none;">
+        <strong>No health data yet</strong>
+        Add machines with a HAHA Market ID, then hit "Check Now" — or wait for the next scheduled sync.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">History</div>
+      <div class="card-desc">Temperature readings and offline/online events over time for one machine.</div>
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div><label>Machine</label><select id="healthDetailSelect" onchange="selectHealthDetail(this.value)"></select></div>
+      </div>
+      <div class="chart-box small"><canvas id="healthTempChart"></canvas></div>
+      <div style="margin-top:16px;">
+        <div class="card-title" style="font-size:13px;">Status Change Log</div>
+        <div class="table-wrap"><table id="healthLogTable"></table></div>
+        <div id="healthLogEmpty" class="empty-state" style="display:none; padding:16px 10px;">
+          No status changes recorded yet for this machine.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ SALES ============ -->
   <div class="tab-panel" id="panel-sales">
     <div class="card">
@@ -305,6 +369,21 @@
         <div><button class="btn btn-primary" onclick="addSale()">Add Entry</button></div>
       </div>
       <div class="pill-note" style="margin-top:10px; display:inline-block;">Net Sales = Gross − Cost of Goods − Processing Fees</div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Sales Pattern</div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary" id="patternHourBtn" onclick="setSalesPattern('hour')">By Hour</button>
+          <button class="btn btn-ghost" id="patternDayBtn" onclick="setSalesPattern('day')">By Day</button>
+        </div>
+      </div>
+      <div class="card-desc" id="patternDesc">Gross sales by hour of day, summed across the selected range and all synced machines — helps time restocks and spot slow windows.</div>
+      <div class="chart-box small"><canvas id="patternChart"></canvas></div>
+      <div id="patternEmpty" class="empty-state" style="display:none;">
+        <strong>No hourly data yet</strong>
+        This chart fills in once machines with a HAHA Market ID are synced — hour-level detail isn't available for manually logged entries.
+      </div>
     </div>
     <div class="card">
       <div class="section-flex">
@@ -422,6 +501,12 @@ async function apiDelete(path) {
 let machines = [];
 let sales = [];
 let expenses = [];
+let health = [];        // full history, all machines
+let latestHealth = [];  // one row per machine, most recent
+let saleHours = [];     // hourly HAHA sales, for the pattern chart
+let editingMachineId = null;
+let salesPatternMode = 'hour'; // 'hour' | 'day'
+let healthDetailMachineId = null;
 let charts = {};
 
 const fmt = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -566,25 +651,42 @@ async function syncFromHaha() {
 
       // Aggregate HAHA's per-order totals into one sales-log entry per day,
       // computing real COGS from each line item's quantity × product cost.
+      // Also bucket by hour for the Sales by Hour / Sales by Day pattern chart.
       const byDay = {};
+      const byHour = {};
       (data.sales || []).forEach(s => {
         if (s.isRefund) return; // skip refunded orders
-        const day = (s.saleDtm || '').slice(0, 10);
+        const dtm = s.saleDtm || '';
+        const day = dtm.slice(0, 10);
         if (!day) return;
         if (!byDay[day]) byDay[day] = { gross: 0, cogs: 0 };
-        byDay[day].gross += parseFloat(s.saleTotal || '0');
+        const total = parseFloat(s.saleTotal || '0');
+        byDay[day].gross += total;
         (s.saleItems || []).forEach(item => {
           const unitCost = costById[item.productId] || 0;
           byDay[day].cogs += unitCost * (item.quantity || 0);
         });
+        const hour = parseInt(dtm.slice(11, 13), 10);
+        if (!isNaN(hour)) {
+          const hkey = day + '|' + hour;
+          byHour[hkey] = (byHour[hkey] || 0) + total;
+        }
       });
 
       const entries = Object.entries(byDay).map(([date, v]) => ({ date, gross: v.gross, cogs: v.cogs }));
       await apiPost('/api/data/sales', { sync: true, machineId: m.id, start, end, entries });
+
+      const hourEntries = Object.entries(byHour).map(([key, gross]) => {
+        const [date, hourStr] = key.split('|');
+        return { date, hour: parseInt(hourStr, 10), gross };
+      });
+      await apiPost('/api/data/sale-hours', { sync: true, machineId: m.id, start, end, entries: hourEntries });
+
       totalDays += entries.length;
       totalMachines += 1;
     }
     sales = (await apiGet('/api/data/sales')).sales;
+    saleHours = (await apiGet('/api/data/sale-hours')).hours;
     status.textContent = `Synced ${totalDays} day(s) across ${totalMachines} machine(s). Gross Sales and Cost of Goods are both filled in from HAHA — only Processing Fees still need your input, since HAHA doesn't report those.`;
     renderAll();
   } catch (e) {
@@ -629,6 +731,34 @@ async function deleteMachine(id) {
   renderAll();
 }
 
+function startEditMachine(id) { editingMachineId = id; renderMachines(); }
+function cancelEditMachine() { editingMachineId = null; renderMachines(); }
+
+async function saveEditMachine(id) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  const get = (suffix) => document.getElementById('em_' + suffix + '_' + id).value.trim();
+  const name = get('name');
+  if (!name) { alert('Give the machine a name or ID.'); return; }
+  try {
+    await apiPost('/api/data/machines', {
+      id,
+      name,
+      host: get('host'),
+      address: get('address'),
+      plan: document.getElementById('em_plan_' + id).value,
+      install: document.getElementById('em_install_' + id).value,
+      hahaId: get('haha'),
+      contactName: get('contactName'),
+      contactPhone: get('contactPhone'),
+      contactEmail: get('contactEmail'),
+    });
+  } catch (e) { alert('Could not save changes: ' + e.message); return; }
+  editingMachineId = null;
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
 function renderMachines() {
   const tbl = document.getElementById('machineTable');
   const empty = document.getElementById('machinesEmpty');
@@ -636,10 +766,38 @@ function renderMachines() {
   empty.style.display = 'none';
   let html = '<thead><tr><th>Machine</th><th>Host</th><th>Address</th><th>PM Contact</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
   machines.forEach(m => {
+    if (m.id === editingMachineId) {
+      html += `<tr>
+        <td colspan="8">
+          <div class="form-grid" style="margin: 4px 0;">
+            <div><label>Machine Name / ID</label><input id="em_name_${m.id}" value="${escapeAttr(m.name)}" /></div>
+            <div><label>Host / Location Name</label><input id="em_host_${m.id}" value="${escapeAttr(m.host || '')}" /></div>
+            <div><label>Address</label><input id="em_address_${m.id}" value="${escapeAttr(m.address || '')}" /></div>
+            <div>
+              <label>Placement Type</label>
+              <select id="em_plan_${m.id}">
+                <option value="none" ${m.plan !== 'tiered' ? 'selected' : ''}>No-cost placement</option>
+                <option value="tiered" ${m.plan === 'tiered' ? 'selected' : ''}>Commission (tiered)</option>
+              </select>
+            </div>
+            <div><label>Install Date</label><input id="em_install_${m.id}" type="date" value="${escapeAttr(m.install || '')}" /></div>
+            <div><label>HAHA Market ID</label><input id="em_haha_${m.id}" value="${escapeAttr(m.hahaId || '')}" /></div>
+            <div><label>Property Manager Name</label><input id="em_contactName_${m.id}" value="${escapeAttr(m.contactName || '')}" placeholder="e.g. Margie Chen" /></div>
+            <div><label>PM Phone</label><input id="em_contactPhone_${m.id}" value="${escapeAttr(m.contactPhone || '')}" placeholder="e.g. (470) 555-0139" /></div>
+            <div><label>PM Email</label><input id="em_contactEmail_${m.id}" type="email" value="${escapeAttr(m.contactEmail || '')}" placeholder="e.g. margie@example.com" /></div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="saveEditMachine('${m.id}')">Save</button>
+              <button class="btn btn-ghost" onclick="cancelEditMachine()">Cancel</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+      return;
+    }
     const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
     const contactCell = m.contactName || contactBits
       ? `${m.contactName ? escapeHtml(m.contactName) : ''}${contactBits ? `<div style="font-size:11.5px; color:var(--graphite); margin-top:2px;">${escapeHtml(contactBits)}</div>` : ''}`
-      : '<span style="color:var(--graphite)">—</span>';
+      : '<span style="color:var(--graphite)">Add contact info</span>';
     html += `<tr>
       <td>${escapeHtml(m.name)}</td>
       <td>${escapeHtml(m.host || '—')}</td>
@@ -648,7 +806,10 @@ function renderMachines() {
       <td><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
       <td>${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
       <td>${m.install || '—'}</td>
-      <td><button class="btn-danger-text" onclick="deleteMachine('${m.id}')">Remove</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="startEditMachine('${m.id}')">Edit</button>
+        <button class="btn-danger-text" onclick="deleteMachine('${m.id}')">Remove</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
@@ -662,6 +823,178 @@ function renderMachines() {
   eMachine.innerHTML = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   if (machines.some(m => m.id === curS)) sMachine.value = curS;
   if (curE && machines.some(m => m.id === curE)) eMachine.value = curE;
+}
+
+// ---------------- machine health ----------------
+function fmtTemp(t, unit) {
+  if (t === null || t === undefined) return '—';
+  const u = unit === 'FAHRENHEIT' ? '°F' : '°C';
+  return Number(t).toFixed(1) + u;
+}
+function fmtWhen(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+async function checkHealthNow() {
+  const status = document.getElementById('healthCheckStatus');
+  status.style.display = 'block';
+  status.textContent = 'Checking machine status…';
+  const withHaha = machines.filter(m => m.hahaId);
+  if (!withHaha.length) { status.textContent = 'No machines have a HAHA Market ID set yet.'; return; }
+  try {
+    const data = await apiGet('/api/haha-market-health');
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    const byMarketId = {};
+    (data.health || []).forEach(h => { byMarketId[h.marketId] = h; });
+    const checkedAt = new Date().toISOString();
+    const readings = withHaha
+      .filter(m => byMarketId[m.hahaId])
+      .map(m => {
+        const h = byMarketId[m.hahaId];
+        return {
+          machineId: m.id, checkedAt,
+          isOnline: h.isOnline, status: h.status,
+          temperature: h.temperature, temperatureUnit: h.temperatureUnit,
+          warningLow: h.warningLow, warningHigh: h.warningHigh,
+        };
+      });
+    if (readings.length) await apiPost('/api/data/health', { readings });
+    latestHealth = (await apiGet('/api/data/health?latest=1')).health;
+    status.textContent = `Checked ${readings.length} machine(s) just now.`;
+    renderHealth();
+    if (healthDetailMachineId) loadHealthDetail(healthDetailMachineId);
+  } catch (e) {
+    status.textContent = 'Check failed: ' + e.message;
+  }
+}
+
+function renderHealth() {
+  const tbl = document.getElementById('healthTable');
+  const empty = document.getElementById('healthEmpty');
+  const byMachine = {};
+  latestHealth.forEach(h => { byMachine[h.machineId] = h; });
+
+  const withHaha = machines.filter(m => m.hahaId);
+  if (!withHaha.length) {
+    tbl.innerHTML = ''; empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    let html = '<thead><tr><th>Machine</th><th>Status</th><th>Temperature</th><th>Last Checked</th><th></th></tr></thead><tbody>';
+    withHaha.forEach(m => {
+      const h = byMachine[m.id];
+      const online = h ? h.isOnline : null;
+      const dot = online === null ? '<span class="tag tag-none">Not checked yet</span>'
+        : online ? '<span class="tag tag-paid">● Online</span>'
+        : '<span class="tag tag-due">● Offline</span>';
+      let tempCell = '—';
+      if (h && h.temperature !== null && h.temperature !== undefined) {
+        const outOfRange = (h.warningLow !== null && h.temperature < h.warningLow) ||
+                            (h.warningHigh !== null && h.temperature > h.warningHigh);
+        tempCell = fmtTemp(h.temperature, h.temperatureUnit) + (outOfRange ? ' <span class="tag tag-due">out of range</span>' : '');
+      }
+      html += `<tr>
+        <td>${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</td>
+        <td>${dot}</td>
+        <td>${tempCell}</td>
+        <td>${h ? fmtWhen(h.checkedAt) : '—'}</td>
+        <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="selectHealthDetail('${m.id}')">History</button></td>
+      </tr>`;
+    });
+    html += '</tbody>';
+    tbl.innerHTML = html;
+  }
+
+  const online = withHaha.filter(m => byMachine[m.id] && byMachine[m.id].isOnline).length;
+  const offline = withHaha.filter(m => byMachine[m.id] && !byMachine[m.id].isOnline).length;
+  const tempAlerts = withHaha.filter(m => {
+    const h = byMachine[m.id];
+    if (!h || h.temperature === null || h.temperature === undefined) return false;
+    return (h.warningLow !== null && h.temperature < h.warningLow) || (h.warningHigh !== null && h.temperature > h.warningHigh);
+  }).length;
+  const lastChecked = latestHealth.reduce((max, h) => (!max || h.checkedAt > max) ? h.checkedAt : max, null);
+
+  document.getElementById('healthOnline').textContent = online;
+  document.getElementById('healthOnlineSub').textContent = withHaha.length + ' machine(s) tracked';
+  document.getElementById('healthOffline').textContent = offline;
+  document.getElementById('healthTempAlerts').textContent = tempAlerts;
+  document.getElementById('healthLastChecked').textContent = lastChecked ? fmtWhen(lastChecked) : '—';
+
+  // refresh detail machine dropdown
+  const sel = document.getElementById('healthDetailSelect');
+  const curVal = sel.value || healthDetailMachineId;
+  sel.innerHTML = withHaha.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  if (withHaha.length) {
+    const nextId = withHaha.some(m => m.id === curVal) ? curVal : withHaha[0].id;
+    sel.value = nextId;
+    if (nextId !== healthDetailMachineId) selectHealthDetail(nextId);
+    else if (!charts.healthTemp) loadHealthDetail(nextId);
+  }
+}
+
+function selectHealthDetail(machineId) {
+  healthDetailMachineId = machineId;
+  const sel = document.getElementById('healthDetailSelect');
+  if (sel.value !== machineId) sel.value = machineId;
+  loadHealthDetail(machineId);
+}
+
+async function loadHealthDetail(machineId) {
+  let rows = [];
+  try {
+    rows = (await apiGet('/api/data/health?machineId=' + encodeURIComponent(machineId) + '&limit=500')).health;
+  } catch (e) { /* leave empty */ }
+  rows = rows.slice().sort((a, b) => a.checkedAt.localeCompare(b.checkedAt));
+
+  // temperature chart
+  const tempRows = rows.filter(r => r.temperature !== null && r.temperature !== undefined);
+  const ctx = document.getElementById('healthTempChart');
+  if (charts.healthTemp) charts.healthTemp.destroy();
+  if (tempRows.length) {
+    charts.healthTemp = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: tempRows.map(r => fmtWhen(r.checkedAt)),
+        datasets: [{ label: 'Temperature', data: tempRows.map(r => r.temperature), borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25, pointRadius: 2 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: v => v + '°' } } }
+      }
+    });
+  } else {
+    ctx.getContext('2d').clearRect(0, 0, 999, 999);
+  }
+
+  // status-change log — only rows where isOnline flips vs. the prior reading
+  const changes = [];
+  let prevOnline = null;
+  rows.forEach(r => {
+    if (prevOnline === null || r.isOnline !== prevOnline) {
+      changes.push(r);
+      prevOnline = r.isOnline;
+    }
+  });
+  const logTbl = document.getElementById('healthLogTable');
+  const logEmpty = document.getElementById('healthLogEmpty');
+  if (!changes.length) {
+    logTbl.innerHTML = ''; logEmpty.style.display = 'block';
+  } else {
+    logEmpty.style.display = 'none';
+    let html = '<thead><tr><th>When</th><th>Event</th><th>Temp at the time</th></tr></thead><tbody>';
+    changes.slice().reverse().forEach(r => {
+      html += `<tr>
+        <td>${fmtWhen(r.checkedAt)}</td>
+        <td>${r.isOnline ? '<span class="tag tag-paid">Came online</span>' : '<span class="tag tag-due">Went offline</span>'}</td>
+        <td>${fmtTemp(r.temperature, r.temperatureUnit)}</td>
+      </tr>`;
+    });
+    html += '</tbody>';
+    logTbl.innerHTML = html;
+  }
 }
 
 // ---------------- sales ----------------
@@ -923,18 +1256,82 @@ function renderMachineChart(sRows) {
   });
 }
 
+// ---------------- sales pattern (by hour / by day) ----------------
+function filteredSaleHours() {
+  const range = document.getElementById('rangeSelect').value;
+  if (!range || range === 'all') return saleHours;
+  return saleHours.filter(h => monthKey(h.date) === range);
+}
+
+function setSalesPattern(mode) {
+  salesPatternMode = mode;
+  document.getElementById('patternHourBtn').className = mode === 'hour' ? 'btn btn-secondary' : 'btn btn-ghost';
+  document.getElementById('patternDayBtn').className = mode === 'day' ? 'btn btn-secondary' : 'btn btn-ghost';
+  document.getElementById('patternDesc').textContent = mode === 'hour'
+    ? 'Gross sales by hour of day, summed across the selected range and all synced machines — helps time restocks and spot slow windows.'
+    : 'Gross sales by day of week, summed across the selected range and all synced machines — helps spot which days to prioritize on your route.';
+  renderPatternChart();
+}
+
+function renderPatternChart() {
+  const rows = filteredSaleHours();
+  const empty = document.getElementById('patternEmpty');
+  const ctx = document.getElementById('patternChart');
+  if (charts.pattern) charts.pattern.destroy();
+  if (!rows.length) {
+    empty.style.display = 'block';
+    ctx.getContext('2d').clearRect(0, 0, 999, 999);
+    return;
+  }
+  empty.style.display = 'none';
+
+  let labels, data;
+  if (salesPatternMode === 'hour') {
+    const buckets = new Array(24).fill(0);
+    rows.forEach(h => { buckets[h.hour] += (h.gross || 0); });
+    labels = buckets.map((_, i) => {
+      const h12 = i % 12 === 0 ? 12 : i % 12;
+      return `${h12}${i < 12 ? 'a' : 'p'}`;
+    });
+    data = buckets;
+  } else {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const buckets = new Array(7).fill(0);
+    rows.forEach(h => {
+      const [y, m, d] = h.date.split('-').map(Number);
+      const dow = new Date(y, m - 1, d).getDay();
+      buckets[dow] += (h.gross || 0);
+    });
+    labels = dayNames;
+    data = buckets;
+  }
+
+  charts.pattern = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Gross Sales', data, backgroundColor: '#FF6B2B', borderRadius: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { callback: v => '$' + v } } }
+    }
+  });
+}
+
 // ---------------- misc ----------------
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+const escapeAttr = escapeHtml;
 
 function renderAll() {
   buildRangeOptions();
   renderMachines();
   renderSales();
+  renderPatternChart();
   renderExpenses();
   renderCommission();
   renderOverview();
+  renderHealth();
 }
 
 async function init() {
@@ -948,10 +1345,12 @@ async function init() {
   document.getElementById('hahaStart').valueAsDate = monthAgo;
 
   try {
-    const [m, s, e] = await Promise.all([
+    const [m, s, e, sh, hl] = await Promise.all([
       apiGet('/api/data/machines'), apiGet('/api/data/sales'), apiGet('/api/data/expenses'),
+      apiGet('/api/data/sale-hours'), apiGet('/api/data/health?latest=1'),
     ]);
     machines = m.machines; sales = s.sales; expenses = e.expenses;
+    saleHours = sh.hours; latestHealth = hl.health;
   } catch (err) {
     document.querySelector('.app').insertAdjacentHTML('afterbegin',
       `<div class="card" style="border-color:#e0a0a0; background:#fff5f5;">

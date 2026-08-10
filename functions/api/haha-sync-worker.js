@@ -3,7 +3,11 @@
 // This is a STANDALONE Worker, deployed separately from the sidecarservices.com
 // Pages project (Pages Functions can't run on a schedule — only real Workers can).
 // It re-runs the same "Sync from HAHA" logic the dashboard's button does, on a
-// timer, for every machine that has a HAHA Market ID set.
+// timer, for every machine that has a HAHA Market ID set. It also:
+//   - buckets each day's sales by hour into sale_hours, for the Sales by
+//     Hour / Sales by Day pattern chart
+//   - polls each machine's online status + temperature into machine_health,
+//     for the Machine Health tab's current-status grid and history log
 //
 // Required bindings/variables (set these when creating the Worker):
 //   DB               - D1 database binding, same "sidecar-ops" database, variable name DB
@@ -91,16 +95,25 @@ async function runSync(env, log) {
     });
 
     const byDay = {};
+    const byHour = {}; // key: `${date}|${hour}` -> gross
     sales.forEach((s) => {
       if (s.isRefund) return;
-      const day = (s.saleDtm || '').slice(0, 10);
+      const dtm = s.saleDtm || '';
+      const day = dtm.slice(0, 10);
       if (!day) return;
       if (!byDay[day]) byDay[day] = { gross: 0, cogs: 0 };
-      byDay[day].gross += parseFloat(s.saleTotal || '0');
+      const total = parseFloat(s.saleTotal || '0');
+      byDay[day].gross += total;
       (s.saleItems || []).forEach((item) => {
         const unitCost = costById[item.productId] || 0;
         byDay[day].cogs += unitCost * (item.quantity || 0);
       });
+
+      const hour = parseInt(dtm.slice(11, 13), 10);
+      if (!isNaN(hour)) {
+        const hkey = `${day}|${hour}`;
+        byHour[hkey] = (byHour[hkey] || 0) + total;
+      }
     });
 
     await env.DB.prepare(
@@ -114,10 +127,59 @@ async function runSync(env, log) {
     );
     if (stmts.length) await env.DB.batch(stmts);
     totalDays += stmts.length;
-    log(`  ${m.hahaId}: ${stmts.length} day(s) synced`);
+
+    await env.DB.prepare(
+      `DELETE FROM sale_hours WHERE machine_id = ?1 AND source = 'haha' AND date >= ?2 AND date <= ?3`
+    ).bind(m.id, startStr, endStr).run();
+    const hourStmts = Object.entries(byHour).map(([key, gross]) => {
+      const [date, hourStr] = key.split('|');
+      return env.DB.prepare(
+        `INSERT INTO sale_hours (id, machine_id, date, hour, gross, source) VALUES (?1, ?2, ?3, ?4, ?5, 'haha')`
+      ).bind(crypto.randomUUID(), m.id, date, parseInt(hourStr, 10), gross);
+    });
+    if (hourStmts.length) await env.DB.batch(hourStmts);
+
+    log(`  ${m.hahaId}: ${stmts.length} day(s), ${hourStmts.length} hour-bucket(s) synced`);
   }
 
   log(`Sync complete: ${machines.length} machine(s), ${totalDays} day-entries, window ${startStr} to ${endStr}`);
+
+  // ---- Machine health poll (online status + temperature) ----
+  if (machines.length) {
+    const marketList = await fetchAllPages(env, token, '/open/api/v1/markets', {});
+    const byMarketId = {};
+    marketList.forEach((mk) => { byMarketId[mk.marketId] = mk; });
+
+    const checkedAt = new Date().toISOString();
+    const healthStmts = machines
+      .map((m) => {
+        const mk = byMarketId[m.hahaId];
+        if (!mk) return null;
+        const temperature = mk.temperature !== undefined && mk.temperature !== null && mk.temperature !== ''
+          ? parseFloat(mk.temperature) : null;
+        return env.DB.prepare(
+          `INSERT INTO machine_health
+            (id, machine_id, checked_at, is_online, status, temperature, temperature_unit, warning_low, warning_high)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+        ).bind(
+          crypto.randomUUID(), m.id, checkedAt,
+          mk.isOnline ? 1 : 0,
+          mk.status || null,
+          temperature,
+          mk.temperatureUnit || null,
+          mk.warningTemperatureStart ?? null,
+          mk.warningTemperatureEnd ?? null,
+        );
+      })
+      .filter(Boolean);
+    if (healthStmts.length) await env.DB.batch(healthStmts);
+    log(`Health poll: ${healthStmts.length} machine(s) checked at ${checkedAt}`);
+
+    // Keep the health log from growing unbounded — prune anything older than 120 days.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 120);
+    await env.DB.prepare(`DELETE FROM machine_health WHERE checked_at < ?1`).bind(cutoff.toISOString()).run();
+  }
 }
 
 export default {
