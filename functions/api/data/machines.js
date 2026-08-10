@@ -1,12 +1,16 @@
 // /api/data/machines
 // GET    -> { machines: [...] }
-// POST   -> body: { id?, name, host, address, plan, install, hahaId }
+// POST   -> body: { id?, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail }
 //           creates a new machine if id is omitted, otherwise updates that id.
 // DELETE ?id=... -> removes a machine (its sales/expenses history is left in place)
 //
 // Requires a D1 database bound to this Pages project as "DB"
 // (Settings -> Functions -> D1 database bindings -> variable name: DB).
 // This route should sit behind Cloudflare Access — see setup notes.
+//
+// contact_name / contact_phone / contact_email were added via
+// migrations/001_add_contact_fields.sql — run that once if you set this
+// database up before that migration existed.
 
 function genId() {
   return crypto.randomUUID();
@@ -14,26 +18,32 @@ function genId() {
 
 export async function onRequestGet({ env }) {
   const { results } = await env.DB.prepare(
-    'SELECT id, name, host, address, plan, install, haha_id as hahaId FROM machines ORDER BY created_at ASC'
+    `SELECT id, name, host, address, plan, install, haha_id as hahaId,
+            contact_name as contactName, contact_phone as contactPhone, contact_email as contactEmail
+     FROM machines ORDER BY created_at ASC`
   ).all();
   return Response.json({ machines: results });
 }
 
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
-  const { name, host = '', address = '', plan = 'none', install = '', hahaId = '' } = body;
+  const {
+    name, host = '', address = '', plan = 'none', install = '', hahaId = '',
+    contactName = '', contactPhone = '', contactEmail = '',
+  } = body;
   if (!name) return Response.json({ error: 'name is required' }, { status: 400 });
 
   const id = body.id || genId();
   await env.DB.prepare(
-    `INSERT INTO machines (id, name, host, address, plan, install, haha_id)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    `INSERT INTO machines (id, name, host, address, plan, install, haha_id, contact_name, contact_phone, contact_email)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
      ON CONFLICT(id) DO UPDATE SET
        name=excluded.name, host=excluded.host, address=excluded.address,
-       plan=excluded.plan, install=excluded.install, haha_id=excluded.haha_id`
-  ).bind(id, name, host, address, plan, install, hahaId).run();
+       plan=excluded.plan, install=excluded.install, haha_id=excluded.haha_id,
+       contact_name=excluded.contact_name, contact_phone=excluded.contact_phone, contact_email=excluded.contact_email`
+  ).bind(id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail).run();
 
-  return Response.json({ id, name, host, address, plan, install, hahaId });
+  return Response.json({ id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
 }
 
 export async function onRequestDelete({ request, env }) {

@@ -251,6 +251,9 @@
         </div>
         <div><label>Install Date</label><input id="mInstall" type="date" /></div>
         <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
+        <div><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
+        <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
+        <div><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
         <div><button class="btn btn-primary" onclick="addMachine()">Add Machine</button></div>
       </div>
       <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
@@ -273,13 +276,22 @@
   <div class="tab-panel" id="panel-sales">
     <div class="card">
       <div class="card-title">Sync from HAHA</div>
-      <div class="card-desc">Pulls completed sales from HAHA's API and fills in Gross Sales automatically. Cost of Goods and Processing Fees still need your input — HAHA doesn't know either of those.</div>
+      <div class="card-desc">Pulls completed sales from HAHA's API and fills in both Gross Sales and Cost of Goods automatically, using each product's listed cost. Processing Fees still need your input — HAHA doesn't report those.</div>
       <div class="form-grid" id="hahaSyncForm">
         <div><label>Start Date</label><input id="hahaStart" type="date" /></div>
         <div><label>End Date</label><input id="hahaEnd" type="date" /></div>
         <div><button class="btn btn-primary" onclick="syncFromHaha()">Sync Now</button></div>
       </div>
       <div id="hahaSyncStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Products Missing a Cost</div>
+        <button class="btn btn-secondary" onclick="checkMissingCosts()">Check Now</button>
+      </div>
+      <div class="card-desc">Any product below has no cost set in HAHA's catalogue — its sales sync in with $0 Cost of Goods, which quietly overstates profit until it's fixed. Set the cost on the product in HAHA's Merchant Portal, then re-run a sync to correct past entries.</div>
+      <div class="table-wrap"><table id="missingCostTable"></table></div>
+      <div id="missingCostStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
     </div>
     <div class="card">
       <div class="card-title">Log a Sales Entry Manually</div>
@@ -481,15 +493,21 @@ async function addMachine() {
   const plan = document.getElementById('mPlan').value;
   const install = document.getElementById('mInstall').value;
   const hahaId = document.getElementById('mHaha').value.trim();
+  const contactName = document.getElementById('mContactName').value.trim();
+  const contactPhone = document.getElementById('mContactPhone').value.trim();
+  const contactEmail = document.getElementById('mContactEmail').value.trim();
   if (!name) { alert('Give the machine a name or ID.'); return; }
   try {
-    await apiPost('/api/data/machines', { name, host, address, plan, install, hahaId });
+    await apiPost('/api/data/machines', { name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
   } catch (e) { alert('Could not save machine: ' + e.message); return; }
   document.getElementById('mName').value = '';
   document.getElementById('mHost').value = '';
   document.getElementById('mAddress').value = '';
   document.getElementById('mInstall').value = '';
   document.getElementById('mHaha').value = '';
+  document.getElementById('mContactName').value = '';
+  document.getElementById('mContactPhone').value = '';
+  document.getElementById('mContactEmail').value = '';
   machines = (await apiGet('/api/data/machines')).machines;
   renderAll();
 }
@@ -528,6 +546,17 @@ async function syncFromHaha() {
   const withHaha = machines.filter(m => m.hahaId);
   if (!withHaha.length) { status.textContent = 'No machines have a HAHA Market ID set yet — add one on the Machines tab, or use "Import from HAHA" there.'; return; }
 
+  status.textContent = 'Fetching product costs…';
+  let costById = {};
+  try {
+    const productData = await apiGet('/api/haha-products');
+    if (productData.ok) {
+      (productData.products || []).forEach(p => { costById[p.productId] = parseFloat(p.cost || '0'); });
+    }
+  } catch (e) {
+    // Non-fatal — sync still works, COGS just won't be filled in automatically.
+  }
+
   status.textContent = 'Syncing…';
   let totalDays = 0, totalMachines = 0;
   try {
@@ -535,27 +564,64 @@ async function syncFromHaha() {
       const data = await apiGet(`/api/haha-sales?sticker_num=${encodeURIComponent(m.hahaId)}&start_time=${start}&end_time=${end}&status=PAID`);
       if (!data.ok) throw new Error(`${m.name}: ${data.error || 'Unknown error'}`);
 
-      // Aggregate HAHA's per-order totals into one sales-log entry per day.
+      // Aggregate HAHA's per-order totals into one sales-log entry per day,
+      // computing real COGS from each line item's quantity × product cost.
       const byDay = {};
       (data.sales || []).forEach(s => {
         if (s.isRefund) return; // skip refunded orders
         const day = (s.saleDtm || '').slice(0, 10);
         if (!day) return;
-        byDay[day] = (byDay[day] || 0) + parseFloat(s.saleTotal || '0');
+        if (!byDay[day]) byDay[day] = { gross: 0, cogs: 0 };
+        byDay[day].gross += parseFloat(s.saleTotal || '0');
+        (s.saleItems || []).forEach(item => {
+          const unitCost = costById[item.productId] || 0;
+          byDay[day].cogs += unitCost * (item.quantity || 0);
+        });
       });
 
-      const entries = Object.entries(byDay).map(([date, gross]) => ({ date, gross }));
+      const entries = Object.entries(byDay).map(([date, v]) => ({ date, gross: v.gross, cogs: v.cogs }));
       await apiPost('/api/data/sales', { sync: true, machineId: m.id, start, end, entries });
       totalDays += entries.length;
       totalMachines += 1;
     }
     sales = (await apiGet('/api/data/sales')).sales;
-    status.textContent = `Synced ${totalDays} day(s) across ${totalMachines} machine(s). Gross Sales is filled in — add Cost of Goods and Processing Fees on each entry to get accurate Net Sales.`;
+    status.textContent = `Synced ${totalDays} day(s) across ${totalMachines} machine(s). Gross Sales and Cost of Goods are both filled in from HAHA — only Processing Fees still need your input, since HAHA doesn't report those.`;
     renderAll();
   } catch (e) {
     status.textContent = 'Sync failed: ' + e.message;
   }
 }
+
+async function checkMissingCosts() {
+  const status = document.getElementById('missingCostStatus');
+  const tbl = document.getElementById('missingCostTable');
+  status.style.display = 'block';
+  status.textContent = 'Checking HAHA product catalogue…';
+  tbl.innerHTML = '';
+  try {
+    const data = await apiGet('/api/haha-products');
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    const missing = (data.products || []).filter(p => p.cost === undefined || p.cost === null || p.cost === '' || parseFloat(p.cost) === 0);
+    if (!missing.length) {
+      status.textContent = `Checked ${data.products.length} product(s) — every one has a cost set. Nothing to fix.`;
+      return;
+    }
+    status.textContent = `${missing.length} of ${data.products.length} product(s) have no cost set:`;
+    let html = '<thead><tr><th>Product</th><th>Code</th><th class="num">Selling Price</th></tr></thead><tbody>';
+    missing.forEach(p => {
+      html += `<tr>
+        <td>${escapeHtml(p.productName || p.productId)}</td>
+        <td>${escapeHtml(p.productCode || '—')}</td>
+        <td class="num">${p.price ? fmt(parseFloat(p.price)) : '—'}</td>
+      </tr>`;
+    });
+    html += '</tbody>';
+    tbl.innerHTML = html;
+  } catch (e) {
+    status.textContent = 'Check failed: ' + e.message;
+  }
+}
+
 async function deleteMachine(id) {
   if (!confirm('Remove this machine? Its sales and expense history will stay logged but will show as "(deleted machine)".')) return;
   await apiDelete('/api/data/machines?id=' + encodeURIComponent(id));
@@ -568,12 +634,17 @@ function renderMachines() {
   const empty = document.getElementById('machinesEmpty');
   if (!machines.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Machine</th><th>Host</th><th>Address</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Machine</th><th>Host</th><th>Address</th><th>PM Contact</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
   machines.forEach(m => {
+    const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
+    const contactCell = m.contactName || contactBits
+      ? `${m.contactName ? escapeHtml(m.contactName) : ''}${contactBits ? `<div style="font-size:11.5px; color:var(--graphite); margin-top:2px;">${escapeHtml(contactBits)}</div>` : ''}`
+      : '<span style="color:var(--graphite)">—</span>';
     html += `<tr>
       <td>${escapeHtml(m.name)}</td>
       <td>${escapeHtml(m.host || '—')}</td>
       <td>${escapeHtml(m.address || '—')}</td>
+      <td>${contactCell}</td>
       <td><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
       <td>${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
       <td>${m.install || '—'}</td>

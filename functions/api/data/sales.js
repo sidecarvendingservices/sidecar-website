@@ -47,8 +47,8 @@ export async function onRequestPost({ request, env }) {
 
     const stmts = entries.map((e) =>
       env.DB.prepare(
-        `INSERT INTO sales (id, machine_id, date, gross, cogs, fees, source) VALUES (?1, ?2, ?3, ?4, 0, 0, 'haha')`
-      ).bind(genId(), machineId, e.date, e.gross)
+        `INSERT INTO sales (id, machine_id, date, gross, cogs, fees, source) VALUES (?1, ?2, ?3, ?4, ?5, 0, 'haha')`
+      ).bind(genId(), machineId, e.date, e.gross, e.cogs || 0)
     );
     if (stmts.length) await env.DB.batch(stmts);
 
