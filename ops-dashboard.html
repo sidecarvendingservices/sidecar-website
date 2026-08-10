@@ -262,14 +262,19 @@
         <div><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
         <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
         <div><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
-        <div><button class="btn btn-primary" onclick="addMachine()">Add Machine</button></div>
+        <div><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
       </div>
       <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
+    </div>
+    <div class="card" id="duplicatesCard" style="display:none; border-color:#f0c896; background:#fff8ee;">
+      <div class="card-title">Possible Duplicate Machines</div>
+      <div class="card-desc">These share the same HAHA Market ID or name — probably the same physical machine added twice. Merging moves all sales/expense/health history onto the kept machine, then removes the duplicate.</div>
+      <div id="duplicatesList"></div>
     </div>
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Machines</div>
-        <button class="btn btn-secondary" onclick="importMachinesFromHaha()">Import from HAHA</button>
+        <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
       </div>
       <div class="table-wrap"><table id="machineTable"></table></div>
       <div id="machinesEmpty" class="empty-state" style="display:none;">
@@ -308,7 +313,7 @@
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Current Status</div>
-        <button class="btn btn-secondary" onclick="checkHealthNow()">Check Now</button>
+        <button class="btn btn-secondary" onclick="checkHealthNow(this)">Check Now</button>
       </div>
       <div class="card-desc">Online status + temperature update automatically on the same schedule as the HAHA sales sync. "Check Now" polls immediately instead of waiting for the next run.</div>
       <div id="healthCheckStatus" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px;"></div>
@@ -344,7 +349,7 @@
       <div class="form-grid" id="hahaSyncForm">
         <div><label>Start Date</label><input id="hahaStart" type="date" /></div>
         <div><label>End Date</label><input id="hahaEnd" type="date" /></div>
-        <div><button class="btn btn-primary" onclick="syncFromHaha()">Sync Now</button></div>
+        <div><button class="btn btn-primary" onclick="syncFromHaha(this)">Sync Now</button></div>
       </div>
       <div id="hahaSyncStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
     </div>
@@ -477,9 +482,16 @@
 
 <script>
 // ---------------- API helpers (Cloudflare Functions + D1, same-origin) ----------------
+async function apiErrorMessage(res, fallback) {
+  try {
+    const body = await res.clone().json();
+    if (body && body.error) return body.error;
+  } catch (e) { /* body wasn't JSON, or had no .error — use the fallback */ }
+  return fallback;
+}
 async function apiGet(path) {
   const res = await fetch(path);
-  if (!res.ok) throw new Error(`GET ${path} failed (${res.status})`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `GET ${path} failed (${res.status})`));
   return res.json();
 }
 async function apiPost(path, body) {
@@ -488,12 +500,12 @@ async function apiPost(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`POST ${path} failed (${res.status})`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `POST ${path} failed (${res.status})`));
   return res.json();
 }
 async function apiDelete(path) {
   const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`DELETE ${path} failed (${res.status})`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `DELETE ${path} failed (${res.status})`));
   return res.json();
 }
 
@@ -571,7 +583,27 @@ function machineName(id) {
   return m ? (m.name + (m.host ? ' — ' + m.host : '')) : '(deleted machine)';
 }
 
-async function addMachine() {
+// Disables a button (and shows a "Working…" label) for the duration of an
+// async action, so a double-click can't fire the request twice — the most
+// common real-world cause of duplicate rows in this kind of app.
+async function withButtonBusy(btn, fn) {
+  if (!btn) return fn();
+  if (btn.disabled) return; // already in flight
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Working…';
+  try {
+    await fn();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function addMachine(btn) {
+  return withButtonBusy(btn, () => addMachineImpl());
+}
+async function addMachineImpl() {
   const name = document.getElementById('mName').value.trim();
   const host = document.getElementById('mHost').value.trim();
   const address = document.getElementById('mAddress').value.trim();
@@ -597,32 +629,61 @@ async function addMachine() {
   renderAll();
 }
 
-async function importMachinesFromHaha() {
+async function importMachinesFromHaha(btn) {
+  return withButtonBusy(btn, () => importMachinesFromHahaImpl());
+}
+async function importMachinesFromHahaImpl() {
   const status = document.getElementById('machineImportStatus');
   status.style.display = 'block';
   status.textContent = 'Importing from HAHA…';
   try {
     const data = await apiGet('/api/haha-markets');
     if (!data.ok) throw new Error(data.error || 'Unknown error');
-    const existingHahaIds = new Set(machines.filter(m => m.hahaId).map(m => m.hahaId));
-    let added = 0;
+
+    // Always re-fetch the current machine list right before importing (rather
+    // than trusting the in-memory `machines` array) — if a previous import
+    // partially succeeded and then hit an error, the in-memory list could be
+    // stale, and re-running the import would try to re-add machines that are
+    // already saved, creating duplicates.
+    const freshMachines = (await apiGet('/api/data/machines')).machines;
+    const existingHahaIds = new Set(freshMachines.filter(m => m.hahaId).map(m => String(m.hahaId).trim().toUpperCase()));
+
+    let added = 0, skipped = 0, failed = 0;
     for (const m of (data.markets || [])) {
-      if (existingHahaIds.has(m.marketId)) continue;
-      await apiPost('/api/data/machines', {
-        name: m.marketName || m.marketId, host: '', address: m.marketLocation || '',
-        plan: 'none', install: (m.activationDate || '').slice(0, 10), hahaId: m.marketId,
-      });
-      added += 1;
+      const marketId = (m.marketId || '').trim();
+      if (!marketId || existingHahaIds.has(marketId.toUpperCase())) { skipped += 1; continue; }
+      try {
+        await apiPost('/api/data/machines', {
+          name: m.marketName || marketId, host: '', address: m.marketLocation || '',
+          plan: 'none', install: (m.activationDate || '').slice(0, 10), hahaId: marketId,
+        });
+        existingHahaIds.add(marketId.toUpperCase()); // avoid re-adding it later in this same loop
+        added += 1;
+      } catch (itemErr) {
+        // One bad item (e.g. a race with another tab) shouldn't stop the rest
+        // of the import, and shouldn't leave things in a state where retrying
+        // re-creates the ones that already succeeded.
+        failed += 1;
+      }
     }
     machines = (await apiGet('/api/data/machines')).machines;
-    status.textContent = added ? `Imported ${added} machine(s) from HAHA. Check host names / placement type on each.` : 'No new machines found — everything HAHA has is already here.';
+    const parts = [];
+    if (added) parts.push(`imported ${added} new machine(s)`);
+    if (skipped) parts.push(`${skipped} already here`);
+    if (failed) parts.push(`${failed} failed`);
+    status.textContent = parts.length ? parts.join(', ') + '.' : 'No machines found in HAHA.';
     renderAll();
   } catch (e) {
     status.textContent = 'Import failed: ' + e.message;
+    // Still refresh in case some machines were added before the failure.
+    try { machines = (await apiGet('/api/data/machines')).machines; renderAll(); } catch (e2) { /* ignore */ }
   }
 }
 
-async function syncFromHaha() {
+async function syncFromHaha(btn) {
+  return withButtonBusy(btn, () => syncFromHahaImpl());
+}
+async function syncFromHahaImpl() {
   const start = document.getElementById('hahaStart').value;
   const end = document.getElementById('hahaEnd').value;
   const status = document.getElementById('hahaSyncStatus');
@@ -760,6 +821,7 @@ async function saveEditMachine(id) {
 }
 
 function renderMachines() {
+  renderDuplicates();
   const tbl = document.getElementById('machineTable');
   const empty = document.getElementById('machinesEmpty');
   if (!machines.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
@@ -825,6 +887,56 @@ function renderMachines() {
   if (curE && machines.some(m => m.id === curE)) eMachine.value = curE;
 }
 
+// ---------------- duplicate detection / merge ----------------
+function duplicateGroups() {
+  // Group by HAHA Market ID first (strongest signal — same physical device),
+  // then by name+host for machines with no HAHA ID at all.
+  const byHaha = {};
+  const byNameHost = {};
+  machines.forEach(m => {
+    if (m.hahaId && m.hahaId.trim()) {
+      const key = m.hahaId.trim().toUpperCase();
+      (byHaha[key] = byHaha[key] || []).push(m);
+    } else {
+      const key = (m.name || '').trim().toLowerCase() + '|' + (m.host || '').trim().toLowerCase();
+      (byNameHost[key] = byNameHost[key] || []).push(m);
+    }
+  });
+  const groups = [...Object.values(byHaha), ...Object.values(byNameHost)].filter(g => g.length > 1);
+  return groups;
+}
+
+function renderDuplicates() {
+  const card = document.getElementById('duplicatesCard');
+  const list = document.getElementById('duplicatesList');
+  const groups = duplicateGroups();
+  if (!groups.length) { card.style.display = 'none'; list.innerHTML = ''; return; }
+  card.style.display = 'block';
+  list.innerHTML = groups.map(group => {
+    const keep = group[0]; // earliest — machines are fetched ordered by created_at ASC
+    const dupes = group.slice(1);
+    return `<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 0; border-top:1px solid #f0d9b5;">
+      <span>Keep <strong>${escapeHtml(keep.name)}${keep.host ? ' — ' + escapeHtml(keep.host) : ''}</strong>,
+      merge in ${dupes.map(d => `<strong>${escapeHtml(d.name)}${d.host ? ' — ' + escapeHtml(d.host) : ''}</strong>`).join(', ')}</span>
+      ${dupes.map(d => `<button class="btn btn-secondary" onclick="mergeMachines('${keep.id}','${d.id}')">Merge "${escapeAttr(d.name)}" into "${escapeAttr(keep.name)}"</button>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function mergeMachines(keepId, removeId) {
+  if (!confirm('Merge this machine\'s sales, expenses, and health history into the other machine, then remove it? This can\'t be undone.')) return;
+  try {
+    await apiPost('/api/data/merge-machines', { keepId, removeId });
+  } catch (e) { alert('Could not merge: ' + e.message); return; }
+  const [m, s, e2] = await Promise.all([
+    apiGet('/api/data/machines'), apiGet('/api/data/sales'), apiGet('/api/data/expenses'),
+  ]);
+  machines = m.machines; sales = s.sales; expenses = e2.expenses;
+  try { saleHours = (await apiGet('/api/data/sale-hours')).hours || []; } catch (e3) { /* ignore */ }
+  try { latestHealth = (await apiGet('/api/data/health?latest=1')).health || []; } catch (e3) { /* ignore */ }
+  renderAll();
+}
+
 // ---------------- machine health ----------------
 function fmtTemp(t, unit) {
   if (t === null || t === undefined) return '—';
@@ -838,7 +950,10 @@ function fmtWhen(iso) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-async function checkHealthNow() {
+async function checkHealthNow(btn) {
+  return withButtonBusy(btn, () => checkHealthNowImpl());
+}
+async function checkHealthNowImpl() {
   const status = document.getElementById('healthCheckStatus');
   status.style.display = 'block';
   status.textContent = 'Checking machine status…';
@@ -1323,6 +1438,18 @@ function escapeHtml(str) {
 }
 const escapeAttr = escapeHtml;
 
+let migrationWarningShown = false;
+function warnMigrationNeeded(file) {
+  if (migrationWarningShown) return;
+  migrationWarningShown = true;
+  document.querySelector('.app').insertAdjacentHTML('afterbegin',
+    `<div class="card" style="border-color:#f0c896; background:#fff8ee;">
+       <strong>Machine Health and Sales Pattern are waiting on a database update.</strong>
+       Run <code>${escapeHtml(file)}</code> against the D1 database, then reload this page.
+       Everything else on the dashboard works normally in the meantime.
+     </div>`);
+}
+
 function renderAll() {
   buildRangeOptions();
   renderMachines();
@@ -1344,13 +1471,14 @@ async function init() {
   document.getElementById('hahaEnd').valueAsDate = today;
   document.getElementById('hahaStart').valueAsDate = monthAgo;
 
+  // Core data (machines/sales/expenses) and newer, optional data (sale-hours/health)
+  // are loaded independently — a problem with one (e.g. a migration that hasn't
+  // been run yet) shouldn't blank out the rest of the dashboard.
   try {
-    const [m, s, e, sh, hl] = await Promise.all([
+    const [m, s, e] = await Promise.all([
       apiGet('/api/data/machines'), apiGet('/api/data/sales'), apiGet('/api/data/expenses'),
-      apiGet('/api/data/sale-hours'), apiGet('/api/data/health?latest=1'),
     ]);
     machines = m.machines; sales = s.sales; expenses = e.expenses;
-    saleHours = sh.hours; latestHealth = hl.health;
   } catch (err) {
     document.querySelector('.app').insertAdjacentHTML('afterbegin',
       `<div class="card" style="border-color:#e0a0a0; background:#fff5f5;">
@@ -1358,6 +1486,18 @@ async function init() {
          Check that the D1 database is bound to this Pages project as <code>DB</code>.
        </div>`);
   }
+
+  try {
+    const sh = await apiGet('/api/data/sale-hours');
+    saleHours = sh.hours || [];
+    if (sh._migrationNeeded) warnMigrationNeeded(sh._migrationNeeded);
+  } catch (err) { saleHours = []; }
+
+  try {
+    const hl = await apiGet('/api/data/health?latest=1');
+    latestHealth = hl.health || [];
+    if (hl._migrationNeeded) warnMigrationNeeded(hl._migrationNeeded);
+  } catch (err) { latestHealth = []; }
 
   renderAll();
 }

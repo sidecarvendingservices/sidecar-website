@@ -128,57 +128,69 @@ async function runSync(env, log) {
     if (stmts.length) await env.DB.batch(stmts);
     totalDays += stmts.length;
 
-    await env.DB.prepare(
-      `DELETE FROM sale_hours WHERE machine_id = ?1 AND source = 'haha' AND date >= ?2 AND date <= ?3`
-    ).bind(m.id, startStr, endStr).run();
-    const hourStmts = Object.entries(byHour).map(([key, gross]) => {
-      const [date, hourStr] = key.split('|');
-      return env.DB.prepare(
-        `INSERT INTO sale_hours (id, machine_id, date, hour, gross, source) VALUES (?1, ?2, ?3, ?4, ?5, 'haha')`
-      ).bind(crypto.randomUUID(), m.id, date, parseInt(hourStr, 10), gross);
-    });
-    if (hourStmts.length) await env.DB.batch(hourStmts);
-
-    log(`  ${m.hahaId}: ${stmts.length} day(s), ${hourStmts.length} hour-bucket(s) synced`);
+    // sale_hours / machine_health are newer, optional tables (migration 002).
+    // If that migration hasn't been run yet on this D1 database, these calls
+    // throw "no such table" — that must NOT take down the core sales sync
+    // above, which has run successfully since before these tables existed.
+    try {
+      await env.DB.prepare(
+        `DELETE FROM sale_hours WHERE machine_id = ?1 AND source = 'haha' AND date >= ?2 AND date <= ?3`
+      ).bind(m.id, startStr, endStr).run();
+      const hourStmts = Object.entries(byHour).map(([key, gross]) => {
+        const [date, hourStr] = key.split('|');
+        return env.DB.prepare(
+          `INSERT INTO sale_hours (id, machine_id, date, hour, gross, source) VALUES (?1, ?2, ?3, ?4, ?5, 'haha')`
+        ).bind(crypto.randomUUID(), m.id, date, parseInt(hourStr, 10), gross);
+      });
+      if (hourStmts.length) await env.DB.batch(hourStmts);
+      log(`  ${m.hahaId}: ${stmts.length} day(s), ${hourStmts.length} hour-bucket(s) synced`);
+    } catch (err) {
+      log(`  ${m.hahaId}: ${stmts.length} day(s) synced. Hourly bucketing skipped (${err.message}) — run migrations/002_add_health_and_sale_hours.sql if this persists.`);
+    }
   }
 
   log(`Sync complete: ${machines.length} machine(s), ${totalDays} day-entries, window ${startStr} to ${endStr}`);
 
   // ---- Machine health poll (online status + temperature) ----
+  // Also wrapped so a missing table degrades this feature only, not the sales sync above.
   if (machines.length) {
-    const marketList = await fetchAllPages(env, token, '/open/api/v1/markets', {});
-    const byMarketId = {};
-    marketList.forEach((mk) => { byMarketId[mk.marketId] = mk; });
+    try {
+      const marketList = await fetchAllPages(env, token, '/open/api/v1/markets', {});
+      const byMarketId = {};
+      marketList.forEach((mk) => { byMarketId[mk.marketId] = mk; });
 
-    const checkedAt = new Date().toISOString();
-    const healthStmts = machines
-      .map((m) => {
-        const mk = byMarketId[m.hahaId];
-        if (!mk) return null;
-        const temperature = mk.temperature !== undefined && mk.temperature !== null && mk.temperature !== ''
-          ? parseFloat(mk.temperature) : null;
-        return env.DB.prepare(
-          `INSERT INTO machine_health
-            (id, machine_id, checked_at, is_online, status, temperature, temperature_unit, warning_low, warning_high)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
-        ).bind(
-          crypto.randomUUID(), m.id, checkedAt,
-          mk.isOnline ? 1 : 0,
-          mk.status || null,
-          temperature,
-          mk.temperatureUnit || null,
-          mk.warningTemperatureStart ?? null,
-          mk.warningTemperatureEnd ?? null,
-        );
-      })
-      .filter(Boolean);
-    if (healthStmts.length) await env.DB.batch(healthStmts);
-    log(`Health poll: ${healthStmts.length} machine(s) checked at ${checkedAt}`);
+      const checkedAt = new Date().toISOString();
+      const healthStmts = machines
+        .map((m) => {
+          const mk = byMarketId[m.hahaId];
+          if (!mk) return null;
+          const temperature = mk.temperature !== undefined && mk.temperature !== null && mk.temperature !== ''
+            ? parseFloat(mk.temperature) : null;
+          return env.DB.prepare(
+            `INSERT INTO machine_health
+              (id, machine_id, checked_at, is_online, status, temperature, temperature_unit, warning_low, warning_high)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+          ).bind(
+            crypto.randomUUID(), m.id, checkedAt,
+            mk.isOnline ? 1 : 0,
+            mk.status || null,
+            temperature,
+            mk.temperatureUnit || null,
+            mk.warningTemperatureStart ?? null,
+            mk.warningTemperatureEnd ?? null,
+          );
+        })
+        .filter(Boolean);
+      if (healthStmts.length) await env.DB.batch(healthStmts);
+      log(`Health poll: ${healthStmts.length} machine(s) checked at ${checkedAt}`);
 
-    // Keep the health log from growing unbounded — prune anything older than 120 days.
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 120);
-    await env.DB.prepare(`DELETE FROM machine_health WHERE checked_at < ?1`).bind(cutoff.toISOString()).run();
+      // Keep the health log from growing unbounded — prune anything older than 120 days.
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 120);
+      await env.DB.prepare(`DELETE FROM machine_health WHERE checked_at < ?1`).bind(cutoff.toISOString()).run();
+    } catch (err) {
+      log(`Health poll skipped (${err.message}) — run migrations/002_add_health_and_sale_hours.sql if this persists.`);
+    }
   }
 }
 
