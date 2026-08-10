@@ -165,6 +165,27 @@
 
   .section-flex { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
   .pill-note { font-size: 12px; color: var(--graphite); background: #F0F4F6; border-radius: 20px; padding: 5px 12px; }
+
+  /* ---------- modal ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(20,25,28,.5); z-index: 100;
+    display: flex; align-items: flex-start; justify-content: center; padding: 30px 16px; overflow-y: auto;
+  }
+  .modal-box {
+    background: var(--card); border-radius: 12px; max-width: 760px; width: 100%;
+    padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--graphite); line-height: 1; padding: 4px; }
+  .modal-title { font-size: 18px; font-weight: 800; color: var(--charcoal); margin: 0 0 2px; }
+  .modal-sub { font-size: 12.5px; color: var(--graphite); margin-bottom: 14px; }
+  .link-btn { background: none; border: none; padding: 0; color: var(--sky-deep); font-weight: 700; cursor: pointer; font-family: inherit; font-size: inherit; text-decoration: none; }
+  .link-btn:hover { text-decoration: underline; }
+  .thumb { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 8px; background: #F0F4F6; border: 1px solid var(--border); }
+  .arrow-up { color: #1f7a44; font-weight: 800; }
+  .arrow-down { color: #b3401f; font-weight: 800; }
+  .arrow-flat { color: var(--graphite); font-weight: 800; }
+  .row-low-stock { background: #FDECE3; }
+  .row-alert { color: #b3401f; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -192,8 +213,14 @@
     <button class="tab-btn" data-tab="machines">Machines</button>
     <button class="tab-btn" data-tab="health">Machine Health</button>
     <button class="tab-btn" data-tab="sales">Sales</button>
+    <button class="tab-btn" data-tab="supply">Supply Inventory</button>
     <button class="tab-btn" data-tab="expenses">Expenses</button>
     <button class="tab-btn" data-tab="commission">Commission</button>
+  </div>
+
+  <!-- shared modal, populated by JS for order drill-down / machine detail -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none;" onclick="if(event.target===this) closeModal()">
+    <div class="modal-box" id="modalBox"></div>
   </div>
 
   <!-- ============ OVERVIEW ============ -->
@@ -218,6 +245,23 @@
         <div class="kpi-label">Net Profit</div>
         <div class="kpi-value accent" id="kpiProfit">$0.00</div>
         <div class="kpi-sub" id="kpiMargin">&nbsp;</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Sales Momentum</div>
+      <div class="card-desc">Gross sales this week/month vs. the equivalent period before it (calendar week Sun–Sat, calendar month) — not affected by the "Showing" filter above.</div>
+      <div class="kpi-grid" style="margin-bottom:0;">
+        <div class="kpi-card">
+          <div class="kpi-label">This Week</div>
+          <div class="kpi-value" id="momWeekValue">$0.00</div>
+          <div class="kpi-sub" id="momWeekArrow">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">This Month</div>
+          <div class="kpi-value" id="momMonthValue">$0.00</div>
+          <div class="kpi-sub" id="momMonthArrow">&nbsp;</div>
+        </div>
       </div>
     </div>
 
@@ -344,6 +388,24 @@
   <!-- ============ SALES ============ -->
   <div class="tab-panel" id="panel-sales">
     <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Pay Period</div>
+        <select id="payPeriodMonth" onchange="loadPayPeriod()" style="max-width:180px;"></select>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:0;">
+        <div class="kpi-card">
+          <div class="kpi-label">Orders This Period</div>
+          <div class="kpi-value accent" id="payPeriodOrders">—</div>
+          <div class="kpi-sub">non-refunded, HAHA-synced machines</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unique Shoppers</div>
+          <div class="kpi-value" id="payPeriodShoppers">N/A</div>
+          <div class="kpi-sub">HAHA's API doesn't expose a buyer/card ID — orders is the closest available number</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-title">Sync from HAHA</div>
       <div class="card-desc">Pulls completed sales from HAHA's API and fills in both Gross Sales and Cost of Goods automatically, using each product's listed cost. Processing Fees still need your input — HAHA doesn't report those.</div>
       <div class="form-grid" id="hahaSyncForm">
@@ -398,6 +460,34 @@
       <div id="salesEmpty" class="empty-state" style="display:none;">
         <strong>No sales logged yet</strong>
         Add a machine first, then log entries here as HAHA's reports come in (manually for now — this can switch to their API once access is granted).
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUPPLY INVENTORY (non-machine buffer stock) ============ -->
+  <div class="tab-panel" id="panel-supply">
+    <div class="card">
+      <div class="card-title">Add Buffer Stock Item</div>
+      <div class="card-desc">Supplies sitting in storage, not loaded into a machine yet — set a reorder threshold so this flags when it's time to buy more.</div>
+      <div class="form-grid" id="supplyForm">
+        <div><label>Item Name</label><input id="bName" placeholder="e.g. Coca-Cola 500ml" /></div>
+        <div><label>SKU / Barcode</label><input id="bSku" placeholder="optional" /></div>
+        <div><label>HAHA Product ID</label><input id="bProductId" placeholder="optional — links cost/price/image" /></div>
+        <div><label>Quantity on Hand</label><input id="bQuantity" type="number" step="1" min="0" placeholder="0" /></div>
+        <div><label>Buffer / Par Level</label><input id="bBuffer" type="number" step="1" min="0" placeholder="target stock level" /></div>
+        <div><label>Reorder Threshold</label><input id="bReorder" type="number" step="1" min="0" placeholder="reorder when at/below this" /></div>
+        <div><label>Unit Cost ($)</label><input id="bCost" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><label>Location</label><input id="bLocation" placeholder="e.g. garage, storage unit" /></div>
+        <div><button class="btn btn-primary" onclick="addBufferItem(this)">Add Item</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Buffer Stock</div>
+      <div class="card-desc">Rows highlighted in orange are at or below their reorder threshold.</div>
+      <div class="table-wrap"><table id="supplyTable"></table></div>
+      <div id="supplyEmpty" class="empty-state" style="display:none;">
+        <strong>No buffer stock tracked yet</strong>
+        Add items above to track what's on hand outside your machines.
       </div>
     </div>
   </div>
@@ -743,6 +833,26 @@ async function syncFromHahaImpl() {
       });
       await apiPost('/api/data/sale-hours', { sync: true, machineId: m.id, start, end, entries: hourEntries });
 
+      // Raw per-order records, for the order drill-down modal + pay-period order counts.
+      const orderRecords = (data.sales || [])
+        .filter(s => s.saleId)
+        .map(s => ({
+          id: s.saleId,
+          orderDtm: s.saleDtm || '',
+          date: (s.saleDtm || '').slice(0, 10),
+          gross: parseFloat(s.saleGrossTotal || s.saleTotal || '0'),
+          net: parseFloat(s.saleTotal || '0'),
+          status: s.status || null,
+          isRefund: !!s.isRefund,
+          items: (s.saleItems || []).map(it => ({
+            productId: it.productId || null, productName: it.productName || null,
+            quantity: it.quantity || 0,
+            price: it.price ? parseFloat(it.price) : null,
+            itemTotal: it.itemFinalPrice ? parseFloat(it.itemFinalPrice) : (it.itemSubTotal ? parseFloat(it.itemSubTotal) : null),
+          })),
+        }));
+      await apiPost('/api/data/orders', { sync: true, machineId: m.id, start, end, orders: orderRecords });
+
       totalDays += entries.length;
       totalMachines += 1;
     }
@@ -861,7 +971,7 @@ function renderMachines() {
       ? `${m.contactName ? escapeHtml(m.contactName) : ''}${contactBits ? `<div style="font-size:11.5px; color:var(--graphite); margin-top:2px;">${escapeHtml(contactBits)}</div>` : ''}`
       : '<span style="color:var(--graphite)">Add contact info</span>';
     html += `<tr>
-      <td>${escapeHtml(m.name)}</td>
+      <td><button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button></td>
       <td>${escapeHtml(m.host || '—')}</td>
       <td>${escapeHtml(m.address || '—')}</td>
       <td>${contactCell}</td>
@@ -1112,6 +1222,324 @@ async function loadHealthDetail(machineId) {
   }
 }
 
+// ---------------- modal ----------------
+function openModal(html) {
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('modalBox').innerHTML = '';
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+// ---------------- order drill-down ----------------
+async function openOrderDrilldown(machineId, date) {
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">Orders</div>
+    <div class="modal-sub">Loading…</div>`);
+  const params = new URLSearchParams();
+  if (machineId) params.set('machineId', machineId);
+  if (date) params.set('date', date);
+  let orders = [];
+  try {
+    orders = (await apiGet('/api/data/orders?' + params.toString())).orders || [];
+  } catch (e) { /* leave empty */ }
+
+  const who = machineId ? machineName(machineId) : 'All machines';
+  const when = date ? date : 'all dates';
+  const sub = `${escapeHtml(who)} — ${escapeHtml(when)} — ${orders.length} order(s)`;
+
+  let body;
+  if (!orders.length) {
+    body = `<div class="empty-state"><strong>No orders found</strong>This date/machine combination has no HAHA-synced orders on file.</div>`;
+  } else {
+    body = orders.map(o => `
+      <div class="card" style="margin-bottom:10px; padding:12px 14px;">
+        <div class="section-flex" style="margin-bottom:6px;">
+          <strong>${fmtWhen(o.orderDtm)}</strong>
+          <span>${o.isRefund ? '<span class="tag tag-due">Refunded</span>' : `<strong>${fmt(o.net)}</strong>`}</span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Total</th></tr></thead>
+          <tbody>${(o.items || []).map(it => `<tr>
+            <td>${escapeHtml(it.productName || it.productId || 'Unknown item')}</td>
+            <td class="num">${it.quantity}</td>
+            <td class="num">${it.itemTotal !== null && it.itemTotal !== undefined ? fmt(it.itemTotal) : '—'}</td>
+          </tr>`).join('') || '<tr><td colspan="3" style="color:var(--graphite)">No line-item detail</td></tr>'}</tbody>
+        </table></div>
+      </div>`).join('');
+  }
+
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">Orders</div>
+    <div class="modal-sub">${sub}</div>
+    ${body}`);
+}
+
+// ---------------- pay period tracker ----------------
+function buildPayPeriodOptions() {
+  const sel = document.getElementById('payPeriodMonth');
+  if (sel.options.length) return; // populate once
+  const months = [];
+  const d = new Date();
+  for (let i = 0; i < 12; i++) {
+    months.push(d.toISOString().slice(0, 7));
+    d.setMonth(d.getMonth() - 1);
+  }
+  sel.innerHTML = months.map(m => `<option value="${m}">${escapeHtml(monthLabel(m))}</option>`).join('');
+}
+
+async function loadPayPeriod() {
+  buildPayPeriodOptions();
+  const month = document.getElementById('payPeriodMonth').value;
+  try {
+    const data = await apiGet('/api/data/orders?stats=1&month=' + encodeURIComponent(month));
+    document.getElementById('payPeriodOrders').textContent = data.orderCount ?? 0;
+  } catch (e) {
+    document.getElementById('payPeriodOrders').textContent = '—';
+  }
+}
+
+// ---------------- machine detail (inventory, sell-through, service, expiration) ----------------
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + Math.ceil(days));
+  return d.toISOString().slice(0, 10);
+}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+async function openMachineDetail(machineId) {
+  const m = machines.find(x => x.id === machineId);
+  if (!m) return;
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
+    <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
+
+  const start14 = addDays(todayStr(), -14);
+  const [invRes, prodRes, expRes, logRes, ordersRes] = await Promise.all([
+    m.hahaId ? apiGet('/api/haha-market-inventory').catch(() => null) : Promise.resolve(null),
+    m.hahaId ? apiGet('/api/haha-products').catch(() => null) : Promise.resolve(null),
+    apiGet('/api/data/product-expiration?machineId=' + encodeURIComponent(machineId)).catch(() => ({ expirations: [] })),
+    apiGet('/api/data/service-log?machineId=' + encodeURIComponent(machineId)).catch(() => ({ log: [] })),
+    apiGet('/api/data/orders?machineId=' + encodeURIComponent(machineId) + '&start=' + start14 + '&end=' + todayStr() + '&limit=1000').catch(() => ({ orders: [] })),
+  ]);
+
+  const stockList = (invRes && invRes.ok && m.hahaId) ? (invRes.byMarket[m.hahaId] || []) : [];
+  const productById = {};
+  if (prodRes && prodRes.ok) (prodRes.products || []).forEach(p => { productById[p.productId] = p; });
+  const expByProduct = {};
+  (expRes.expirations || []).forEach(e => { expByProduct[e.productId] = e; });
+
+  // Sales velocity per product over the last 14 days, from raw orders.
+  const soldByProduct = {};
+  (ordersRes.orders || []).forEach(o => {
+    if (o.isRefund) return;
+    (o.items || []).forEach(it => {
+      if (!it.productId) return;
+      soldByProduct[it.productId] = (soldByProduct[it.productId] || 0) + (it.quantity || 0);
+    });
+  });
+
+  const rows = stockList.map(s => {
+    const prod = productById[s.productId] || {};
+    const cost = prod.cost !== undefined ? parseFloat(prod.cost || '0') : null;
+    const price = prod.price !== undefined ? parseFloat(prod.price || '0') : null;
+    const sold14 = soldByProduct[s.productId] || 0;
+    const velocity = sold14 / 14;
+    const daysRemaining = velocity > 0 ? s.stock / velocity : null;
+    const stockoutDate = daysRemaining !== null ? addDays(todayStr(), daysRemaining) : null;
+    const exp = expByProduct[s.productId];
+    return {
+      productId: s.productId, productName: s.productName, productImage: s.productImage,
+      stock: s.stock, cost, price, velocity, daysRemaining, stockoutDate,
+      expirationDate: exp ? exp.expirationDate : null,
+    };
+  });
+
+  // Next Service Required By = the soonest of every product's projected stockout
+  // date or expiration date, across the whole machine.
+  const candidateDates = [];
+  rows.forEach(r => {
+    if (r.stockoutDate) candidateDates.push(r.stockoutDate);
+    if (r.expirationDate) candidateDates.push(r.expirationDate);
+  });
+  const nextServiceBy = candidateDates.length ? candidateDates.sort()[0] : null;
+  const lowestSellThroughId = rows.filter(r => r.daysRemaining !== null).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.productId;
+
+  const totalCostValue = rows.reduce((s, r) => s + (r.cost !== null ? r.cost * r.stock : 0), 0);
+  const totalSaleValue = rows.reduce((s, r) => s + (r.price !== null ? r.price * r.stock : 0), 0);
+
+  const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
+  const daysUntilService = nextServiceBy ? Math.round((new Date(nextServiceBy) - new Date(todayStr())) / 86400000) : null;
+  const serviceBadge = !nextServiceBy
+    ? '<span class="tag tag-none">Not enough data yet</span>'
+    : daysUntilService <= 2
+      ? `<span class="tag tag-due">${escapeHtml(nextServiceBy)} — ${daysUntilService <= 0 ? 'due now' : daysUntilService + ' day(s)'}</span>`
+      : `<span class="tag tag-tiered">${escapeHtml(nextServiceBy)} — ${daysUntilService} day(s)</span>`;
+
+  const invTableHtml = !m.hahaId
+    ? '<div class="empty-state">Link a HAHA Market ID on the Machines tab to see live inventory and sell-through.</div>'
+    : !rows.length
+      ? '<div class="empty-state">No stocked products reported for this machine yet.</div>'
+      : `<div class="table-wrap"><table>
+          <thead><tr><th>Product</th><th class="num">Stock</th><th class="num">Sold/day (14d)</th><th class="num">Days Left</th><th>Projected Out</th><th>Expires</th></tr></thead>
+          <tbody>${rows.map(r => `<tr class="${r.productId === lowestSellThroughId ? 'row-alert' : ''}">
+            <td>${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" alt="" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName || r.productId)}</td>
+            <td class="num">${r.stock}</td>
+            <td class="num">${r.velocity > 0 ? r.velocity.toFixed(1) : '—'}</td>
+            <td class="num">${r.daysRemaining !== null ? Math.round(r.daysRemaining) : '—'}</td>
+            <td>${r.stockoutDate || '—'}</td>
+            <td>
+              <input type="date" style="width:130px; display:inline-block;" value="${r.expirationDate || ''}"
+                     onchange="saveProductExpiration('${machineId}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
+            </td>
+          </tr>`).join('')}</tbody>
+        </table></div>`;
+
+  const logRows = (logRes.log || []);
+  const serviceLogHtml = `
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div><label>Serviced On</label><input id="svcDate_${machineId}" type="date" value="${todayStr()}" /></div>
+      <div><label>Serviced By</label><input id="svcBy_${machineId}" placeholder="e.g. Brian" /></div>
+      <div><label>Notes</label><input id="svcNotes_${machineId}" placeholder="optional" /></div>
+      <div><button class="btn btn-primary" onclick="addServiceLogEntry('${machineId}')">Log Service</button></div>
+    </div>
+    ${!logRows.length ? '<div class="empty-state" style="padding:10px;">No service history logged yet.</div>' :
+      `<div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>By</th><th>Notes</th></tr></thead>
+        <tbody>${logRows.map(l => `<tr><td>${l.servicedAt}</td><td>${escapeHtml(l.servicedBy || '—')}</td><td>${escapeHtml(l.notes || '—')}</td></tr>`).join('')}</tbody>
+      </table></div>`}
+  `;
+
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
+    <div class="modal-sub">${escapeHtml(m.address || 'No address on file')}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}</div>
+
+    <div class="section-flex">
+      <div>Next Service Required By: ${serviceBadge}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary" onclick="promptEmailPM('${machineId}')" ${m.contactEmail ? '' : 'disabled'}>Email PM</button>
+        <button class="btn btn-secondary" onclick="promptTextPM('${machineId}')" ${m.contactPhone ? '' : 'disabled'}>Text PM</button>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-top:16px;">Inventory &amp; Sell-Through</div>
+    <div class="card-desc">Velocity is based on the last 14 days of synced orders. The row in red has the fastest-selling / soonest-to-empty product.</div>
+    ${invTableHtml}
+
+    ${m.hahaId ? `<div class="pill-note" style="margin-top:10px; display:inline-block;">
+      Inventory value: ${fmt(totalCostValue)} at cost, ${fmt(totalSaleValue)} if sold at current price
+    </div>` : ''}
+
+    <div class="card-title" style="margin-top:18px;">Service Log</div>
+    ${serviceLogHtml}
+  `);
+}
+
+async function saveProductExpiration(machineId, productId, productName, expirationDate) {
+  if (!expirationDate) return;
+  try {
+    await apiPost('/api/data/product-expiration', { machineId, productId, productName, expirationDate });
+  } catch (e) { alert('Could not save expiration date: ' + e.message); return; }
+  openMachineDetail(machineId); // re-render with the recomputed Next Service Required By
+}
+
+async function addServiceLogEntry(machineId) {
+  const servicedAt = document.getElementById('svcDate_' + machineId).value;
+  const servicedBy = document.getElementById('svcBy_' + machineId).value.trim();
+  const notes = document.getElementById('svcNotes_' + machineId).value.trim();
+  if (!servicedAt) { alert('Pick a service date.'); return; }
+  try {
+    await apiPost('/api/data/service-log', { machineId, servicedAt, servicedBy, notes });
+  } catch (e) { alert('Could not log service: ' + e.message); return; }
+  openMachineDetail(machineId);
+}
+
+async function promptEmailPM(machineId) {
+  const m = machines.find(x => x.id === machineId);
+  if (!m || !m.contactEmail) return;
+  const subject = prompt('Email subject:', `Regarding your vending machine (${m.name})`);
+  if (subject === null) return;
+  const message = prompt('Message:');
+  if (message === null || !message.trim()) return;
+  try {
+    const res = await apiPost('/api/send-email', { to: m.contactEmail, toName: m.contactName || '', subject, message });
+    alert(res.ok ? 'Email sent to ' + m.contactEmail : 'Could not send: ' + (res.error || 'unknown error'));
+  } catch (e) { alert('Could not send: ' + e.message); }
+}
+
+async function promptTextPM(machineId) {
+  const m = machines.find(x => x.id === machineId);
+  if (!m || !m.contactPhone) return;
+  const message = prompt('Text message to ' + m.contactPhone + ':');
+  if (message === null || !message.trim()) return;
+  try {
+    const res = await apiPost('/api/send-sms', { to: m.contactPhone, toName: m.contactName || '', message });
+    alert(res.ok ? 'Text sent to ' + m.contactPhone : 'Could not send: ' + (res.error || 'unknown error'));
+  } catch (e) { alert('Could not send: ' + e.message); }
+}
+
+// ---------------- supply inventory (non-machine buffer stock) ----------------
+let supplyItems = [];
+
+async function addBufferItem(btn) {
+  return withButtonBusy(btn, () => addBufferItemImpl());
+}
+async function addBufferItemImpl() {
+  const name = document.getElementById('bName').value.trim();
+  if (!name) { alert('Give the item a name.'); return; }
+  const body = {
+    name,
+    sku: document.getElementById('bSku').value.trim(),
+    productId: document.getElementById('bProductId').value.trim(),
+    quantity: parseInt(document.getElementById('bQuantity').value, 10) || 0,
+    bufferThreshold: document.getElementById('bBuffer').value ? parseInt(document.getElementById('bBuffer').value, 10) : null,
+    reorderThreshold: document.getElementById('bReorder').value ? parseInt(document.getElementById('bReorder').value, 10) : null,
+    unitCost: document.getElementById('bCost').value ? parseFloat(document.getElementById('bCost').value) : null,
+    location: document.getElementById('bLocation').value.trim(),
+  };
+  try {
+    await apiPost('/api/data/inventory-buffer', body);
+  } catch (e) { alert('Could not save item: ' + e.message); return; }
+  ['bName', 'bSku', 'bProductId', 'bQuantity', 'bBuffer', 'bReorder', 'bCost', 'bLocation'].forEach(id => { document.getElementById(id).value = ''; });
+  await loadSupplyItems();
+  renderSupply();
+}
+
+async function deleteBufferItem(id) {
+  if (!confirm('Remove this buffer stock item?')) return;
+  await apiDelete('/api/data/inventory-buffer?id=' + encodeURIComponent(id));
+  await loadSupplyItems();
+  renderSupply();
+}
+
+async function loadSupplyItems() {
+  try { supplyItems = (await apiGet('/api/data/inventory-buffer')).items || []; } catch (e) { supplyItems = []; }
+}
+
+function renderSupply() {
+  const tbl = document.getElementById('supplyTable');
+  const empty = document.getElementById('supplyEmpty');
+  if (!supplyItems.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Item</th><th>Location</th><th class="num">On Hand</th><th class="num">Par</th><th class="num">Reorder At</th><th class="num">Unit Cost</th><th></th></tr></thead><tbody>';
+  supplyItems.forEach(it => {
+    const low = it.reorderThreshold !== null && it.reorderThreshold !== undefined && it.quantity <= it.reorderThreshold;
+    html += `<tr class="${low ? 'row-low-stock' : ''}">
+      <td>${escapeHtml(it.name)}${it.sku ? `<div style="font-size:11px; color:var(--graphite);">${escapeHtml(it.sku)}</div>` : ''}</td>
+      <td>${escapeHtml(it.location || '—')}</td>
+      <td class="num">${it.quantity}${low ? ' <span class="tag tag-due">reorder</span>' : ''}</td>
+      <td class="num">${it.bufferThreshold ?? '—'}</td>
+      <td class="num">${it.reorderThreshold ?? '—'}</td>
+      <td class="num">${it.unitCost !== null && it.unitCost !== undefined ? fmt(it.unitCost) : '—'}</td>
+      <td><button class="btn-danger-text" onclick="deleteBufferItem('${it.id}')">Remove</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
 // ---------------- sales ----------------
 async function addSale() {
   const machineId = document.getElementById('sMachine').value;
@@ -1146,9 +1574,15 @@ function renderSales() {
   let html = '<thead><tr><th>Date</th><th>Machine</th><th>Source</th><th class="num">Gross</th><th class="num">COGS</th><th class="num">Fees</th><th class="num">Net</th><th></th></tr></thead><tbody>';
   rows.forEach(s => {
     const net = s.gross - s.cogs - s.fees;
+    const dateCell = s.source === 'haha'
+      ? `<button class="link-btn" onclick="openOrderDrilldown('${s.machineId}','${s.date}')">${s.date}</button>`
+      : s.date;
+    const machineCell = s.source === 'haha'
+      ? `<button class="link-btn" onclick="openOrderDrilldown('${s.machineId}', null)">${escapeHtml(machineName(s.machineId))}</button>`
+      : escapeHtml(machineName(s.machineId));
     html += `<tr>
-      <td>${s.date}</td>
-      <td>${escapeHtml(machineName(s.machineId))}</td>
+      <td>${dateCell}</td>
+      <td>${machineCell}</td>
       <td>${s.source === 'haha' ? '<span class="tag tag-tiered">HAHA sync</span>' : '<span class="tag tag-none">Manual</span>'}</td>
       <td class="num">${fmt(s.gross)}</td>
       <td class="num">${fmt(s.cogs)}</td>
@@ -1304,6 +1738,47 @@ function renderOverview() {
   renderTrendChart();
   renderExpenseChart(eRows);
   renderMachineChart(sRows);
+  renderMomentum();
+}
+
+function sumGrossInRange(startStr, endStr) {
+  return sales.filter(s => s.date >= startStr && s.date <= endStr).reduce((sum, s) => sum + s.gross, 0);
+}
+function arrowHtml(current, prior) {
+  if (!prior) return '<span class="arrow-flat">— no prior period data</span>';
+  const pct = ((current - prior) / prior) * 100;
+  if (Math.abs(pct) < 0.5) return `<span class="arrow-flat">flat vs last period (${fmt(prior)})</span>`;
+  const cls = pct > 0 ? 'arrow-up' : 'arrow-down';
+  const glyph = pct > 0 ? '▲' : '▼';
+  return `<span class="${cls}">${glyph} ${Math.abs(pct).toFixed(1)}% vs last period (${fmt(prior)})</span>`;
+}
+
+function renderMomentum() {
+  const today = new Date();
+  const todayS = today.toISOString().slice(0, 10);
+
+  // Week: Sunday-start. Compare "so far this week" to the same number of days
+  // into last week, so a Tuesday isn't compared against a full 7-day week.
+  const dow = today.getDay();
+  const startThisWeek = addDays(todayS, -dow);
+  const startLastWeek = addDays(startThisWeek, -7);
+  const endLastWeekComparable = addDays(startLastWeek, dow);
+  const thisWeekGross = sumGrossInRange(startThisWeek, todayS);
+  const lastWeekGross = sumGrossInRange(startLastWeek, endLastWeekComparable);
+
+  // Month: same idea, compare day 1..N of this month to day 1..N of last month.
+  const dom = today.getDate(); // 1-based day of month
+  const startThisMonth = todayS.slice(0, 8) + '01';
+  const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const startLastMonth = lastMonthDate.toISOString().slice(0, 8) + '01';
+  const endLastMonthComparable = addDays(startLastMonth, dom - 1);
+  const thisMonthGross = sumGrossInRange(startThisMonth, todayS);
+  const lastMonthGross = sumGrossInRange(startLastMonth, endLastMonthComparable);
+
+  document.getElementById('momWeekValue').textContent = fmt(thisWeekGross);
+  document.getElementById('momWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross);
+  document.getElementById('momMonthValue').textContent = fmt(thisMonthGross);
+  document.getElementById('momMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross);
 }
 
 function renderTrendChart() {
@@ -1459,6 +1934,7 @@ function renderAll() {
   renderCommission();
   renderOverview();
   renderHealth();
+  renderSupply();
 }
 
 async function init() {
@@ -1498,6 +1974,10 @@ async function init() {
     latestHealth = hl.health || [];
     if (hl._migrationNeeded) warnMigrationNeeded(hl._migrationNeeded);
   } catch (err) { latestHealth = []; }
+
+  await loadSupplyItems();
+  buildPayPeriodOptions();
+  loadPayPeriod();
 
   renderAll();
 }

@@ -147,6 +147,58 @@ async function runSync(env, log) {
     } catch (err) {
       log(`  ${m.hahaId}: ${stmts.length} day(s) synced. Hourly bucketing skipped (${err.message}) — run migrations/002_add_health_and_sale_hours.sql if this persists.`);
     }
+
+    // orders / order_items (migration 004) — raw per-order records for the
+    // drill-down modal + pay-period order counts. Same "must not break the
+    // core sales sync" guard as sale_hours above.
+    try {
+      const { results: existingOrders } = await env.DB.prepare(
+        `SELECT id FROM orders WHERE machine_id = ?1 AND source = 'haha' AND date >= ?2 AND date <= ?3`
+      ).bind(m.id, startStr, endStr).all();
+      if (existingOrders.length) {
+        const existIds = existingOrders.map((r) => r.id);
+        const ph = existIds.map((_, i) => `?${i + 1}`).join(',');
+        await env.DB.prepare(`DELETE FROM order_items WHERE order_id IN (${ph})`).bind(...existIds).run();
+      }
+      await env.DB.prepare(
+        `DELETE FROM orders WHERE machine_id = ?1 AND source = 'haha' AND date >= ?2 AND date <= ?3`
+      ).bind(m.id, startStr, endStr).run();
+
+      const orderStmts = [];
+      const itemStmts = [];
+      sales.forEach((s) => {
+        const orderId = s.saleId;
+        if (!orderId) return;
+        orderStmts.push(
+          env.DB.prepare(
+            `INSERT INTO orders (id, machine_id, order_dtm, date, gross, net, status, is_refund, source)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'haha')`
+          ).bind(
+            orderId, m.id, s.saleDtm || '', (s.saleDtm || '').slice(0, 10),
+            parseFloat(s.saleGrossTotal || s.saleTotal || '0'),
+            parseFloat(s.saleTotal || '0'),
+            s.status || null, s.isRefund ? 1 : 0,
+          )
+        );
+        (s.saleItems || []).forEach((it) => {
+          itemStmts.push(
+            env.DB.prepare(
+              `INSERT INTO order_items (id, order_id, machine_id, product_id, product_name, quantity, price, item_total)
+               VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`
+            ).bind(
+              crypto.randomUUID(), orderId, m.id, it.productId || null, it.productName || null,
+              it.quantity || 0, it.price ? parseFloat(it.price) : null,
+              it.itemFinalPrice ? parseFloat(it.itemFinalPrice) : (it.itemSubTotal ? parseFloat(it.itemSubTotal) : null),
+            )
+          );
+        });
+      });
+      if (orderStmts.length) await env.DB.batch(orderStmts);
+      if (itemStmts.length) await env.DB.batch(itemStmts);
+      log(`  ${m.hahaId}: ${orderStmts.length} order(s) synced for drill-down`);
+    } catch (err) {
+      log(`  ${m.hahaId}: order drill-down sync skipped (${err.message}) — run migrations/004_orders_inventory_service.sql if this persists.`);
+    }
   }
 
   log(`Sync complete: ${machines.length} machine(s), ${totalDays} day-entries, window ${startStr} to ${endStr}`);
