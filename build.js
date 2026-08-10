@@ -92,7 +92,7 @@ function blogSlug(file) {
 // Any top-level HTML files here are copied straight into dist/ without
 // going through the header/footer template (useful for one-off pages like
 // a HubSpot/ad "thank you" page that shouldn't have the normal nav).
-const PASSTHROUGH_PAGES = ['thank-you.html', 'support-thank-you.html', '404.html'];
+const PASSTHROUGH_PAGES = ['thank-you.html', 'support-thank-you.html', '404.html', 'ops-dashboard.html'];
 
 function readPartial(name) {
   return fs.readFileSync(path.join(PARTIALS_DIR, name), 'utf8');

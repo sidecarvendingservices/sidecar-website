@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Sidecar Vending — Operations Dashboard</title>
+
+<!-- PWA / "Add to Home Screen" support -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#1A7EB5" />
+<link rel="icon" href="/images/dashboard-icon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/images/dashboard-icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Sidecar Ops" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root {
+    --sky: #29ABE2;
+    --sky-deep: #1A7EB5;
+    --tangerine: #FF6B2B;
+    --charcoal: #3D3D3D;
+    --graphite: #5A5A5A;
+    --bg: #F5F7F8;
+    --card: #FFFFFF;
+    --border: #E2E8EB;
+    --border-strong: #C9D2D6;
+    --good: #1A7EB5;
+    --radius: 10px;
+    font-family: 'Segoe UI', 'Nunito Sans', Arial, Helvetica, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--charcoal);
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 1180px; margin: 0 auto; padding: 20px 20px 60px; }
+
+  /* ---------- header ---------- */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 0 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { height: 34px; width: auto; display: block; }
+  .brand-fallback {
+    font-weight: 800; font-size: 20px; color: var(--charcoal); letter-spacing: -0.02em;
+  }
+  .brand-sub { font-size: 12px; color: var(--graphite); margin-top: 1px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .month-filter { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--graphite); }
+  .month-filter select {
+    border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+    background: var(--card); color: var(--charcoal); font-family: inherit;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabbar {
+    display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab-btn {
+    border: none; background: transparent; padding: 10px 16px; font-size: 14px; font-weight: 600;
+    color: var(--graphite); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+    font-family: inherit;
+  }
+  .tab-btn:hover { color: var(--sky-deep); }
+  .tab-btn.active { color: var(--sky-deep); border-bottom-color: var(--tangerine); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadein .15s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(2px);} to { opacity:1; transform:none; } }
+
+  /* ---------- cards / grid ---------- */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  @media (max-width: 860px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .kpi-label { font-size: 12px; color: var(--graphite); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: var(--charcoal); margin-top: 6px; }
+  .kpi-value.accent { color: var(--sky-deep); }
+  .kpi-sub { font-size: 12px; color: var(--graphite); margin-top: 4px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 18px;
+  }
+  .card-title { font-size: 15px; font-weight: 800; color: var(--charcoal); margin: 0 0 4px; }
+  .card-desc { font-size: 12.5px; color: var(--graphite); margin: 0 0 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ---------- forms ---------- */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+  label { font-size: 11.5px; font-weight: 700; color: var(--graphite); text-transform: uppercase; letter-spacing: .02em; display: block; margin-bottom: 4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 7px;
+    font-size: 13.5px; color: var(--charcoal); font-family: inherit; background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid var(--sky); outline-offset: 0; border-color: var(--sky); }
+  .btn {
+    border: none; border-radius: 7px; padding: 9px 16px; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: var(--tangerine); color: #fff; }
+  .btn-primary:hover { background: #e85a1a; }
+  .btn-secondary { background: transparent; color: var(--sky-deep); border: 1px solid var(--sky-deep); }
+  .btn-secondary:hover { background: #eaf6fc; }
+  .btn-ghost { background: transparent; color: var(--graphite); border: 1px solid var(--border-strong); }
+  .btn-danger-text { background: transparent; color: #b3401f; border: none; font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 4px 6px; }
+  .btn-danger-text:hover { text-decoration: underline; }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--graphite);
+       border-bottom: 1px solid var(--border-strong); padding: 8px 10px; font-weight: 700; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--charcoal); }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .tag-tiered { background: #E9F6FE; color: var(--sky-deep); }
+  .tag-none { background: #F0F0F0; color: var(--graphite); }
+  .tag-paid { background: #E7F3EC; color: #1f7a44; }
+  .tag-due { background: #FDECE3; color: #b3401f; }
+
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--graphite); font-size: 13.5px; }
+  .empty-state strong { display:block; color: var(--charcoal); font-size: 14.5px; margin-bottom: 4px; }
+
+  .chart-box { position: relative; height: 260px; }
+  .chart-box.small { height: 200px; }
+
+  /* ---------- tier gauge ---------- */
+  .gauge-wrap { margin-top: 8px; }
+  .gauge-track { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-strong); }
+  .gauge-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; position: relative; }
+  .gauge-marker {
+    position: absolute; top: -8px; width: 2px; height: 50px; background: var(--charcoal);
+  }
+  .gauge-marker::after {
+    content: attr(data-label); position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 800; color: var(--charcoal); white-space: nowrap;
+  }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--graphite); margin-top: 6px; }
+
+  .footer-note { text-align: center; font-size: 11.5px; color: var(--graphite); margin-top: 30px; }
+  .footer-note button { margin-top: 8px; }
+
+  .section-flex { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pill-note { font-size: 12px; color: var(--graphite); background: #F0F4F6; border-radius: 20px; padding: 5px 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <div class="brand">
+      <img src="https://sidecarservices.com/images/email-signature-logo.png" alt="Sidecar Vending Services"
+           onerror="this.style.display='none'; document.getElementById('brandFallback').style.display='block';" />
+      <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
+      <div>
+        <div class="brand-sub">Operations Dashboard — Sales, Expenses &amp; Commission</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="month-filter">
+        <span>Showing:</span>
+        <select id="rangeSelect"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="machines">Machines</button>
+    <button class="tab-btn" data-tab="sales">Sales</button>
+    <button class="tab-btn" data-tab="expenses">Expenses</button>
+    <button class="tab-btn" data-tab="commission">Commission</button>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <div class="tab-panel active" id="panel-overview">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Gross Sales</div>
+        <div class="kpi-value" id="kpiGross">$0.00</div>
+        <div class="kpi-sub" id="kpiGrossSub">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Net Sales</div>
+        <div class="kpi-value" id="kpiNet">$0.00</div>
+        <div class="kpi-sub" id="kpiNetSub">after COGS &amp; fees</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Expenses + Commission</div>
+        <div class="kpi-value" id="kpiCosts">$0.00</div>
+        <div class="kpi-sub" id="kpiCostsSub">operating costs paid out</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Net Profit</div>
+        <div class="kpi-value accent" id="kpiProfit">$0.00</div>
+        <div class="kpi-sub" id="kpiMargin">&nbsp;</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Sales &amp; Profit Trend</div>
+        <div class="card-desc">Gross sales, net sales, and profit by month.</div>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Expense Breakdown</div>
+        <div class="card-desc">Where operating costs are going this period.</div>
+        <div class="chart-box"><canvas id="expenseChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">By Machine</div>
+      <div class="card-desc">Net sales per machine for the selected period.</div>
+      <div class="chart-box small"><canvas id="machineChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ============ MACHINES ============ -->
+  <div class="tab-panel" id="panel-machines">
+    <div class="card">
+      <div class="card-title">Add a Machine</div>
+      <div class="card-desc">One row per machine — this feeds every other tab.</div>
+      <div class="form-grid" id="machineForm">
+        <div><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
+        <div><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
+        <div><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
+        <div>
+          <label>Placement Type</label>
+          <select id="mPlan">
+            <option value="none">No-cost placement</option>
+            <option value="tiered">Commission (tiered)</option>
+          </select>
+        </div>
+        <div><label>Install Date</label><input id="mInstall" type="date" /></div>
+        <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
+        <div><button class="btn btn-primary" onclick="addMachine()">Add Machine</button></div>
+      </div>
+      <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Machines</div>
+        <button class="btn btn-secondary" onclick="importMachinesFromHaha()">Import from HAHA</button>
+      </div>
+      <div class="table-wrap"><table id="machineTable"></table></div>
+      <div id="machinesEmpty" class="empty-state" style="display:none;">
+        <strong>No machines yet</strong>
+        Add your first machine above, or use "Import from HAHA" to pull your registered devices in automatically.
+      </div>
+      <div id="machineImportStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ============ SALES ============ -->
+  <div class="tab-panel" id="panel-sales">
+    <div class="card">
+      <div class="card-title">Sync from HAHA</div>
+      <div class="card-desc">Pulls completed sales from HAHA's API and fills in Gross Sales automatically. Cost of Goods and Processing Fees still need your input — HAHA doesn't know either of those.</div>
+      <div class="form-grid" id="hahaSyncForm">
+        <div><label>Start Date</label><input id="hahaStart" type="date" /></div>
+        <div><label>End Date</label><input id="hahaEnd" type="date" /></div>
+        <div><button class="btn btn-primary" onclick="syncFromHaha()">Sync Now</button></div>
+      </div>
+      <div id="hahaSyncStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Log a Sales Entry Manually</div>
+      <div class="card-desc">One entry per machine per day (or per batch/report pull) — Net Sales is calculated automatically.</div>
+      <div class="form-grid" id="salesForm">
+        <div><label>Machine</label><select id="sMachine"></select></div>
+        <div><label>Date</label><input id="sDate" type="date" /></div>
+        <div><label>Gross Sales ($)</label><input id="sGross" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><label>Cost of Goods ($)</label><input id="sCogs" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><label>Processing Fees ($)</label><input id="sFees" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><button class="btn btn-primary" onclick="addSale()">Add Entry</button></div>
+      </div>
+      <div class="pill-note" style="margin-top:10px; display:inline-block;">Net Sales = Gross − Cost of Goods − Processing Fees</div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Sales Log</div>
+      </div>
+      <div class="table-wrap"><table id="salesTable"></table></div>
+      <div id="salesEmpty" class="empty-state" style="display:none;">
+        <strong>No sales logged yet</strong>
+        Add a machine first, then log entries here as HAHA's reports come in (manually for now — this can switch to their API once access is granted).
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EXPENSES ============ -->
+  <div class="tab-panel" id="panel-expenses">
+    <div class="card">
+      <div class="card-title">Log an Expense</div>
+      <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Sales tab.)</div>
+      <div class="form-grid" id="expenseForm">
+        <div><label>Date</label><input id="eDate" type="date" /></div>
+        <div>
+          <label>Category</label>
+          <select id="eCategory">
+            <option>Business Insurance</option>
+            <option>IT &amp; Internet / Software</option>
+            <option>Advertising &amp; Marketing</option>
+            <option>Automobile / Fuel</option>
+            <option>Repairs &amp; Maintenance</option>
+            <option>Bank / Card Fees</option>
+            <option>Sales Rep Placement Fees</option>
+            <option>Sales Rep Revenue Share</option>
+            <option>Organizational / Filing Fees</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
+        <div><label>Note</label><input id="eNote" placeholder="optional" /></div>
+        <div><button class="btn btn-primary" onclick="addExpense()">Add Expense</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Expense Log</div>
+      <div class="table-wrap"><table id="expenseTable"></table></div>
+      <div id="expensesEmpty" class="empty-state" style="display:none;">
+        <strong>No expenses logged yet</strong>
+        Add operating costs here to see true profitability on the Overview tab.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COMMISSION ============ -->
+  <div class="tab-panel" id="panel-commission">
+    <div class="card">
+      <div class="card-title">This Month's Tier</div>
+      <div class="card-desc">Based on combined Gross Sales this calendar month, across machines on a commission placement.</div>
+      <div class="gauge-wrap">
+        <div class="gauge-track" id="gaugeTrack"></div>
+        <div class="gauge-labels"><span>$0</span><span>$500</span><span>$1,000</span><span>$1,500</span><span>$2,000+</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly Commission by Machine</div>
+      <div class="card-desc">Gross Sales sets the tier for that month; the tier's rate is applied to that month's Net Sales — matching the Commission Version placement agreement.</div>
+      <div class="table-wrap"><table id="commissionTable"></table></div>
+      <div id="commissionEmpty" class="empty-state" style="display:none;">
+        <strong>Nothing to calculate yet</strong>
+        Mark a machine's placement type as "Commission (tiered)" on the Machines tab, then log sales for it.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tier Reference</div>
+      <table>
+        <thead><tr><th>Gross Sales in a Month</th><th>Commission Rate on Net Sales</th></tr></thead>
+        <tbody>
+          <tr><td>$0 – $500</td><td>No commission</td></tr>
+          <tr><td>$500.01 – $1,000</td><td>5%</td></tr>
+          <tr><td>$1,000.01 – $1,500</td><td>6.5%</td></tr>
+          <tr><td>$1,500.01 – $2,000</td><td>8.5%</td></tr>
+          <tr><td>Over $2,000</td><td>10%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Data is stored in Sidecar's own Cloudflare database, shared across every device you log into this dashboard from.
+  </div>
+
+</div>
+
+<script>
+// ---------------- API helpers (Cloudflare Functions + D1, same-origin) ----------------
+async function apiGet(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`GET ${path} failed (${res.status})`);
+  return res.json();
+}
+async function apiPost(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST ${path} failed (${res.status})`);
+  return res.json();
+}
+async function apiDelete(path) {
+  const res = await fetch(path, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`DELETE ${path} failed (${res.status})`);
+  return res.json();
+}
+
+// ---------------- state ----------------
+let machines = [];
+let sales = [];
+let expenses = [];
+let charts = {};
+
+const fmt = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const monthKey = (dateStr) => (dateStr || '').slice(0, 7); // YYYY-MM
+const monthLabel = (ym) => {
+  if (!ym) return '';
+  const [y, m] = ym.split('-');
+  const d = new Date(Number(y), Number(m) - 1, 1);
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+};
+
+function tierFor(gross) {
+  if (gross > 2000) return { rate: 0.10, label: 'Over $2,000 (10%)' };
+  if (gross > 1500) return { rate: 0.085, label: '$1,500.01–$2,000 (8.5%)' };
+  if (gross > 1000) return { rate: 0.065, label: '$1,000.01–$1,500 (6.5%)' };
+  if (gross > 500) return { rate: 0.05, label: '$500.01–$1,000 (5%)' };
+  return { rate: 0, label: '$0–$500 (no commission)' };
+}
+
+// ---------------- tabs ----------------
+document.getElementById('tabbar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+});
+
+// ---------------- range filter ----------------
+function buildRangeOptions() {
+  const sel = document.getElementById('rangeSelect');
+  const prevValue = sel.value || 'all';
+  const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = 'all'; allOpt.textContent = 'All time';
+  sel.appendChild(allOpt);
+  months.slice().reverse().forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = monthLabel(m);
+    sel.appendChild(o);
+  });
+  sel.value = months.includes(prevValue) || prevValue === 'all' ? prevValue : 'all';
+}
+document.getElementById('rangeSelect').addEventListener('change', renderAll);
+
+function filteredSales() {
+  const range = document.getElementById('rangeSelect').value;
+  if (!range || range === 'all') return sales;
+  return sales.filter(s => monthKey(s.date) === range);
+}
+function filteredExpenses() {
+  const range = document.getElementById('rangeSelect').value;
+  if (!range || range === 'all') return expenses;
+  return expenses.filter(e => monthKey(e.date) === range);
+}
+
+// ---------------- machines ----------------
+function machineName(id) {
+  const m = machines.find(x => x.id === id);
+  return m ? (m.name + (m.host ? ' — ' + m.host : '')) : '(deleted machine)';
+}
+
+async function addMachine() {
+  const name = document.getElementById('mName').value.trim();
+  const host = document.getElementById('mHost').value.trim();
+  const address = document.getElementById('mAddress').value.trim();
+  const plan = document.getElementById('mPlan').value;
+  const install = document.getElementById('mInstall').value;
+  const hahaId = document.getElementById('mHaha').value.trim();
+  if (!name) { alert('Give the machine a name or ID.'); return; }
+  try {
+    await apiPost('/api/data/machines', { name, host, address, plan, install, hahaId });
+  } catch (e) { alert('Could not save machine: ' + e.message); return; }
+  document.getElementById('mName').value = '';
+  document.getElementById('mHost').value = '';
+  document.getElementById('mAddress').value = '';
+  document.getElementById('mInstall').value = '';
+  document.getElementById('mHaha').value = '';
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
+async function importMachinesFromHaha() {
+  const status = document.getElementById('machineImportStatus');
+  status.style.display = 'block';
+  status.textContent = 'Importing from HAHA…';
+  try {
+    const data = await apiGet('/api/haha-markets');
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    const existingHahaIds = new Set(machines.filter(m => m.hahaId).map(m => m.hahaId));
+    let added = 0;
+    for (const m of (data.markets || [])) {
+      if (existingHahaIds.has(m.marketId)) continue;
+      await apiPost('/api/data/machines', {
+        name: m.marketName || m.marketId, host: '', address: m.marketLocation || '',
+        plan: 'none', install: (m.activationDate || '').slice(0, 10), hahaId: m.marketId,
+      });
+      added += 1;
+    }
+    machines = (await apiGet('/api/data/machines')).machines;
+    status.textContent = added ? `Imported ${added} machine(s) from HAHA. Check host names / placement type on each.` : 'No new machines found — everything HAHA has is already here.';
+    renderAll();
+  } catch (e) {
+    status.textContent = 'Import failed: ' + e.message;
+  }
+}
+
+async function syncFromHaha() {
+  const start = document.getElementById('hahaStart').value;
+  const end = document.getElementById('hahaEnd').value;
+  const status = document.getElementById('hahaSyncStatus');
+  status.style.display = 'block';
+  if (!start || !end) { status.textContent = 'Pick a start and end date.'; return; }
+  const withHaha = machines.filter(m => m.hahaId);
+  if (!withHaha.length) { status.textContent = 'No machines have a HAHA Market ID set yet — add one on the Machines tab, or use "Import from HAHA" there.'; return; }
+
+  status.textContent = 'Syncing…';
+  let totalDays = 0, totalMachines = 0;
+  try {
+    for (const m of withHaha) {
+      const data = await apiGet(`/api/haha-sales?sticker_num=${encodeURIComponent(m.hahaId)}&start_time=${start}&end_time=${end}&status=PAID`);
+      if (!data.ok) throw new Error(`${m.name}: ${data.error || 'Unknown error'}`);
+
+      // Aggregate HAHA's per-order totals into one sales-log entry per day.
+      const byDay = {};
+      (data.sales || []).forEach(s => {
+        if (s.isRefund) return; // skip refunded orders
+        const day = (s.saleDtm || '').slice(0, 10);
+        if (!day) return;
+        byDay[day] = (byDay[day] || 0) + parseFloat(s.saleTotal || '0');
+      });
+
+      const entries = Object.entries(byDay).map(([date, gross]) => ({ date, gross }));
+      await apiPost('/api/data/sales', { sync: true, machineId: m.id, start, end, entries });
+      totalDays += entries.length;
+      totalMachines += 1;
+    }
+    sales = (await apiGet('/api/data/sales')).sales;
+    status.textContent = `Synced ${totalDays} day(s) across ${totalMachines} machine(s). Gross Sales is filled in — add Cost of Goods and Processing Fees on each entry to get accurate Net Sales.`;
+    renderAll();
+  } catch (e) {
+    status.textContent = 'Sync failed: ' + e.message;
+  }
+}
+async function deleteMachine(id) {
+  if (!confirm('Remove this machine? Its sales and expense history will stay logged but will show as "(deleted machine)".')) return;
+  await apiDelete('/api/data/machines?id=' + encodeURIComponent(id));
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
+function renderMachines() {
+  const tbl = document.getElementById('machineTable');
+  const empty = document.getElementById('machinesEmpty');
+  if (!machines.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Machine</th><th>Host</th><th>Address</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
+  machines.forEach(m => {
+    html += `<tr>
+      <td>${escapeHtml(m.name)}</td>
+      <td>${escapeHtml(m.host || '—')}</td>
+      <td>${escapeHtml(m.address || '—')}</td>
+      <td><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
+      <td>${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
+      <td>${m.install || '—'}</td>
+      <td><button class="btn-danger-text" onclick="deleteMachine('${m.id}')">Remove</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+
+  // refresh machine dropdowns
+  const sMachine = document.getElementById('sMachine');
+  const eMachine = document.getElementById('eMachine');
+  const curS = sMachine.value, curE = eMachine.value;
+  sMachine.innerHTML = machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  eMachine.innerHTML = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  if (machines.some(m => m.id === curS)) sMachine.value = curS;
+  if (curE && machines.some(m => m.id === curE)) eMachine.value = curE;
+}
+
+// ---------------- sales ----------------
+async function addSale() {
+  const machineId = document.getElementById('sMachine').value;
+  const date = document.getElementById('sDate').value;
+  const gross = parseFloat(document.getElementById('sGross').value);
+  const cogs = parseFloat(document.getElementById('sCogs').value) || 0;
+  const fees = parseFloat(document.getElementById('sFees').value) || 0;
+  if (!machineId) { alert('Add a machine first.'); return; }
+  if (!date) { alert('Pick a date.'); return; }
+  if (isNaN(gross) || gross < 0) { alert('Enter a gross sales amount.'); return; }
+  try {
+    await apiPost('/api/data/sales', { machineId, date, gross, cogs, fees });
+  } catch (e) { alert('Could not save sale: ' + e.message); return; }
+  document.getElementById('sGross').value = '';
+  document.getElementById('sCogs').value = '';
+  document.getElementById('sFees').value = '';
+  sales = (await apiGet('/api/data/sales')).sales;
+  renderAll();
+}
+async function deleteSale(id) {
+  await apiDelete('/api/data/sales?id=' + encodeURIComponent(id));
+  sales = (await apiGet('/api/data/sales')).sales;
+  renderAll();
+}
+
+function renderSales() {
+  const tbl = document.getElementById('salesTable');
+  const empty = document.getElementById('salesEmpty');
+  const rows = filteredSales().slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Date</th><th>Machine</th><th>Source</th><th class="num">Gross</th><th class="num">COGS</th><th class="num">Fees</th><th class="num">Net</th><th></th></tr></thead><tbody>';
+  rows.forEach(s => {
+    const net = s.gross - s.cogs - s.fees;
+    html += `<tr>
+      <td>${s.date}</td>
+      <td>${escapeHtml(machineName(s.machineId))}</td>
+      <td>${s.source === 'haha' ? '<span class="tag tag-tiered">HAHA sync</span>' : '<span class="tag tag-none">Manual</span>'}</td>
+      <td class="num">${fmt(s.gross)}</td>
+      <td class="num">${fmt(s.cogs)}</td>
+      <td class="num">${fmt(s.fees)}</td>
+      <td class="num"><strong>${fmt(net)}</strong></td>
+      <td><button class="btn-danger-text" onclick="deleteSale('${s.id}')">Delete</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+// ---------------- expenses ----------------
+async function addExpense() {
+  const date = document.getElementById('eDate').value;
+  const category = document.getElementById('eCategory').value;
+  const amount = parseFloat(document.getElementById('eAmount').value);
+  const machineId = document.getElementById('eMachine').value || null;
+  const note = document.getElementById('eNote').value.trim();
+  if (!date) { alert('Pick a date.'); return; }
+  if (isNaN(amount) || amount < 0) { alert('Enter an amount.'); return; }
+  try {
+    await apiPost('/api/data/expenses', { date, category, amount, machineId, note });
+  } catch (e) { alert('Could not save expense: ' + e.message); return; }
+  document.getElementById('eAmount').value = '';
+  document.getElementById('eNote').value = '';
+  expenses = (await apiGet('/api/data/expenses')).expenses;
+  renderAll();
+}
+async function deleteExpense(id) {
+  await apiDelete('/api/data/expenses?id=' + encodeURIComponent(id));
+  expenses = (await apiGet('/api/data/expenses')).expenses;
+  renderAll();
+}
+
+function renderExpenses() {
+  const tbl = document.getElementById('expenseTable');
+  const empty = document.getElementById('expensesEmpty');
+  const rows = filteredExpenses().slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Date</th><th>Category</th><th>Machine</th><th class="num">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
+  rows.forEach(e => {
+    html += `<tr>
+      <td>${e.date}</td>
+      <td>${escapeHtml(e.category)}</td>
+      <td>${e.machineId ? escapeHtml(machineName(e.machineId)) : '<span style="color:var(--graphite)">Company-wide</span>'}</td>
+      <td class="num">${fmt(e.amount)}</td>
+      <td>${escapeHtml(e.note || '—')}</td>
+      <td><button class="btn-danger-text" onclick="deleteExpense('${e.id}')">Delete</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+// ---------------- commission ----------------
+function commissionRows() {
+  // group sales by machine + month, only for machines on the tiered plan
+  const groups = {};
+  sales.forEach(s => {
+    const m = machines.find(x => x.id === s.machineId);
+    if (!m || m.plan !== 'tiered') return;
+    const key = s.machineId + '|' + monthKey(s.date);
+    if (!groups[key]) groups[key] = { machineId: s.machineId, month: monthKey(s.date), gross: 0, net: 0 };
+    groups[key].gross += s.gross;
+    groups[key].net += (s.gross - s.cogs - s.fees);
+  });
+  return Object.values(groups).sort((a, b) => (b.month.localeCompare(a.month)) || 0);
+}
+
+function renderCommission() {
+  const tbl = document.getElementById('commissionTable');
+  const empty = document.getElementById('commissionEmpty');
+  const rows = commissionRows();
+  if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; }
+  else {
+    empty.style.display = 'none';
+    let html = '<thead><tr><th>Month</th><th>Machine</th><th class="num">Gross Sales</th><th>Tier</th><th class="num">Net Sales</th><th class="num">Commission Owed</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      const tier = tierFor(r.gross);
+      const commission = tier.rate * r.net;
+      html += `<tr>
+        <td>${monthLabel(r.month)}</td>
+        <td>${escapeHtml(machineName(r.machineId))}</td>
+        <td class="num">${fmt(r.gross)}</td>
+        <td>${tier.label}</td>
+        <td class="num">${fmt(r.net)}</td>
+        <td class="num"><strong>${fmt(commission)}</strong></td>
+      </tr>`;
+    });
+    html += '</tbody>';
+    tbl.innerHTML = html;
+  }
+
+  // gauge — based on current calendar month's combined gross across tiered machines
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonthGross = sales
+    .filter(s => { const m = machines.find(x => x.id === s.machineId); return m && m.plan === 'tiered' && monthKey(s.date) === thisMonth; })
+    .reduce((sum, s) => sum + s.gross, 0);
+  renderGauge(thisMonthGross);
+}
+
+function renderGauge(gross) {
+  const track = document.getElementById('gaugeTrack');
+  const bands = [
+    { upTo: 500, color: '#C9D2D6', label: '0%' },
+    { upTo: 1000, color: '#29ABE2', label: '5%' },
+    { upTo: 1500, color: '#1A7EB5', label: '6.5%' },
+    { upTo: 2000, color: '#FF6B2B', label: '8.5%' },
+    { upTo: Infinity, color: '#B3401F', label: '10%' },
+  ];
+  const cap = 2400; // visual scale cap so "over 2000" band has width
+  let html = '';
+  let prev = 0;
+  bands.forEach((b, i) => {
+    const upTo = i === bands.length - 1 ? cap : b.upTo;
+    const widthPct = ((upTo - prev) / cap) * 100;
+    html += `<div class="gauge-seg" style="width:${widthPct}%; background:${b.color};">${b.label}</div>`;
+    prev = upTo;
+  });
+  track.innerHTML = html;
+  track.style.position = 'relative';
+  const markerPct = Math.min(gross, cap) / cap * 100;
+  track.innerHTML += `<div class="gauge-marker" style="left:${markerPct}%;" data-label="${fmt(gross)} this month"></div>`;
+}
+
+// ---------------- overview / charts ----------------
+function renderOverview() {
+  const sRows = filteredSales();
+  const eRows = filteredExpenses();
+  const cRows = commissionRows().filter(r => {
+    const range = document.getElementById('rangeSelect').value;
+    return range === 'all' || range === r.month;
+  });
+
+  const gross = sRows.reduce((s, r) => s + r.gross, 0);
+  const net = sRows.reduce((s, r) => s + (r.gross - r.cogs - r.fees), 0);
+  const expTotal = eRows.reduce((s, r) => s + r.amount, 0);
+  const commissionTotal = cRows.reduce((s, r) => s + tierFor(r.gross).rate * r.net, 0);
+  const costs = expTotal + commissionTotal;
+  const profit = net - costs;
+  const margin = gross > 0 ? (profit / gross) * 100 : 0;
+
+  document.getElementById('kpiGross').textContent = fmt(gross);
+  document.getElementById('kpiGrossSub').textContent = sRows.length + ' sale ' + (sRows.length === 1 ? 'entry' : 'entries');
+  document.getElementById('kpiNet').textContent = fmt(net);
+  document.getElementById('kpiCosts').textContent = fmt(costs);
+  document.getElementById('kpiCostsSub').textContent = fmt(expTotal) + ' expenses + ' + fmt(commissionTotal) + ' commission';
+  document.getElementById('kpiProfit').textContent = fmt(profit);
+  document.getElementById('kpiMargin').textContent = margin.toFixed(1) + '% margin on gross';
+
+  renderTrendChart();
+  renderExpenseChart(eRows);
+  renderMachineChart(sRows);
+}
+
+function renderTrendChart() {
+  const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
+  const grossByMonth = months.map(m => sales.filter(s => monthKey(s.date) === m).reduce((a, s) => a + s.gross, 0));
+  const netByMonth = months.map(m => sales.filter(s => monthKey(s.date) === m).reduce((a, s) => a + (s.gross - s.cogs - s.fees), 0));
+  const expByMonth = months.map(m => expenses.filter(e => monthKey(e.date) === m).reduce((a, e) => a + e.amount, 0));
+  const commByMonth = months.map(m => commissionRows().filter(r => r.month === m).reduce((a, r) => a + tierFor(r.gross).rate * r.net, 0));
+  const profitByMonth = netByMonth.map((n, i) => n - expByMonth[i] - commByMonth[i]);
+
+  const ctx = document.getElementById('trendChart');
+  if (charts.trend) charts.trend.destroy();
+  if (!months.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
+  charts.trend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months.map(monthLabel),
+      datasets: [
+        { label: 'Gross Sales', data: grossByMonth, borderColor: '#29ABE2', backgroundColor: '#29ABE2', tension: .25 },
+        { label: 'Net Sales', data: netByMonth, borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25 },
+        { label: 'Profit', data: profitByMonth, borderColor: '#FF6B2B', backgroundColor: '#FF6B2B', tension: .25 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { ticks: { callback: v => '$' + v } } }
+    }
+  });
+}
+
+function renderExpenseChart(eRows) {
+  const byCat = {};
+  eRows.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+  const labels = Object.keys(byCat);
+  const ctx = document.getElementById('expenseChart');
+  if (charts.expense) charts.expense.destroy();
+  if (!labels.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
+  const palette = ['#29ABE2', '#1A7EB5', '#FF6B2B', '#5A5A5A', '#8BC7E6', '#B3401F', '#3D3D3D', '#C9D2D6', '#7FB8DC', '#E89A6B'];
+  charts.expense = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: Object.values(byCat), backgroundColor: palette }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } } } }
+  });
+}
+
+function renderMachineChart(sRows) {
+  const byMachine = {};
+  sRows.forEach(s => { byMachine[s.machineId] = (byMachine[s.machineId] || 0) + (s.gross - s.cogs - s.fees); });
+  const ids = Object.keys(byMachine);
+  const ctx = document.getElementById('machineChart');
+  if (charts.machine) charts.machine.destroy();
+  if (!ids.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
+  charts.machine = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ids.map(machineName),
+      datasets: [{ label: 'Net Sales', data: ids.map(id => byMachine[id]), backgroundColor: '#29ABE2', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { callback: v => '$' + v } } }
+    }
+  });
+}
+
+// ---------------- misc ----------------
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderAll() {
+  buildRangeOptions();
+  renderMachines();
+  renderSales();
+  renderExpenses();
+  renderCommission();
+  renderOverview();
+}
+
+async function init() {
+  document.getElementById('sDate').valueAsDate = new Date();
+  document.getElementById('eDate').valueAsDate = new Date();
+
+  // default HAHA sync range: last 30 days
+  const today = new Date();
+  const monthAgo = new Date(); monthAgo.setDate(today.getDate() - 30);
+  document.getElementById('hahaEnd').valueAsDate = today;
+  document.getElementById('hahaStart').valueAsDate = monthAgo;
+
+  try {
+    const [m, s, e] = await Promise.all([
+      apiGet('/api/data/machines'), apiGet('/api/data/sales'), apiGet('/api/data/expenses'),
+    ]);
+    machines = m.machines; sales = s.sales; expenses = e.expenses;
+  } catch (err) {
+    document.querySelector('.app').insertAdjacentHTML('afterbegin',
+      `<div class="card" style="border-color:#e0a0a0; background:#fff5f5;">
+         <strong>Couldn't load data:</strong> ${escapeHtml(err.message)}.
+         Check that the D1 database is bound to this Pages project as <code>DB</code>.
+       </div>`);
+  }
+
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
