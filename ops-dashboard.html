@@ -55,6 +55,17 @@
   }
   .app { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
 
+  /* ---------- accessibility ---------- */
+  .skip-link {
+    position: absolute; left: -999px; top: 0; z-index: 200;
+    background: var(--sky-deep); color: #fff; padding: 12px 18px; border-radius: 0 0 10px 0;
+    font-weight: 800; font-family: var(--font-head); text-decoration: none;
+  }
+  .skip-link:focus { left: 0; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--sky); outline-offset: 2px;
+  }
+
   /* ---------- header ---------- */
   .app-header {
     display: flex;
@@ -68,7 +79,8 @@
     border-bottom: 1px solid var(--border);
   }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { height: 36px; width: auto; display: block; }
+  .brand img { height: 54px; width: auto; display: block; }
+  @media (max-width: 640px) { .brand img { height: 46px; } }
   .brand-fallback {
     font-family: var(--font-head); font-weight: 900; font-size: 22px; color: var(--charcoal); letter-spacing: -0.02em;
   }
@@ -100,8 +112,16 @@
   }
 
   /* ---------- tabs ---------- */
+  /* Sticky so the nav is always reachable while scrolling a long tab (the
+     "menu should always remain visible" requirement) — pinned just under
+     the header with its own opaque backdrop so content doesn't show through. */
+  .tabbar-wrap {
+    position: sticky; top: 0; z-index: 45;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); margin: 0 -20px 20px; padding: 10px 20px;
+  }
   .tabbar {
-    display: flex; gap: 2px; margin-bottom: 20px;
+    display: flex; gap: 2px; flex: 1; min-width: 0;
     overflow-x: auto; background: #EDF1F3; border-radius: 999px; padding: 4px;
     -webkit-overflow-scrolling: touch;
   }
@@ -117,6 +137,40 @@
   .tab-panel.active { display: block; animation: fadein .15s ease; }
   @keyframes fadein { from { opacity: 0; transform: translateY(2px);} to { opacity:1; transform:none; } }
 
+  /* "More" overflow menu — always present (for screen readers / narrow
+     windows) but only visually needed once the tab strip can't fit
+     everything, which CSS alone can't detect, so JS shows/hides it based on
+     viewport width via the .tabbar-compact class on the wrap. */
+  .tabbar-more { position: relative; flex-shrink: 0; display: none; }
+  .tabbar-wrap.tabbar-compact .tabbar .tab-btn-secondary { display: none; }
+  .tabbar-wrap.tabbar-compact .tabbar-more { display: block; }
+  .tabbar-more-btn { background: #EDF1F3; color: var(--graphite); }
+  .tabbar-more-btn.has-active { color: #fff; background: var(--sky-deep); }
+  .tabbar-more-menu {
+    display: none; position: absolute; right: 0; top: calc(100% + 8px);
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-hover); padding: 6px; min-width: 190px; z-index: 60;
+  }
+  .tabbar-more-menu.open { display: block; }
+  .tabbar-more-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 10px 12px; border-radius: 10px; font-family: var(--font-head);
+    font-weight: 700; font-size: 13.5px; color: var(--charcoal); cursor: pointer;
+  }
+  .tabbar-more-menu button:hover { background: #F1F4F5; }
+  .tabbar-more-menu button.active { color: #fff; background: var(--sky-deep); }
+
+  /* ---------- back to top ---------- */
+  .back-to-top {
+    position: fixed; right: 18px; bottom: 18px; z-index: 70;
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--sky-deep); color: #fff; font-size: 18px; font-weight: 900;
+    cursor: pointer; box-shadow: 0 6px 18px rgba(5,116,163,.4);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .back-to-top:hover { background: var(--sky-ink); }
+  @media (max-width: 640px) { .back-to-top { right: 14px; bottom: 14px; } }
+
   /* ---------- cards / grid ---------- */
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
   @media (max-width: 860px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -124,10 +178,10 @@
     .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .app { padding: 0 12px 50px; }
     .app-header { margin: 0 -12px 14px; padding: 12px; }
+    .tabbar-wrap { margin: 0 -12px 16px; padding: 8px 12px; }
     .kpi-card { padding: 12px 14px; }
     .kpi-value { font-size: 20px; }
     .kpi-label { font-size: 10.5px; }
-    .form-grid { grid-template-columns: 1fr; }
     .btn { padding: 12px 18px; } /* larger touch target */
     .card { padding: 14px 16px; }
   }
@@ -154,7 +208,18 @@
   @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
 
   /* ---------- forms ---------- */
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+  /* min-width tuned so short fields (dates, phone, small selects) comfortably
+     pair up 2-per-line, while .field-wide fields (names, addresses, emails,
+     notes) always take the full row instead of getting squeezed. */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+  .form-grid .field-wide { grid-column: 1 / -1; }
+  @media (max-width: 700px) {
+    .form-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  }
+  @media (max-width: 420px) {
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid .field-wide { grid-column: 1 / -1; }
+  }
   label { font-size: 11px; font-weight: 700; color: var(--graphite); text-transform: uppercase; letter-spacing: .03em; display: block; margin-bottom: 4px; }
   input, select {
     width: 100%; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 10px;
@@ -183,6 +248,32 @@
   tr:last-child td { border-bottom: none; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+
+  /* ---------- mobile "card" tables ---------- */
+  /* Below 700px, .responsive-cards tables stop requiring horizontal scroll —
+     each row becomes a tappable card and each cell's data-label is shown as
+     an inline caption. Rows with an onclick handler already get a tap target
+     via .task-row / similar; this only changes layout, not behavior. */
+  @media (max-width: 700px) {
+    .table-wrap.responsive-cards { border: none; overflow-x: visible; }
+    .responsive-cards table, .responsive-cards thead, .responsive-cards tbody,
+    .responsive-cards th, .responsive-cards tr { display: block; }
+    .responsive-cards thead { display: none; }
+    .responsive-cards tbody tr {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: var(--shadow-card); padding: 10px 12px; margin-bottom: 10px;
+    }
+    .responsive-cards tbody tr:hover { background: var(--card); }
+    .responsive-cards td {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border-bottom: none; padding: 6px 0; text-align: right;
+    }
+    .responsive-cards td[data-label]:not([data-label=""])::before {
+      content: attr(data-label); font-weight: 700; color: var(--graphite); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .03em; text-align: left; flex-shrink: 0;
+    }
+    .responsive-cards td:empty, .responsive-cards td[data-label=""] { justify-content: flex-end; }
+  }
   .tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
   .tag-tiered { background: #E9F6FE; color: var(--sky-deep); }
   .tag-none { background: #F0F0F0; color: var(--graphite); }
@@ -242,6 +333,7 @@
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">Skip to main content</a>
 <div class="app">
 
   <div class="app-header">
@@ -255,8 +347,8 @@
     </div>
     <div class="header-actions">
       <div class="haha-sync-status" id="hahaSyncPill" title="Reflects the most recent HAHA health/sales sync, from any source">
-        <span class="sync-dot sync-dot-none" id="hahaSyncDot"></span>
-        <span id="hahaSyncHeaderTime">Last HAHA refresh: —</span>
+        <span class="sync-dot sync-dot-none" id="hahaSyncDot" aria-hidden="true"></span>
+        <span id="hahaSyncHeaderTime" aria-live="polite">Last HAHA refresh: —</span>
       </div>
       <button class="btn-header-sync" onclick="globalHahaSync(this)">Sync HAHA Now</button>
       <div class="month-filter">
@@ -266,23 +358,33 @@
     </div>
   </div>
 
-  <div class="tabbar" id="tabbar">
-    <button class="tab-btn active" data-tab="today">Today</button>
-    <button class="tab-btn" data-tab="overview">Overview</button>
-    <button class="tab-btn" data-tab="machines">Machines</button>
-    <button class="tab-btn" data-tab="health">Machine Health</button>
-    <button class="tab-btn" data-tab="sales">Sales</button>
-    <button class="tab-btn" data-tab="supply">Inventory</button>
-    <button class="tab-btn" data-tab="relationships">Relationships</button>
-    <button class="tab-btn" data-tab="tasks">Tasks</button>
-    <button class="tab-btn" data-tab="financials">Financials</button>
+  <div class="tabbar-wrap" id="tabbarWrap">
+    <div class="tabbar" id="tabbar">
+      <button class="tab-btn active" data-tab="today">Today</button>
+      <button class="tab-btn" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="tasks">Tasks</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="health">Machine Health</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="products">Products</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="relationships">Relationships</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="financials">Financials</button>
+    </div>
+    <div class="tabbar-more">
+      <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
+      <div class="tabbar-more-menu" id="tabbarMoreMenu" role="menu"></div>
+    </div>
   </div>
+
+  <button id="backToTopBtn" class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top" title="Back to top">↑</button>
 
   <!-- shared modal, populated by JS for order drill-down / machine detail -->
   <div class="modal-overlay" id="modalOverlay" style="display:none;" onclick="if(event.target===this) closeModal()">
-    <div class="modal-box" id="modalBox"></div>
+    <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" tabindex="-1"></div>
   </div>
 
+  <main id="mainContent">
   <!-- ============ TODAY ============ -->
   <div class="tab-panel active" id="panel-today">
     <div class="card">
@@ -389,9 +491,9 @@
       <div class="card-title">Add a Machine</div>
       <div class="card-desc">One row per machine — this feeds every other tab.</div>
       <div class="form-grid" id="machineForm">
-        <div><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
-        <div><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
-        <div><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
+        <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
+        <div class="field-wide"><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
+        <div class="field-wide"><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
         <div>
           <label>Placement Type</label>
           <select id="mPlan">
@@ -401,10 +503,10 @@
         </div>
         <div><label>Install Date</label><input id="mInstall" type="date" /></div>
         <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
-        <div><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
+        <div class="field-wide"><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
         <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
-        <div><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
-        <div><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
+        <div class="field-wide"><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
+        <div class="field-wide"><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
       </div>
       <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
     </div>
@@ -418,12 +520,12 @@
         <div class="card-title" style="margin:0;">Machines</div>
         <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
       </div>
-      <div class="table-wrap"><table id="machineTable"></table></div>
+      <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
       <div id="machinesEmpty" class="empty-state" style="display:none;">
         <strong>No machines yet</strong>
         Add your first machine above, or use "Import from HAHA" to pull your registered devices in automatically.
       </div>
-      <div id="machineImportStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+      <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
   </div>
 
@@ -458,9 +560,9 @@
         <button class="btn btn-secondary" onclick="checkHealthNow(this)">Check Now</button>
       </div>
       <div class="card-desc">Online status + temperature update automatically on the same schedule as the HAHA sales sync. "Check Now" polls immediately instead of waiting for the next run.</div>
-      <div id="healthCheckStatus" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px;"></div>
+      <div id="healthCheckStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:0; margin-bottom:10px;"></div>
       <div id="healthFilterBar" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px; cursor:pointer; background:var(--amber-bg); color:var(--amber); border-color:#F3C1A5;"></div>
-      <div class="table-wrap"><table id="healthTable"></table></div>
+      <div class="table-wrap responsive-cards"><table id="healthTable"></table></div>
       <div id="healthEmpty" class="empty-state" style="display:none;">
         <strong>No health data yet</strong>
         Add machines with a HAHA Market ID, then hit "Check Now" — or wait for the next scheduled sync.
@@ -517,7 +619,7 @@
         <div><label>End Date</label><input id="hahaEnd" type="date" /></div>
         <div><button class="btn btn-primary" onclick="syncFromHaha(this)">Sync Now</button></div>
       </div>
-      <div id="hahaSyncStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+      <div id="hahaSyncStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
     <div class="card">
       <div class="section-flex">
@@ -526,7 +628,7 @@
       </div>
       <div class="card-desc">Any product below has no cost set in HAHA's catalogue — its sales sync in with $0 Cost of Goods, which quietly overstates profit until it's fixed. Set the cost on the product in HAHA's Merchant Portal, then re-run a sync to correct past entries.</div>
       <div class="table-wrap"><table id="missingCostTable"></table></div>
-      <div id="missingCostStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+      <div id="missingCostStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
     <div class="card">
       <div class="card-title">Log a Sales Entry Manually</div>
@@ -573,24 +675,34 @@
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Restock Queue</div>
-        <button class="btn btn-secondary" onclick="showPickList()">Route Pick List</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="showPickList()">Route Pick List</button>
+          <button class="btn btn-secondary" onclick="showFillMachinesList()">Fill Machines</button>
+        </div>
       </div>
-      <div class="card-desc">Every HAHA-linked machine, soonest service date first. "Bring" quantities target a 14-day supply based on recent sell-through — a starting point, not exact case counts.</div>
+      <div class="card-desc">Every HAHA-linked machine, soonest service date first. "Route Pick List" targets a 14-day supply based on recent sell-through. "Fill Machines" instead replaces every unit sold and tops off to a set Capacity where you've entered one (set Capacity per product from a machine's detail view) — a starting point either way, not exact case counts.</div>
       <div id="restockQueueBody"><div class="empty-state">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Low Stock, No Backstock</div>
+      </div>
+      <div class="card-desc">Products that are low or out in a machine <em>and</em> low or out in warehouse buffer stock too — these need an actual purchase, not just a restock trip. Matched by HAHA Product ID, so set that field on buffer items to link them.</div>
+      <div id="noBackstockBody"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="card">
       <div class="card-title">Add Buffer Stock Item</div>
       <div class="card-desc">Supplies sitting in storage, not loaded into a machine yet — set a reorder threshold so this flags when it's time to buy more.</div>
       <div class="form-grid" id="supplyForm">
-        <div><label>Item Name</label><input id="bName" placeholder="e.g. Coca-Cola 500ml" /></div>
+        <div class="field-wide"><label>Item Name</label><input id="bName" placeholder="e.g. Coca-Cola 500ml" /></div>
         <div><label>SKU / Barcode</label><input id="bSku" placeholder="optional" /></div>
-        <div><label>HAHA Product ID</label><input id="bProductId" placeholder="optional — links cost/price/image" /></div>
+        <div class="field-wide"><label>HAHA Product ID</label><input id="bProductId" placeholder="optional — links cost/price/image" /></div>
         <div><label>Quantity on Hand</label><input id="bQuantity" type="number" step="1" min="0" placeholder="0" /></div>
         <div><label>Buffer / Par Level</label><input id="bBuffer" type="number" step="1" min="0" placeholder="target stock level" /></div>
         <div><label>Reorder Threshold</label><input id="bReorder" type="number" step="1" min="0" placeholder="reorder when at/below this" /></div>
         <div><label>Unit Cost ($)</label><input id="bCost" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div><label>Location</label><input id="bLocation" placeholder="e.g. garage, storage unit" /></div>
-        <div><button class="btn btn-primary" onclick="addBufferItem(this)">Add Item</button></div>
+        <div class="field-wide"><label>Location</label><input id="bLocation" placeholder="e.g. garage, storage unit" /></div>
+        <div class="field-wide"><button class="btn btn-primary" onclick="addBufferItem(this)">Add Item</button></div>
       </div>
     </div>
     <div class="card">
@@ -600,6 +712,20 @@
       <div id="supplyEmpty" class="empty-state" style="display:none;">
         <strong>No buffer stock tracked yet</strong>
         Add items above to track what's on hand outside your machines.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PRODUCTS (catalog + cost lots) ============ -->
+  <div class="tab-panel" id="panel-products">
+    <div class="card">
+      <div class="card-title">Products</div>
+      <div class="card-desc">Every product currently stocked in a machine, pulled from HAHA's catalogue and each machine's live inventory. "In N Machines" counts active, non-retired machines. Click a product to log a new purchase cost or see its cost history.</div>
+      <div style="margin-bottom:10px;"><input id="productSearch" placeholder="Search products…" oninput="renderProducts()" style="max-width:320px;" /></div>
+      <div class="table-wrap responsive-cards"><table id="productsTable"></table></div>
+      <div id="productsEmpty" class="empty-state" style="display:none;">
+        <strong>No products found yet</strong>
+        This fills in once machines are synced with HAHA Market IDs and have stocked inventory.
       </div>
     </div>
   </div>
@@ -628,7 +754,7 @@
           </select>
         </div>
         <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
+        <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
         <div>
           <label>Paid By</label>
           <select id="ePaidBy">
@@ -647,13 +773,13 @@
           </select>
         </div>
         <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
-        <div><label>Note</label><input id="eNote" placeholder="optional" /></div>
+        <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
         <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
           <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
             <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
           </label>
         </div>
-        <div><button class="btn btn-primary" onclick="addExpense()">Add Expense</button></div>
+        <div class="field-wide"><button class="btn btn-primary" onclick="addExpense()">Add Expense</button></div>
       </div>
     </div>
     <div class="card">
@@ -711,16 +837,16 @@
         </div>
         <button class="btn btn-primary" onclick="runMigrateProperties(this)">Set Up Properties</button>
       </div>
-      <div id="setupPropertiesStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+      <div id="setupPropertiesStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
 
     <div class="card">
       <div class="card-title">Add Property</div>
       <div class="form-grid" id="propertyForm">
-        <div><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
+        <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
         <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
-        <div><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
-        <div><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
+        <div class="field-wide"><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
+        <div class="field-wide"><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
         <div>
           <label>Status</label>
           <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
@@ -730,7 +856,7 @@
           <label>Assigned Operator</label>
           <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
         </div>
-        <div><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
+        <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
       </div>
     </div>
     <div class="card">
@@ -748,7 +874,7 @@
     <div class="card">
       <div class="card-title">Add Task</div>
       <div class="form-grid" id="taskForm">
-        <div><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
+        <div class="field-wide"><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
         <div>
           <label>Owner</label>
           <select id="tOwner"><option>Unassigned</option><option>Brian</option><option>Vala</option></select>
@@ -760,8 +886,8 @@
         </div>
         <div><label>Property</label><select id="tProperty"><option value="">—</option></select></div>
         <div><label>Machine</label><select id="tMachine"><option value="">—</option></select></div>
-        <div><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
-        <div><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
+        <div class="field-wide"><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
+        <div class="field-wide"><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
       </div>
     </div>
     <div class="card">
@@ -773,13 +899,14 @@
           <button class="btn btn-ghost" data-status="complete" onclick="setTaskFilter('complete', this)">Complete</button>
         </div>
       </div>
-      <div class="table-wrap"><table id="taskTable"></table></div>
+      <div class="table-wrap responsive-cards"><table id="taskTable"></table></div>
       <div id="tasksEmpty" class="empty-state" style="display:none;">
         <strong>Nothing here</strong>
         Add a task above, or these fill in automatically from follow-up dates logged on the Relationships tab.
       </div>
     </div>
   </div>
+  </main>
 
   <div class="footer-note">
     Data is stored in Sidecar's own Cloudflare database, shared across every device you log into this dashboard from.
@@ -880,20 +1007,30 @@ function chartUnavailableNote(canvasId) {
   }
 }
 
+// ---------------- sticky local UI state ----------------
+// Small wrapper so a blocked/unavailable localStorage (private browsing,
+// locked-down webview) never breaks the dashboard — it just stops persisting.
+const STORAGE_PREFIX = 'sidecarCC_';
+function stickySet(key, value) {
+  try { localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) { /* ignore */ }
+}
+function stickyGet(key) {
+  try { return localStorage.getItem(STORAGE_PREFIX + key); } catch (e) { return null; }
+}
+
 // ---------------- tabs ----------------
 document.getElementById('tabbar').addEventListener('click', (e) => {
   const btn = e.target.closest('.tab-btn');
   if (!btn) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  switchToTab(btn.dataset.tab);
+  stickySet('activeTab', btn.dataset.tab);
 });
 
 // ---------------- range filter ----------------
 function buildRangeOptions() {
   const sel = document.getElementById('rangeSelect');
-  const prevValue = sel.value || 'all';
+  const stickyValue = stickyGet('range');
+  const prevValue = sel.value || stickyValue || 'all';
   const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
   sel.innerHTML = '';
   const allOpt = document.createElement('option');
@@ -906,7 +1043,10 @@ function buildRangeOptions() {
   });
   sel.value = months.includes(prevValue) || prevValue === 'all' ? prevValue : 'all';
 }
-document.getElementById('rangeSelect').addEventListener('change', renderAll);
+document.getElementById('rangeSelect').addEventListener('change', () => {
+  stickySet('range', document.getElementById('rangeSelect').value);
+  renderAll();
+});
 
 function filteredSales() {
   const range = document.getElementById('rangeSelect').value;
@@ -1228,9 +1368,9 @@ function renderMachines() {
       html += `<tr>
         <td colspan="9">
           <div class="form-grid" style="margin: 4px 0;">
-            <div><label>Machine Name / ID</label><input id="em_name_${m.id}" value="${escapeAttr(m.name)}" /></div>
-            <div><label>Host / Location Name</label><input id="em_host_${m.id}" value="${escapeAttr(m.host || '')}" /></div>
-            <div><label>Address</label><input id="em_address_${m.id}" value="${escapeAttr(m.address || '')}" /></div>
+            <div class="field-wide"><label>Machine Name / ID</label><input id="em_name_${m.id}" value="${escapeAttr(m.name)}" /></div>
+            <div class="field-wide"><label>Host / Location Name</label><input id="em_host_${m.id}" value="${escapeAttr(m.host || '')}" /></div>
+            <div class="field-wide"><label>Address</label><input id="em_address_${m.id}" value="${escapeAttr(m.address || '')}" /></div>
             <div>
               <label>Placement Type</label>
               <select id="em_plan_${m.id}">
@@ -1240,10 +1380,10 @@ function renderMachines() {
             </div>
             <div><label>Install Date</label><input id="em_install_${m.id}" type="date" value="${escapeAttr(m.install || '')}" /></div>
             <div><label>HAHA Market ID</label><input id="em_haha_${m.id}" value="${escapeAttr(m.hahaId || '')}" /></div>
-            <div><label>Property Manager Name</label><input id="em_contactName_${m.id}" value="${escapeAttr(m.contactName || '')}" placeholder="e.g. Margie Chen" /></div>
+            <div class="field-wide"><label>Property Manager Name</label><input id="em_contactName_${m.id}" value="${escapeAttr(m.contactName || '')}" placeholder="e.g. Margie Chen" /></div>
             <div><label>PM Phone</label><input id="em_contactPhone_${m.id}" value="${escapeAttr(m.contactPhone || '')}" placeholder="e.g. (470) 555-0139" /></div>
-            <div><label>PM Email</label><input id="em_contactEmail_${m.id}" type="email" value="${escapeAttr(m.contactEmail || '')}" placeholder="e.g. margie@example.com" /></div>
-            <div style="display:flex; gap:8px;">
+            <div class="field-wide"><label>PM Email</label><input id="em_contactEmail_${m.id}" type="email" value="${escapeAttr(m.contactEmail || '')}" placeholder="e.g. margie@example.com" /></div>
+            <div class="field-wide" style="display:flex; gap:8px;">
               <button class="btn btn-primary" onclick="saveEditMachine('${m.id}')">Save</button>
               <button class="btn btn-ghost" onclick="cancelEditMachine()">Cancel</button>
             </div>
@@ -1261,15 +1401,15 @@ function renderMachines() {
       .join('');
     const propertyCell = `<select style="font-size:12.5px; padding:3px 4px;" onchange="assignMachineProperty('${m.id}', this.value)">${propertyOptions}</select>`;
     html += `<tr style="${isRetired ? 'opacity:0.55;' : ''}">
-      <td><button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button>${isRetired ? ' <span class="tag tag-none">Retired</span>' : ''}</td>
-      <td>${propertyCell}</td>
-      <td>${escapeHtml(m.host || '—')}</td>
-      <td>${escapeHtml(m.address || '—')}</td>
-      <td>${contactCell}</td>
-      <td><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
-      <td>${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
-      <td>${m.install || '—'}</td>
-      <td style="white-space:nowrap;">
+      <td data-label="Machine"><button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button>${isRetired ? ' <span class="tag tag-none">Retired</span>' : ''}</td>
+      <td data-label="Property">${propertyCell}</td>
+      <td data-label="Host">${escapeHtml(m.host || '—')}</td>
+      <td data-label="Address">${escapeHtml(m.address || '—')}</td>
+      <td data-label="PM Contact">${contactCell}</td>
+      <td data-label="Placement"><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
+      <td data-label="HAHA ID">${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
+      <td data-label="Installed">${m.install || '—'}</td>
+      <td data-label="" style="white-space:nowrap;">
         <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="startEditMachine('${m.id}')">Edit</button>
         ${isRetired
           ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="reactivateMachine('${m.id}')">Reactivate</button>`
@@ -1499,11 +1639,11 @@ function renderHealth() {
         tempCell = fmtTemp(h.temperature, h.temperatureUnit) + (outOfRange ? ' <span class="tag tag-due">out of range</span>' : '');
       }
       html += `<tr>
-        <td>${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</td>
-        <td>${dot}</td>
-        <td>${tempCell}</td>
-        <td>${h ? fmtWhen(h.checkedAt) + ` <span style="color:var(--graphite);">(${fmtAgo(h.checkedAt)})</span>` : 'Never checked'}</td>
-        <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="selectHealthDetail('${m.id}')">History</button></td>
+        <td data-label="Machine">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</td>
+        <td data-label="Status">${dot}</td>
+        <td data-label="Temperature">${tempCell}</td>
+        <td data-label="Last Checked">${h ? fmtWhen(h.checkedAt) + ` <span style="color:var(--graphite);">(${fmtAgo(h.checkedAt)})</span>` : 'Never checked'}</td>
+        <td data-label=""><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="selectHealthDetail('${m.id}')">History</button></td>
       </tr>`;
     });
     html += '</tbody>';
@@ -1602,6 +1742,8 @@ async function loadHealthDetail(machineId) {
 function openModal(html) {
   document.getElementById('modalBox').innerHTML = html;
   document.getElementById('modalOverlay').style.display = 'flex';
+  wireLabelAssociations(document.getElementById('modalBox'));
+  document.getElementById('modalBox').focus();
 }
 function closeModal() {
   document.getElementById('modalOverlay').style.display = 'none';
@@ -1609,9 +1751,22 @@ function closeModal() {
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
+// Associates <label> with the input/select immediately after it whenever
+// that sibling has an id but no explicit for= was written — lets screen
+// readers and "click the label" behavior work without hand-annotating every
+// field across the dashboard's ~10 forms.
+function wireLabelAssociations(root) {
+  (root || document).querySelectorAll('label:not([for])').forEach(label => {
+    const sib = label.nextElementSibling;
+    if (sib && sib.id && ['INPUT', 'SELECT', 'TEXTAREA'].includes(sib.tagName)) {
+      label.setAttribute('for', sib.id);
+    }
+  });
+}
+
 // ---------------- order drill-down ----------------
 async function openOrderDrilldown(machineId, date, start, end) {
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Orders</div>
     <div class="modal-sub">Loading…</div>`);
   const params = new URLSearchParams();
@@ -1649,7 +1804,7 @@ async function openOrderDrilldown(machineId, date, start, end) {
       </div>`).join('');
   }
 
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Orders</div>
     <div class="modal-sub">${sub}</div>
     ${body}`);
@@ -1714,10 +1869,11 @@ function todayStr() { return businessToday(); }
 // route/case-pack optimization — good enough to know what to load today.
 async function computeMachineSellThrough(m) {
   const start14 = addDays(todayStr(), -14);
-  const [invRes, prodRes, expRes, ordersRes] = await Promise.all([
+  const [invRes, prodRes, expRes, capRes, ordersRes] = await Promise.all([
     m.hahaId ? apiGet('/api/haha-market-inventory').catch(() => null) : Promise.resolve(null),
     m.hahaId ? apiGet('/api/haha-products').catch(() => null) : Promise.resolve(null),
     apiGet('/api/data/product-expiration?machineId=' + encodeURIComponent(m.id)).catch(() => ({ expirations: [] })),
+    apiGet('/api/data/product-capacity?machineId=' + encodeURIComponent(m.id)).catch(() => ({ capacities: [] })),
     apiGet('/api/data/orders?machineId=' + encodeURIComponent(m.id) + '&start=' + start14 + '&end=' + todayStr() + '&limit=1000').catch(() => ({ orders: [] })),
   ]);
 
@@ -1726,6 +1882,8 @@ async function computeMachineSellThrough(m) {
   if (prodRes && prodRes.ok) (prodRes.products || []).forEach(p => { productById[p.productId] = p; });
   const expByProduct = {};
   (expRes.expirations || []).forEach(e => { expByProduct[e.productId] = e; });
+  const capByProduct = {};
+  (capRes.capacities || []).forEach(c => { capByProduct[c.productId] = c; });
 
   const soldByProduct = {};
   (ordersRes.orders || []).forEach(o => {
@@ -1746,10 +1904,15 @@ async function computeMachineSellThrough(m) {
     const stockoutDate = daysRemaining !== null ? addDays(todayStr(), daysRemaining) : null;
     const exp = expByProduct[s.productId];
     const bring = velocity > 0 ? Math.max(0, Math.round(velocity * 14 - s.stock)) : 0;
+    const cap = capByProduct[s.productId] ? capByProduct[s.productId].capacity : null;
+    // "Fill Machines" quantity: if a Capacity is set, top off to it; otherwise
+    // just replace whatever sold in the last 14 days (never negative).
+    const fillBring = cap !== null ? Math.max(0, cap - s.stock) : Math.max(0, Math.round(sold14));
     return {
       productId: s.productId, productName: s.productName, productImage: s.productImage,
       stock: s.stock, cost, price, velocity, daysRemaining, stockoutDate, bring,
       expirationDate: exp ? exp.expirationDate : null,
+      capacity: cap, fillBring,
     };
   });
 
@@ -1775,7 +1938,7 @@ async function computeMachineSellThrough(m) {
 async function openMachineDetail(machineId) {
   const m = machines.find(x => x.id === machineId);
   if (!m) return;
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
     <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
 
@@ -1800,16 +1963,16 @@ async function openMachineDetail(machineId) {
     ? '<div class="empty-state">Link a HAHA Market ID on the Machines tab to see live inventory and sell-through.</div>'
     : !rows.length
       ? '<div class="empty-state">No stocked products reported for this machine yet.</div>'
-      : `<div class="table-wrap"><table>
-          <thead><tr><th>Product</th><th class="num">Stock</th><th class="num">Sold/day (14d)</th><th class="num">Days Left</th><th>Projected Out</th><th>Expires</th></tr></thead>
+      : `<div class="table-wrap responsive-cards"><table>
+          <thead><tr><th>Product</th><th class="num">Stock</th><th class="num">Sold/day (14d)</th><th class="num">Days Left</th><th>Projected Out</th><th>Expires</th><th class="num">Capacity</th></tr></thead>
           <tbody>${rows.map(r => `<tr class="${r.productId === lowestSellThroughId ? 'row-alert' : ''}">
-            <td>${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" alt="" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName || r.productId)}</td>
-            <td class="num">${r.stock}</td>
-            <td class="num">${r.velocity > 0 ? r.velocity.toFixed(1) : '—'}</td>
-            <td class="num">${r.daysRemaining !== null ? Math.round(r.daysRemaining) : '—'}</td>
-            <td>${r.stockoutDate || '—'}</td>
-            <td>
-              <input type="date" style="width:130px; display:inline-block;" value="${r.expirationDate || ''}"
+            <td data-label="Product">${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" alt="" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName || r.productId)}</td>
+            <td data-label="Stock" class="num">${r.stock}</td>
+            <td data-label="Sold/day (14d)" class="num">${r.velocity > 0 ? r.velocity.toFixed(1) : '—'}</td>
+            <td data-label="Days Left" class="num">${r.daysRemaining !== null ? Math.round(r.daysRemaining) : '—'}</td>
+            <td data-label="Projected Out">${r.stockoutDate || '—'}</td>
+            <td data-label="Expires">
+              <input type="date" aria-label="Expiration date for ${escapeAttr(r.productName || r.productId)}" style="width:130px; display:inline-block;" value="${r.expirationDate || ''}"
                      onchange="saveProductExpiration('${machineId}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
               ${(() => {
                 if (!r.expirationDate) return '';
@@ -1817,6 +1980,10 @@ async function openMachineDetail(machineId) {
                 if (daysToExp <= 7) return `<span class="tag tag-due" style="margin-left:4px;">${daysToExp <= 0 ? 'expired' : daysToExp + 'd'}</span>`;
                 return `<span class="tag tag-tiered" style="margin-left:4px;">${daysToExp}d</span>`;
               })()}
+            </td>
+            <td data-label="Capacity" class="num">
+              <input type="number" min="0" step="1" aria-label="Full capacity for ${escapeAttr(r.productName || r.productId)}" style="width:70px; display:inline-block;" value="${r.capacity !== null && r.capacity !== undefined ? r.capacity : ''}" placeholder="—"
+                     onchange="saveProductCapacity('${machineId}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`;
@@ -1836,7 +2003,7 @@ async function openMachineDetail(machineId) {
       </table></div>`}
   `;
 
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
     <div class="modal-sub">${escapeHtml(m.address || 'No address on file')}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}</div>
 
@@ -1867,6 +2034,14 @@ async function saveProductExpiration(machineId, productId, productName, expirati
     await apiPost('/api/data/product-expiration', { machineId, productId, productName, expirationDate });
   } catch (e) { alert('Could not save expiration date: ' + e.message); return; }
   openMachineDetail(machineId); // re-render with the recomputed Next Service Required By
+}
+
+async function saveProductCapacity(machineId, productId, productName, capacity) {
+  if (capacity === '' || capacity === null || capacity === undefined) return;
+  try {
+    await apiPost('/api/data/product-capacity', { machineId, productId, productName, capacity: parseInt(capacity, 10) });
+  } catch (e) { alert('Could not save capacity: ' + e.message); return; }
+  openMachineDetail(machineId);
 }
 
 async function addServiceLogEntry(machineId) {
@@ -1924,6 +2099,7 @@ let restockQueueCache = [];
 async function loadRestockQueue() {
   restockQueueCache = await computeRestockQueueAll();
   renderRestockQueue();
+  renderNoBackstockList();
   if (typeof renderToday === 'function') renderToday();
 }
 
@@ -1934,17 +2110,17 @@ function renderRestockQueue() {
     body.innerHTML = '<div class="empty-state">No machines with a projectable service date yet — sync sales (and optionally set expiration dates) to populate this.</div>';
     return;
   }
-  let html = '<div class="table-wrap"><table><thead><tr><th>Machine</th><th>Service By</th><th>Priority</th><th>Products Needed</th><th class="num">Est. Units</th><th></th></tr></thead><tbody>';
+  let html = '<div class="table-wrap responsive-cards"><table><thead><tr><th>Machine</th><th>Service By</th><th>Priority</th><th>Products Needed</th><th class="num">Est. Units</th><th></th></tr></thead><tbody>';
   restockQueueCache.forEach(r => {
     const needed = r.rows.filter(row => row.bring > 0);
     const pr = restockPriority(r.nextServiceBy);
     html += `<tr class="${pr.label === 'Critical' ? 'row-alert' : ''}">
-      <td><button class="link-btn" onclick="openMachineDetail('${r.machine.id}')">${escapeHtml(r.machine.name)}</button>${r.machine.host ? ' — ' + escapeHtml(r.machine.host) : ''}</td>
-      <td>${r.nextServiceBy}</td>
-      <td><span class="tag ${pr.cls}">${pr.label}</span></td>
-      <td>${needed.length} product(s)</td>
-      <td class="num">${needed.reduce((s, x) => s + x.bring, 0)}</td>
-      <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="showRestockList('${r.machine.id}')">Restock List</button></td>
+      <td data-label="Machine"><button class="link-btn" onclick="openMachineDetail('${r.machine.id}')">${escapeHtml(r.machine.name)}</button>${r.machine.host ? ' — ' + escapeHtml(r.machine.host) : ''}</td>
+      <td data-label="Service By">${r.nextServiceBy}</td>
+      <td data-label="Priority"><span class="tag ${pr.cls}">${pr.label}</span></td>
+      <td data-label="Products Needed">${needed.length} product(s)</td>
+      <td data-label="Est. Units" class="num">${needed.reduce((s, x) => s + x.bring, 0)}</td>
+      <td data-label=""><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="showRestockList('${r.machine.id}')">Restock List</button></td>
     </tr>`;
   });
   html += '</tbody></table></div>';
@@ -1955,7 +2131,7 @@ function showRestockList(machineId) {
   const r = restockQueueCache.find(x => x.machine.id === machineId);
   if (!r) return;
   const needed = r.rows.filter(row => row.bring > 0).sort((a, b) => b.bring - a.bring);
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Restock ${escapeHtml(r.machine.name)}</div>
     <div class="modal-sub">Service by ${r.nextServiceBy}</div>
     ${!needed.length ? '<div class="empty-state">Nothing needs restocking right now.</div>' :
@@ -1978,13 +2154,43 @@ function showPickList() {
     });
   });
   const items = Object.values(totals).sort((a, b) => b.units - a.units);
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Restock Route Pick List</div>
-    <div class="modal-sub">Combined across every machine at Medium priority or higher — load this before you leave.</div>
+    <div class="modal-sub">Combined across every machine at Medium priority or higher — load this before you leave. Targets a 14-day supply.</div>
     ${!items.length ? '<div class="empty-state">Nothing due soon.</div>' :
       `<table><thead><tr><th>Product</th><th class="num">Total Units</th></tr></thead><tbody>${items.map(i => `<tr>
         <td>${i.productImage ? `<img class="thumb" src="${escapeAttr(i.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(i.productName)}</td>
         <td class="num"><strong>${i.units}</strong></td>
+      </tr>`).join('')}</tbody></table>`}
+  `);
+}
+
+// "Fill Machines" — the alternate pick list: instead of targeting a 14-day
+// supply, this replaces every unit sold and tops off to a manually-set
+// Capacity where one exists (per product per machine, set from Machine
+// Detail). Same machine scope as the route pick list (Medium priority or
+// higher) so the two stay comparable.
+function showFillMachinesList() {
+  const totals = {};
+  restockQueueCache.forEach(r => {
+    const pr = restockPriority(r.nextServiceBy);
+    if (pr.label === 'Low') return;
+    r.rows.forEach(row => {
+      if (row.fillBring <= 0) return;
+      if (!totals[row.productId]) totals[row.productId] = { productName: row.productName, productImage: row.productImage, units: 0, anyCapacitySet: false };
+      totals[row.productId].units += row.fillBring;
+      if (row.capacity !== null && row.capacity !== undefined) totals[row.productId].anyCapacitySet = true;
+    });
+  });
+  const items = Object.values(totals).sort((a, b) => b.units - a.units);
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Fill Machines Pick List</div>
+    <div class="modal-sub">Replaces everything sold in the last 14 days, topped off to Capacity where you've set one. Combined across every machine at Medium priority or higher.</div>
+    ${!items.length ? '<div class="empty-state">Nothing due soon.</div>' :
+      `<table><thead><tr><th>Product</th><th class="num">Total Units</th><th></th></tr></thead><tbody>${items.map(i => `<tr>
+        <td>${i.productImage ? `<img class="thumb" src="${escapeAttr(i.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(i.productName)}</td>
+        <td class="num"><strong>${i.units}</strong></td>
+        <td>${i.anyCapacitySet ? '<span class="tag tag-paid">to capacity</span>' : '<span class="tag tag-none">sold-only</span>'}</td>
       </tr>`).join('')}</tbody></table>`}
   `);
 }
@@ -2047,6 +2253,207 @@ function renderSupply() {
   });
   html += '</tbody>';
   tbl.innerHTML = html;
+
+  renderNoBackstockList();
+}
+
+// Cross-references live machine stock against warehouse buffer stock (linked
+// by HAHA Product ID) to flag products that can't be fixed with a restock
+// trip alone — actually need a purchase. Runs whenever either side refreshes.
+function renderNoBackstockList() {
+  const body = document.getElementById('noBackstockBody');
+  if (!body) return;
+  const bufferByProduct = {};
+  (supplyItems || []).forEach(it => { if (it.productId) bufferByProduct[it.productId] = it; });
+
+  const rows = [];
+  (restockQueueCache || []).forEach(r => {
+    r.rows.forEach(row => {
+      const lowInMachine = row.stock <= 0 || (row.daysRemaining !== null && row.daysRemaining <= 2);
+      if (!lowInMachine) return;
+      const buf = bufferByProduct[row.productId];
+      const bufQty = buf ? buf.quantity : 0;
+      const bufLow = !buf || bufQty <= 0 || (buf.reorderThreshold !== null && buf.reorderThreshold !== undefined && bufQty <= buf.reorderThreshold);
+      if (!bufLow) return; // enough backstock — a restock trip alone covers it
+      rows.push({
+        machineName: r.machine.name, productId: row.productId, productName: row.productName, productImage: row.productImage,
+        machineStock: row.stock, bufferQty: bufQty, hasBufferLink: !!buf,
+      });
+    });
+  });
+
+  if (!restockQueueCache.length) {
+    body.innerHTML = '<div class="empty-state">Loading…</div>';
+    return;
+  }
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty-state">Nothing low in both a machine and backstock right now.</div>';
+    return;
+  }
+  let html = '<div class="table-wrap responsive-cards"><table><thead><tr><th>Product</th><th>Machine</th><th class="num">In Machine</th><th class="num">In Backstock</th><th></th></tr></thead><tbody>';
+  rows.forEach(x => {
+    html += `<tr class="row-alert">
+      <td data-label="Product">${x.productImage ? `<img class="thumb" src="${escapeAttr(x.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(x.productName || x.productId || 'Unknown product')}</td>
+      <td data-label="Machine">${escapeHtml(x.machineName)}</td>
+      <td data-label="In Machine" class="num">${x.machineStock}</td>
+      <td data-label="In Backstock" class="num">${x.bufferQty}</td>
+      <td data-label="">${x.hasBufferLink ? '' : '<span class="tag tag-none">no buffer item linked</span>'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  body.innerHTML = html;
+}
+
+// ---------------- products (catalog + cost-lot ledger) ----------------
+let productCostLots = [];
+let productCatalogCache = [];
+
+async function loadProductCostLots() {
+  try {
+    const data = await apiGet('/api/data/product-costs');
+    productCostLots = data.costs || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { productCostLots = []; }
+}
+
+// Cross-references HAHA's product catalogue + every active machine's live
+// inventory to build one row per distinct product, with how many machines
+// currently stock it and its most recent purchase cost (from the ledger
+// above — falls back to HAHA's own listed cost if no lot has been logged yet).
+async function computeProductCatalog() {
+  const [prodRes, invRes] = await Promise.all([
+    apiGet('/api/haha-products').catch(() => null),
+    apiGet('/api/haha-market-inventory').catch(() => null),
+  ]);
+  const catalogById = {};
+  if (prodRes && prodRes.ok) (prodRes.products || []).forEach(p => { catalogById[p.productId] = p; });
+
+  const machineCount = {};
+  const machineNames = {};
+  if (invRes && invRes.ok) {
+    machines.filter(m => m.hahaId && m.status !== 'retired').forEach(m => {
+      const list = invRes.byMarket[m.hahaId] || [];
+      const seen = new Set();
+      list.forEach(item => {
+        if (seen.has(item.productId)) return; // one machine only counts once even with multiple slots
+        seen.add(item.productId);
+        machineCount[item.productId] = (machineCount[item.productId] || 0) + 1;
+        (machineNames[item.productId] = machineNames[item.productId] || []).push(m.name);
+        if (!catalogById[item.productId]) {
+          catalogById[item.productId] = { productId: item.productId, productName: item.productName, productImage: item.productImage };
+        } else if (!catalogById[item.productId].productImage && item.productImage) {
+          catalogById[item.productId].productImage = item.productImage;
+        }
+      });
+    });
+  }
+
+  const lotsByProduct = {};
+  productCostLots.forEach(c => { (lotsByProduct[c.productId] = lotsByProduct[c.productId] || []).push(c); });
+
+  const allIds = new Set([...Object.keys(catalogById), ...Object.keys(machineCount), ...Object.keys(lotsByProduct)]);
+  const rows = Array.from(allIds).map(id => {
+    const cat = catalogById[id] || {};
+    const lots = (lotsByProduct[id] || []).slice().sort((a, b) => (b.purchasedDate || '').localeCompare(a.purchasedDate || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const latestLot = lots[0] || null;
+    const hahaCost = cat.cost !== undefined && cat.cost !== null ? parseFloat(cat.cost || '0') : null;
+    const price = cat.price !== undefined && cat.price !== null ? parseFloat(cat.price || '0') : null;
+    const currentCost = latestLot ? latestLot.unitCost : hahaCost;
+    return {
+      productId: id,
+      productName: cat.productName || (latestLot && latestLot.productName) || id,
+      productImage: cat.productImage || null,
+      hahaCost, price, currentCost,
+      currentCostSource: latestLot ? 'logged' : (hahaCost !== null ? 'haha' : 'none'),
+      machineCount: machineCount[id] || 0,
+      machineNames: machineNames[id] || [],
+      lots,
+    };
+  });
+  rows.sort((a, b) => b.machineCount - a.machineCount || a.productName.localeCompare(b.productName));
+  return rows;
+}
+
+async function loadProductsCatalog() {
+  productCatalogCache = await computeProductCatalog();
+  renderProducts();
+}
+
+function renderProducts() {
+  const tbl = document.getElementById('productsTable');
+  const empty = document.getElementById('productsEmpty');
+  if (!tbl) return;
+  const q = (document.getElementById('productSearch')?.value || '').trim().toLowerCase();
+  let rows = productCatalogCache;
+  if (q) rows = rows.filter(r => (r.productName || '').toLowerCase().includes(q) || (r.productId || '').toLowerCase().includes(q));
+
+  if (!rows.length) {
+    tbl.innerHTML = '';
+    empty.style.display = 'block';
+    empty.innerHTML = productCatalogCache.length
+      ? '<strong>No matches</strong>Try a different search.'
+      : '<strong>No products found yet</strong>This fills in once machines are synced with HAHA Market IDs and have stocked inventory.';
+    return;
+  }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Product</th><th class="num">In Machines</th><th class="num">Current Cost</th><th class="num">Price</th><th class="num">Margin</th><th></th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const margin = (r.currentCost !== null && r.price) ? ((r.price - r.currentCost) / r.price) * 100 : null;
+    html += `<tr>
+      <td data-label="Product">${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName)}</td>
+      <td data-label="In Machines" class="num">${r.machineCount}</td>
+      <td data-label="Current Cost" class="num">${r.currentCost !== null ? fmt(r.currentCost) : '—'}${r.currentCostSource === 'haha' ? ' <span class="tag tag-none">from HAHA</span>' : ''}</td>
+      <td data-label="Price" class="num">${r.price !== null ? fmt(r.price) : '—'}</td>
+      <td data-label="Margin" class="num">${margin !== null ? margin.toFixed(0) + '%' : '—'}</td>
+      <td data-label=""><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openProductDetail('${escapeAttr(r.productId)}')">Log Cost</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function openProductDetail(productId) {
+  const p = productCatalogCache.find(x => x.productId === productId);
+  if (!p) return;
+  const lotsHtml = !p.lots.length
+    ? '<div class="empty-state" style="padding:10px;">No purchases logged yet — HAHA\'s own cost is used until one is.</div>'
+    : `<div class="table-wrap"><table><thead><tr><th>Date</th><th class="num">Unit Cost</th><th class="num">Qty</th><th>Vendor</th></tr></thead><tbody>${p.lots.map(l => `<tr>
+        <td>${l.purchasedDate}</td><td class="num">${fmt(l.unitCost)}</td><td class="num">${l.quantity}</td><td>${escapeHtml(l.vendor || '—')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">${escapeHtml(p.productName)}</div>
+    <div class="modal-sub">In ${p.machineCount} machine(s)${p.machineNames.length ? ': ' + escapeHtml(p.machineNames.join(', ')) : ''}</div>
+    <div class="card-title" style="margin-top:6px;">Log a Purchase</div>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div><label>Unit Cost ($)</label><input id="pcCost_${escapeAttr(productId)}" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div><label>Quantity Purchased</label><input id="pcQty_${escapeAttr(productId)}" type="number" step="1" min="1" placeholder="0" /></div>
+      <div><label>Purchase Date</label><input id="pcDate_${escapeAttr(productId)}" type="date" value="${todayStr()}" /></div>
+      <div><label>Vendor</label><input id="pcVendor_${escapeAttr(productId)}" placeholder="optional" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="addProductCostLot('${escapeAttr(productId)}')">Save Cost</button></div>
+    </div>
+    <div class="card-title">Cost History</div>
+    ${lotsHtml}
+  `);
+}
+
+async function addProductCostLot(productId) {
+  const p = productCatalogCache.find(x => x.productId === productId);
+  const unitCost = parseFloat(document.getElementById('pcCost_' + productId).value);
+  const quantity = parseInt(document.getElementById('pcQty_' + productId).value, 10);
+  const purchasedDate = document.getElementById('pcDate_' + productId).value;
+  const vendor = document.getElementById('pcVendor_' + productId).value.trim();
+  if (isNaN(unitCost) || unitCost < 0) { alert('Enter a unit cost.'); return; }
+  if (!quantity || quantity < 1) { alert('Enter how many were purchased at that cost.'); return; }
+  if (!purchasedDate) { alert('Pick a purchase date.'); return; }
+  try {
+    await apiPost('/api/data/product-costs', {
+      productId, productName: p ? p.productName : productId, unitCost, quantity, purchasedDate, vendor,
+    });
+  } catch (e) { alert('Could not save cost: ' + e.message); return; }
+  await loadProductCostLots();
+  productCatalogCache = await computeProductCatalog();
+  renderProducts();
+  openProductDetail(productId); // re-open showing the new lot
 }
 
 // ---------------- properties / contacts / activity (Relationships) ----------------
@@ -2132,7 +2539,7 @@ async function addProperty(btn) {
 }
 
 async function openPropertyDetail(propertyId) {
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button><div class="modal-title">Loading…</div>`);
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button><div class="modal-title">Loading…</div>`);
   const [detail, activityRes] = await Promise.all([
     apiGet('/api/data/properties?id=' + encodeURIComponent(propertyId)),
     apiGet('/api/data/activity?propertyId=' + encodeURIComponent(propertyId)).catch(() => ({ activity: [] })),
@@ -2166,17 +2573,17 @@ async function openPropertyDetail(propertyId) {
   const contactOptions = contacts.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   const machineOptions = propMachines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
 
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(property.name)}</div>
     <div class="modal-sub">${escapeHtml(property.propertyType || 'Property')}${property.address ? ' — ' + escapeHtml(property.address) : ''} · <span class="tag ${property.status === 'active' ? 'tag-paid' : 'tag-none'}">${escapeHtml(property.status)}</span></div>
 
     <div class="card-title" style="margin-top:14px;">Contacts</div>
     ${contactsHtml}
     <div class="form-grid" style="margin-top:10px;">
-      <div><label>Name</label><input id="cName_${propertyId}" placeholder="e.g. Sarah Jones" /></div>
+      <div class="field-wide"><label>Name</label><input id="cName_${propertyId}" placeholder="e.g. Sarah Jones" /></div>
       <div><label>Title</label><input id="cTitle_${propertyId}" placeholder="e.g. Property Manager" /></div>
       <div><label>Phone</label><input id="cPhone_${propertyId}" /></div>
-      <div><label>Email</label><input id="cEmail_${propertyId}" type="email" /></div>
+      <div class="field-wide"><label>Email</label><input id="cEmail_${propertyId}" type="email" /></div>
       <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="cPrimary_${propertyId}" style="width:auto;" /> Primary</label></div>
       <div><button class="btn btn-secondary" onclick="addContact('${propertyId}')">Add Contact</button></div>
     </div>
@@ -2311,6 +2718,33 @@ async function setTaskStatus(id, status) {
   renderTasks();
   renderToday();
 }
+// Checkbox shortcut for the common case — collapses any status straight to
+// Complete or back to To Do, saving instantly (no separate save step).
+async function toggleTaskComplete(id, checked) {
+  await setTaskStatus(id, checked ? 'complete' : 'to_do');
+}
+async function updateTaskDueDate(id, dueDate) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  try {
+    await apiPost('/api/data/tasks', { ...t, id, dueDate: dueDate || null });
+  } catch (e) { alert('Could not update the due date: ' + e.message); return; }
+  await loadTasks();
+  renderTasks();
+  renderToday();
+}
+// Generic single-field autosave used by the task detail modal — every field
+// there saves the instant it changes, no separate "Save" button.
+async function updateTaskField(id, field, value) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  try {
+    await apiPost('/api/data/tasks', { ...t, id, [field]: value });
+  } catch (e) { alert('Could not save: ' + e.message); return; }
+  await loadTasks();
+  renderTasks();
+  renderToday();
+}
 async function deleteTask(id) {
   if (!confirm('Delete this task?')) return;
   await apiDelete('/api/data/tasks?id=' + encodeURIComponent(id));
@@ -2326,6 +2760,43 @@ function taskLinkLabel(t) {
   return bits.join(' — ') || '—';
 }
 
+function openTaskDetail(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">${escapeHtml(t.title)}</div>
+    <div class="modal-sub">${escapeHtml(taskLinkLabel(t))}</div>
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div><label>Owner</label>
+        <select onchange="updateTaskField('${id}','owner',this.value)">
+          <option ${(!t.owner || t.owner === 'Unassigned') ? 'selected' : ''}>Unassigned</option>
+          <option ${t.owner === 'Brian' ? 'selected' : ''}>Brian</option>
+          <option ${t.owner === 'Vala' ? 'selected' : ''}>Vala</option>
+        </select>
+      </div>
+      <div><label>Due Date</label><input type="date" value="${t.dueDate || ''}" onchange="updateTaskField('${id}','dueDate',this.value)" /></div>
+      <div><label>Priority</label>
+        <select onchange="updateTaskField('${id}','priority',this.value)">
+          <option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>Normal</option>
+          <option value="critical" ${t.priority === 'critical' ? 'selected' : ''}>Critical</option>
+          <option value="high" ${t.priority === 'high' ? 'selected' : ''}>High</option>
+          <option value="low" ${t.priority === 'low' ? 'selected' : ''}>Low</option>
+        </select>
+      </div>
+      <div><label>Status</label>
+        <select onchange="updateTaskField('${id}','status',this.value)">
+          <option value="to_do" ${t.status === 'to_do' ? 'selected' : ''}>To Do</option>
+          <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+          <option value="waiting" ${t.status === 'waiting' ? 'selected' : ''}>Waiting</option>
+          <option value="complete" ${t.status === 'complete' ? 'selected' : ''}>Complete</option>
+        </select>
+      </div>
+      <div class="field-wide"><label>Notes</label><input value="${escapeAttr(t.description || '')}" onchange="updateTaskField('${id}','description',this.value)" placeholder="optional" /></div>
+    </div>
+    <button class="btn-danger-text" onclick="deleteTask('${id}'); closeModal();">Delete Task</button>
+  `);
+}
+
 function renderTasks() {
   const tbl = document.getElementById('taskTable');
   const empty = document.getElementById('tasksEmpty');
@@ -2336,28 +2807,44 @@ function renderTasks() {
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const priorityTag = { critical: 'tag-due', high: 'tag-due', normal: 'tag-tiered', low: 'tag-none' };
-  let html = '<thead><tr><th>Title</th><th>Owner</th><th>Due</th><th>Priority</th><th>Related</th><th>Status</th><th></th></tr></thead><tbody>';
+  let html = '<thead><tr><th></th><th>Title</th><th>Owner</th><th>Due</th><th>Priority</th><th>Related</th><th>Status</th><th></th></tr></thead><tbody>';
   rows.forEach(t => {
     const overdue = t.dueDate && t.status !== 'complete' && t.dueDate < todayStr();
-    html += `<tr class="${overdue ? 'row-alert' : ''}">
-      <td>${escapeHtml(t.title)}</td>
-      <td>${escapeHtml(t.owner || 'Unassigned')}</td>
-      <td>${t.dueDate || '—'}${overdue ? ' <span class="tag tag-due">overdue</span>' : ''}</td>
-      <td><span class="tag ${priorityTag[t.priority] || 'tag-none'}">${t.priority}</span></td>
-      <td>${escapeHtml(taskLinkLabel(t))}</td>
-      <td>
-        <select onchange="setTaskStatus('${t.id}', this.value)" style="width:auto; display:inline-block; padding:4px 6px; font-size:12px;">
+    const isComplete = t.status === 'complete';
+    html += `<tr class="${overdue ? 'row-alert' : ''}" data-task-id="${t.id}" style="cursor:pointer;">
+      <td data-label="">
+        <input type="checkbox" aria-label="Mark ${escapeAttr(t.title)} complete" ${isComplete ? 'checked' : ''}
+               onclick="event.stopPropagation();" onchange="toggleTaskComplete('${t.id}', this.checked)" style="width:18px; height:18px;" />
+      </td>
+      <td data-label="Title"><span style="${isComplete ? 'text-decoration:line-through; color:var(--graphite);' : ''}">${escapeHtml(t.title)}</span></td>
+      <td data-label="Owner">${escapeHtml(t.owner || 'Unassigned')}</td>
+      <td data-label="Due">
+        <input type="date" aria-label="Due date" value="${t.dueDate || ''}" onclick="event.stopPropagation();"
+               onchange="event.stopPropagation(); updateTaskDueDate('${t.id}', this.value);" style="width:auto; display:inline-block; padding:4px 6px; font-size:12px;" />
+        ${overdue ? ' <span class="tag tag-due">overdue</span>' : ''}
+      </td>
+      <td data-label="Priority"><span class="tag ${priorityTag[t.priority] || 'tag-none'}">${t.priority}</span></td>
+      <td data-label="Related">${escapeHtml(taskLinkLabel(t))}</td>
+      <td data-label="Status">
+        <select onclick="event.stopPropagation();" onchange="event.stopPropagation(); setTaskStatus('${t.id}', this.value)" style="width:auto; display:inline-block; padding:4px 6px; font-size:12px;">
           <option value="to_do" ${t.status === 'to_do' ? 'selected' : ''}>To Do</option>
           <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
           <option value="waiting" ${t.status === 'waiting' ? 'selected' : ''}>Waiting</option>
           <option value="complete" ${t.status === 'complete' ? 'selected' : ''}>Complete</option>
         </select>
       </td>
-      <td><button class="btn-danger-text" onclick="deleteTask('${t.id}')">Delete</button></td>
+      <td data-label=""><button class="btn-danger-text" onclick="event.stopPropagation(); deleteTask('${t.id}')">Delete</button></td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
+
+  // Tap/click anywhere on a row (outside the interactive controls, which
+  // stop propagation themselves) opens the full detail view — this is the
+  // primary way to see everything on a task without scrolling a wide table.
+  tbl.querySelectorAll('tbody tr[data-task-id]').forEach(tr => {
+    tr.addEventListener('click', () => openTaskDetail(tr.dataset.taskId));
+  });
 
   const tMachineSel = document.getElementById('tMachine');
   if (tMachineSel) tMachineSel.innerHTML = '<option value="">—</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
@@ -2374,7 +2861,55 @@ function switchToTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('panel-' + tab).classList.add('active');
+  // On the condensed mobile nav, surface which tab is active even when it's
+  // tucked inside "More" so context isn't lost.
+  const moreBtn = document.getElementById('tabbarMoreBtn');
+  if (moreBtn) {
+    const isSecondary = btn.classList.contains('tab-btn-secondary');
+    moreBtn.classList.toggle('has-active', isSecondary);
+    moreBtn.textContent = isSecondary ? (btn.textContent.trim() + ' ▾') : 'More ▾';
+  }
 }
+
+// ---------------- nav: sticky tabbar overflow menu + back-to-top ----------------
+const TABBAR_COMPACT_QUERY = window.matchMedia('(max-width: 700px)');
+function updateTabbarCompact() {
+  const wrap = document.getElementById('tabbarWrap');
+  if (wrap) wrap.classList.toggle('tabbar-compact', TABBAR_COMPACT_QUERY.matches);
+}
+if (TABBAR_COMPACT_QUERY.addEventListener) TABBAR_COMPACT_QUERY.addEventListener('change', updateTabbarCompact);
+else TABBAR_COMPACT_QUERY.addListener(updateTabbarCompact); // older Safari
+updateTabbarCompact();
+
+function buildMoreMenu() {
+  const menu = document.getElementById('tabbarMoreMenu');
+  if (!menu) return;
+  const secondaryBtns = Array.from(document.querySelectorAll('#tabbar .tab-btn-secondary'));
+  menu.innerHTML = secondaryBtns.map(b =>
+    `<button class="${b.classList.contains('active') ? 'active' : ''}" role="menuitem" onclick="switchToTab('${b.dataset.tab}'); stickySet('activeTab','${b.dataset.tab}'); closeMoreMenu();">${escapeHtml(b.textContent.trim())}</button>`
+  ).join('');
+}
+function toggleMoreMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('tabbarMoreMenu');
+  const btn = document.getElementById('tabbarMoreBtn');
+  if (!menu) return;
+  buildMoreMenu();
+  const willOpen = !menu.classList.contains('open');
+  menu.classList.toggle('open', willOpen);
+  if (btn) btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+}
+function closeMoreMenu() {
+  const menu = document.getElementById('tabbarMoreMenu');
+  const btn = document.getElementById('tabbarMoreBtn');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('tabbarWrap');
+  if (wrap && !wrap.contains(e.target)) closeMoreMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMoreMenu(); });
 
 function buildAttentionItems() {
   const critical = [], high = [], followUp = [], info = [];
@@ -2920,7 +3455,7 @@ function openOverviewKpiDetail(kind) {
       <tbody>${rowsHtml || '<tr><td colspan="2" style="color:var(--graphite);">No expenses in this range.</td></tr>'}
       <tr><td><strong>Commission</strong></td><td class="num"><strong>${fmt(commissionTotal)}</strong></td></tr></tbody></table></div>`;
   }
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${title}</div>
     <div class="modal-sub">${escapeHtml(rangeLabel)} — by ${kind === 'costs' ? 'category' : 'machine'}</div>
     ${bodyHtml}`);
@@ -2952,7 +3487,7 @@ function openMomentumDetail(period) {
   }).join('');
   const bodyHtml = `<div class="table-wrap"><table><thead><tr><th>Date</th><th class="num">Gross Sales</th></tr></thead>
     <tbody>${rowsHtml || '<tr><td colspan="2" style="color:var(--graphite);">No sales yet this period.</td></tr>'}</tbody></table></div>`;
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${title}</div>
     <div class="modal-sub">Comparing to ${startPrior} – ${endPrior}</div>
     ${bodyHtml}`);
@@ -3126,6 +3661,7 @@ function renderAll() {
   renderSection('overview', renderOverview);
   renderSection('health', renderHealth);
   renderSection('supply inventory', renderSupply);
+  renderSection('products', () => { if (typeof renderProducts === 'function') renderProducts(); });
   renderSection('relationships', renderRelationships);
   renderSection('tasks', renderTasks);
   renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
@@ -3180,11 +3716,20 @@ async function init() {
   await loadCommissionPayments();
   await loadProperties();
   await loadTasks();
+  await loadProductCostLots();
   buildPayPeriodOptions();
   loadPayPeriod();
   loadRestockQueue(); // not awaited — fires several parallel HAHA calls per machine, renders in when ready
+  loadProductsCatalog(); // not awaited — same reason (HAHA product + inventory calls)
 
   renderAll();
+
+  // Restore whichever tab was open last time, so refreshing mid-task doesn't
+  // dump the user back on Today.
+  const stickyTab = stickyGet('activeTab');
+  if (stickyTab && document.getElementById('panel-' + stickyTab)) switchToTab(stickyTab);
+
+  wireLabelAssociations(document);
 }
 init();
 </script>
