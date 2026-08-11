@@ -1,28 +1,50 @@
 // /api/data/machines
-// GET    -> { machines: [...] }
-// POST   -> body: { id?, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail }
+// GET    -> { machines: [...] }  (includes propertyId/status once migration 005 has run)
+// POST   -> body: { id?, name, host, address, plan, install, hahaId, contactName, contactPhone,
+//                    contactEmail, propertyId?, status?, retiredAt?, retiredReason? }
 //           creates a new machine if id is omitted, otherwise updates that id.
 // DELETE ?id=... -> removes a machine (its sales/expenses history is left in place)
+//           Prefer POST with status: 'retired' instead — see promoteMachineStatus below.
+//           Historical sales/orders keep showing the real machine name either way.
 //
 // Requires a D1 database bound to this Pages project as "DB"
 // (Settings -> Functions -> D1 database bindings -> variable name: DB).
 // This route should sit behind Cloudflare Access — see setup notes.
 //
 // contact_name / contact_phone / contact_email were added via
-// migrations/001_add_contact_fields.sql — run that once if you set this
-// database up before that migration existed.
+// migrations/001_add_contact_fields.sql.
+// property_id / status / retired_at / retired_reason were added via
+// migrations/005_properties_contacts_activity_tasks.sql — this file works
+// before or after that migration has been run (falls back to the narrower
+// column set if the new columns don't exist yet).
 
 function genId() {
   return crypto.randomUUID();
 }
+function isMissingColumnOrTable(err) {
+  return /no such (table|column)/i.test(String(err && err.message || err));
+}
+
+const WIDE_SELECT = `SELECT id, name, host, address, plan, install, haha_id as hahaId,
+         contact_name as contactName, contact_phone as contactPhone, contact_email as contactEmail,
+         property_id as propertyId, status, retired_at as retiredAt, retired_reason as retiredReason
+       FROM machines ORDER BY created_at ASC`;
+const NARROW_SELECT = `SELECT id, name, host, address, plan, install, haha_id as hahaId,
+         contact_name as contactName, contact_phone as contactPhone, contact_email as contactEmail
+       FROM machines ORDER BY created_at ASC`;
 
 export async function onRequestGet({ env }) {
-  const { results } = await env.DB.prepare(
-    `SELECT id, name, host, address, plan, install, haha_id as hahaId,
-            contact_name as contactName, contact_phone as contactPhone, contact_email as contactEmail
-     FROM machines ORDER BY created_at ASC`
-  ).all();
-  return Response.json({ machines: results });
+  try {
+    const { results } = await env.DB.prepare(WIDE_SELECT).all();
+    return Response.json({ machines: results });
+  } catch (err) {
+    if (!isMissingColumnOrTable(err)) return Response.json({ error: String(err.message || err) }, { status: 500 });
+    const { results } = await env.DB.prepare(NARROW_SELECT).all();
+    return Response.json({
+      machines: results.map((m) => ({ ...m, propertyId: null, status: 'active', retiredAt: null, retiredReason: null })),
+      _migrationNeeded: 'migrations/005_properties_contacts_activity_tasks.sql',
+    });
+  }
 }
 
 export async function onRequestPost({ request, env }) {
@@ -30,6 +52,7 @@ export async function onRequestPost({ request, env }) {
   const {
     name, host = '', address = '', plan = 'none', install = '', hahaId = '',
     contactName = '', contactPhone = '', contactEmail = '',
+    propertyId = null, status = 'active', retiredAt = null, retiredReason = null,
   } = body;
   if (!name) return Response.json({ error: 'name is required' }, { status: 400 });
 
@@ -49,29 +72,48 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
+  const responseBody = { name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail, propertyId, status, retiredAt, retiredReason };
+
   // Explicit update-vs-insert (rather than INSERT ... ON CONFLICT) so this
   // never silently inserts a second row for an id that should have been
   // updated, regardless of how the id column's constraints are defined.
   if (body.id) {
     const existing = await env.DB.prepare('SELECT id FROM machines WHERE id = ?1').bind(body.id).first();
     if (existing) {
-      await env.DB.prepare(
-        `UPDATE machines SET
-           name=?2, host=?3, address=?4, plan=?5, install=?6, haha_id=?7,
-           contact_name=?8, contact_phone=?9, contact_email=?10
-         WHERE id=?1`
-      ).bind(body.id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail).run();
-      return Response.json({ id: body.id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
+      try {
+        await env.DB.prepare(
+          `UPDATE machines SET
+             name=?2, host=?3, address=?4, plan=?5, install=?6, haha_id=?7,
+             contact_name=?8, contact_phone=?9, contact_email=?10,
+             property_id=?11, status=?12, retired_at=?13, retired_reason=?14
+           WHERE id=?1`
+        ).bind(body.id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail, propertyId, status, retiredAt, retiredReason).run();
+      } catch (err) {
+        if (!isMissingColumnOrTable(err)) return Response.json({ error: String(err.message || err) }, { status: 500 });
+        await env.DB.prepare(
+          `UPDATE machines SET name=?2, host=?3, address=?4, plan=?5, install=?6, haha_id=?7,
+             contact_name=?8, contact_phone=?9, contact_email=?10 WHERE id=?1`
+        ).bind(body.id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail).run();
+      }
+      return Response.json({ id: body.id, ...responseBody });
     }
   }
 
   const id = body.id || genId();
-  await env.DB.prepare(
-    `INSERT INTO machines (id, name, host, address, plan, install, haha_id, contact_name, contact_phone, contact_email)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
-  ).bind(id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail).run();
+  try {
+    await env.DB.prepare(
+      `INSERT INTO machines (id, name, host, address, plan, install, haha_id, contact_name, contact_phone, contact_email, property_id, status, retired_at, retired_reason)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`
+    ).bind(id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail, propertyId, status, retiredAt, retiredReason).run();
+  } catch (err) {
+    if (!isMissingColumnOrTable(err)) return Response.json({ error: String(err.message || err) }, { status: 500 });
+    await env.DB.prepare(
+      `INSERT INTO machines (id, name, host, address, plan, install, haha_id, contact_name, contact_phone, contact_email)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
+    ).bind(id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail).run();
+  }
 
-  return Response.json({ id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
+  return Response.json({ id, ...responseBody });
 }
 
 export async function onRequestDelete({ request, env }) {

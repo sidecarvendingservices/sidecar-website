@@ -209,13 +209,15 @@
   </div>
 
   <div class="tabbar" id="tabbar">
-    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn active" data-tab="today">Today</button>
+    <button class="tab-btn" data-tab="overview">Overview</button>
     <button class="tab-btn" data-tab="machines">Machines</button>
     <button class="tab-btn" data-tab="health">Machine Health</button>
     <button class="tab-btn" data-tab="sales">Sales</button>
-    <button class="tab-btn" data-tab="supply">Supply Inventory</button>
-    <button class="tab-btn" data-tab="expenses">Expenses</button>
-    <button class="tab-btn" data-tab="commission">Commission</button>
+    <button class="tab-btn" data-tab="supply">Inventory</button>
+    <button class="tab-btn" data-tab="relationships">Relationships</button>
+    <button class="tab-btn" data-tab="tasks">Tasks</button>
+    <button class="tab-btn" data-tab="financials">Financials</button>
   </div>
 
   <!-- shared modal, populated by JS for order drill-down / machine detail -->
@@ -223,8 +225,46 @@
     <div class="modal-box" id="modalBox"></div>
   </div>
 
+  <!-- ============ TODAY ============ -->
+  <div class="tab-panel active" id="panel-today">
+    <div class="card">
+      <div class="card-title">What Needs Attention</div>
+      <div class="card-desc">Pulled live from Machine Health, the Restock Queue, Tasks, and Commission — nothing here is entered separately.</div>
+      <div id="todayAttention"><div class="empty-state">Loading…</div></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">This Week</div>
+        <div class="kpi-value" id="todayWeekValue">$0.00</div>
+        <div class="kpi-sub" id="todayWeekArrow">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">This Month</div>
+        <div class="kpi-value" id="todayMonthValue">$0.00</div>
+        <div class="kpi-sub" id="todayMonthArrow">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Machines Online</div>
+        <div class="kpi-value accent" id="todayOnline">0 / 0</div>
+        <div class="kpi-sub">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Open Tasks</div>
+        <div class="kpi-value" id="todayOpenTasks">0</div>
+        <div class="kpi-sub">&nbsp;</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Due Today &amp; Overdue</div>
+        <button class="btn btn-secondary" onclick="switchToTab('tasks')">Open Tasks Tab</button>
+      </div>
+      <div id="todayTasksBody"><div class="empty-state">Nothing due — nice.</div></div>
+    </div>
+  </div>
+
   <!-- ============ OVERVIEW ============ -->
-  <div class="tab-panel active" id="panel-overview">
+  <div class="tab-panel" id="panel-overview">
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-label">Gross Sales</div>
@@ -394,14 +434,19 @@
       </div>
       <div class="kpi-grid" style="margin-bottom:0;">
         <div class="kpi-card">
-          <div class="kpi-label">Orders This Period</div>
+          <div class="kpi-label">Orders</div>
           <div class="kpi-value accent" id="payPeriodOrders">—</div>
           <div class="kpi-sub">non-refunded, HAHA-synced machines</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Unique Shoppers</div>
-          <div class="kpi-value" id="payPeriodShoppers">N/A</div>
-          <div class="kpi-sub">HAHA's API doesn't expose a buyer/card ID — orders is the closest available number</div>
+          <div class="kpi-label">Revenue</div>
+          <div class="kpi-value" id="payPeriodRevenue">—</div>
+          <div class="kpi-sub">gross, this period</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Average Order Value</div>
+          <div class="kpi-value" id="payPeriodAOV">—</div>
+          <div class="kpi-sub">revenue ÷ orders</div>
         </div>
       </div>
     </div>
@@ -467,6 +512,14 @@
   <!-- ============ SUPPLY INVENTORY (non-machine buffer stock) ============ -->
   <div class="tab-panel" id="panel-supply">
     <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Restock Queue</div>
+        <button class="btn btn-secondary" onclick="showPickList()">Route Pick List</button>
+      </div>
+      <div class="card-desc">Every HAHA-linked machine, soonest service date first. "Bring" quantities target a 14-day supply based on recent sell-through — a starting point, not exact case counts.</div>
+      <div id="restockQueueBody"><div class="empty-state">Loading…</div></div>
+    </div>
+    <div class="card">
       <div class="card-title">Add Buffer Stock Item</div>
       <div class="card-desc">Supplies sitting in storage, not loaded into a machine yet — set a reorder threshold so this flags when it's time to buy more.</div>
       <div class="form-grid" id="supplyForm">
@@ -492,11 +545,11 @@
     </div>
   </div>
 
-  <!-- ============ EXPENSES ============ -->
-  <div class="tab-panel" id="panel-expenses">
+  <!-- ============ FINANCIALS (expenses + commission) ============ -->
+  <div class="tab-panel" id="panel-financials">
     <div class="card">
       <div class="card-title">Log an Expense</div>
-      <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Sales tab.)</div>
+      <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Sales tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
       <div class="form-grid" id="expenseForm">
         <div><label>Date</label><input id="eDate" type="date" /></div>
         <div>
@@ -511,14 +564,43 @@
             <option>Sales Rep Placement Fees</option>
             <option>Sales Rep Revenue Share</option>
             <option>Organizational / Filing Fees</option>
+            <option>Equipment / Machine Purchase</option>
             <option>Other</option>
           </select>
         </div>
         <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        <div><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
+        <div>
+          <label>Paid By</label>
+          <select id="ePaidBy">
+            <option value="">—</option>
+            <option>Brian personally</option>
+            <option>Vala personally</option>
+            <option>Sidecar card</option>
+            <option>Sidecar bank account</option>
+          </select>
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="eExpenseType">
+            <option value="operating">Operating Expense</option>
+            <option value="capital">Capital / Equipment</option>
+          </select>
+        </div>
         <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
         <div><label>Note</label><input id="eNote" placeholder="optional" /></div>
+        <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
+          <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
+            <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
+          </label>
+        </div>
         <div><button class="btn btn-primary" onclick="addExpense()">Add Expense</button></div>
       </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Owner Reimbursement</div>
+      <div class="card-desc">Reimbursable expenses paid personally, not yet reimbursed.</div>
+      <div id="reimbursementSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="card">
       <div class="card-title">Expense Log</div>
@@ -528,21 +610,17 @@
         Add operating costs here to see true profitability on the Overview tab.
       </div>
     </div>
-  </div>
-
-  <!-- ============ COMMISSION ============ -->
-  <div class="tab-panel" id="panel-commission">
     <div class="card">
       <div class="card-title">This Month's Tier</div>
-      <div class="card-desc">Based on combined Gross Sales this calendar month, across machines on a commission placement.</div>
+      <div class="card-desc">Shows the highest tier reached by any single property this calendar month — each property's own combined gross (across every commission-tiered machine it has) sets its own tier below.</div>
       <div class="gauge-wrap">
         <div class="gauge-track" id="gaugeTrack"></div>
         <div class="gauge-labels"><span>$0</span><span>$500</span><span>$1,000</span><span>$1,500</span><span>$2,000+</span></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Monthly Commission by Machine</div>
-      <div class="card-desc">Gross Sales sets the tier for that month; the tier's rate is applied to that month's Net Sales — matching the Commission Version placement agreement.</div>
+      <div class="card-title">Monthly Commission by Property</div>
+      <div class="card-desc">Each property's own combined Gross Sales sets its tier for that month; the tier's rate applies to that property's combined Net Sales — matching the Commission Version placement agreement. "Mark Paid" records a payment against that period.</div>
       <div class="table-wrap"><table id="commissionTable"></table></div>
       <div id="commissionEmpty" class="empty-state" style="display:none;">
         <strong>Nothing to calculate yet</strong>
@@ -561,6 +639,86 @@
           <tr><td>Over $2,000</td><td>10%</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ============ RELATIONSHIPS (properties, contacts, activity) ============ -->
+  <div class="tab-panel" id="panel-relationships">
+    <div class="card" id="setupPropertiesCard" style="display:none;">
+      <div class="section-flex">
+        <div>
+          <div class="card-title" style="margin:0;">Set Up Properties</div>
+          <div class="card-desc" style="margin:4px 0 0;">Some machines aren't linked to a Property yet. This groups them by host/contact automatically — different contacts at the same host become separate contact records, nothing is merged blindly.</div>
+        </div>
+        <button class="btn btn-primary" onclick="runMigrateProperties(this)">Set Up Properties</button>
+      </div>
+      <div id="setupPropertiesStatus" class="pill-note" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Add Property</div>
+      <div class="form-grid" id="propertyForm">
+        <div><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
+        <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
+        <div><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
+        <div><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
+        <div>
+          <label>Status</label>
+          <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
+        </div>
+        <div><label>Relationship Started</label><input id="pRelStart" type="date" /></div>
+        <div>
+          <label>Assigned Operator</label>
+          <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
+        </div>
+        <div><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Properties</div>
+      <div class="table-wrap"><table id="propertyTable"></table></div>
+      <div id="propertiesEmpty" class="empty-state" style="display:none;">
+        <strong>No properties yet</strong>
+        Add one above, or use "Set Up Properties" to create them from your existing machines.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TASKS ============ -->
+  <div class="tab-panel" id="panel-tasks">
+    <div class="card">
+      <div class="card-title">Add Task</div>
+      <div class="form-grid" id="taskForm">
+        <div><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
+        <div>
+          <label>Owner</label>
+          <select id="tOwner"><option>Unassigned</option><option>Brian</option><option>Vala</option></select>
+        </div>
+        <div><label>Due Date</label><input id="tDue" type="date" /></div>
+        <div>
+          <label>Priority</label>
+          <select id="tPriority"><option value="normal">Normal</option><option value="critical">Critical</option><option value="high">High</option><option value="low">Low</option></select>
+        </div>
+        <div><label>Property</label><select id="tProperty"><option value="">—</option></select></div>
+        <div><label>Machine</label><select id="tMachine"><option value="">—</option></select></div>
+        <div><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
+        <div><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Task List</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;" id="taskFilterBar">
+          <button class="btn btn-secondary" data-status="open" onclick="setTaskFilter('open', this)">Open</button>
+          <button class="btn btn-ghost" data-status="all" onclick="setTaskFilter('all', this)">All</button>
+          <button class="btn btn-ghost" data-status="complete" onclick="setTaskFilter('complete', this)">Complete</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="taskTable"></table></div>
+      <div id="tasksEmpty" class="empty-state" style="display:none;">
+        <strong>Nothing here</strong>
+        Add a task above, or these fill in automatically from follow-up dates logged on the Relationships tab.
+      </div>
     </div>
   </div>
 
@@ -626,6 +784,40 @@ function tierFor(gross) {
   if (gross > 1000) return { rate: 0.065, label: '$1,000.01–$1,500 (6.5%)' };
   if (gross > 500) return { rate: 0.05, label: '$500.01–$1,000 (5%)' };
   return { rate: 0, label: '$0–$500 (no commission)' };
+}
+
+// ---------------- business timezone (America/New_York) ----------------
+// Sidecar operates in Eastern time. `new Date().toISOString()` reports UTC —
+// after ~8pm ET that silently rolls "today" over to tomorrow, which would
+// throw off Today's KPIs, month selectors, commission periods, service
+// dates, and momentum comparisons. Every "what's the business date right
+// now" call in this file should go through these two helpers instead of a
+// raw toISOString().slice(0,10).
+const BUSINESS_TZ = 'America/New_York';
+function businessDateStr(d) {
+  // en-CA locale formats as YYYY-MM-DD, which is exactly what every date
+  // input/comparison in this file expects.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+function businessToday() { return businessDateStr(new Date()); }
+
+// ---------------- chart availability (graceful degradation) ----------------
+// If the Chart.js CDN request fails or is blocked, `Chart` is undefined.
+// That must never take down the rest of the dashboard, and must never get
+// confused with a failed data sync — see safeRenderAll() below.
+const CHARTS_AVAILABLE = typeof Chart !== 'undefined';
+if (!CHARTS_AVAILABLE) console.warn('Chart.js did not load — charts will be skipped, the rest of the dashboard still works.');
+function chartUnavailableNote(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !canvas.parentElement) return;
+  let note = canvas.parentElement.querySelector('.chart-unavailable-note');
+  if (!note) {
+    note = document.createElement('div');
+    note.className = 'chart-unavailable-note empty-state';
+    note.style.padding = '10px';
+    note.textContent = 'Chart could not render (Chart.js failed to load) — the underlying data is still correct.';
+    canvas.parentElement.appendChild(note);
+  }
 }
 
 // ---------------- tabs ----------------
@@ -902,6 +1094,38 @@ async function deleteMachine(id) {
   renderAll();
 }
 
+async function retireMachine(id) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  const reason = prompt(`Retire "${m.name}"? It will be hidden from active views (restock queue, health) but its sales and expense history stay intact under its real name.\n\nReason (optional):`, '');
+  if (reason === null) return; // cancelled
+  try {
+    await apiPost('/api/data/machines', { ...m, status: 'retired', retiredAt: todayStr(), retiredReason: reason || '' });
+  } catch (e) { alert('Could not retire machine: ' + e.message); return; }
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
+async function reactivateMachine(id) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  try {
+    await apiPost('/api/data/machines', { ...m, status: 'active', retiredAt: null, retiredReason: null });
+  } catch (e) { alert('Could not reactivate machine: ' + e.message); return; }
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
+async function assignMachineProperty(id, propertyId) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  try {
+    await apiPost('/api/data/machines', { ...m, propertyId: propertyId || null });
+  } catch (e) { alert('Could not assign property: ' + e.message); return; }
+  machines = (await apiGet('/api/data/machines')).machines;
+  renderAll();
+}
+
 function startEditMachine(id) { editingMachineId = id; renderMachines(); }
 function cancelEditMachine() { editingMachineId = null; renderMachines(); }
 
@@ -936,11 +1160,12 @@ function renderMachines() {
   const empty = document.getElementById('machinesEmpty');
   if (!machines.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Machine</th><th>Host</th><th>Address</th><th>PM Contact</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Machine</th><th>Property</th><th>Host</th><th>Address</th><th>PM Contact</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
   machines.forEach(m => {
+    const isRetired = m.status === 'retired';
     if (m.id === editingMachineId) {
       html += `<tr>
-        <td colspan="8">
+        <td colspan="9">
           <div class="form-grid" style="margin: 4px 0;">
             <div><label>Machine Name / ID</label><input id="em_name_${m.id}" value="${escapeAttr(m.name)}" /></div>
             <div><label>Host / Location Name</label><input id="em_host_${m.id}" value="${escapeAttr(m.host || '')}" /></div>
@@ -970,8 +1195,13 @@ function renderMachines() {
     const contactCell = m.contactName || contactBits
       ? `${m.contactName ? escapeHtml(m.contactName) : ''}${contactBits ? `<div style="font-size:11.5px; color:var(--graphite); margin-top:2px;">${escapeHtml(contactBits)}</div>` : ''}`
       : '<span style="color:var(--graphite)">Add contact info</span>';
-    html += `<tr>
-      <td><button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button></td>
+    const propertyOptions = ['<option value="">— Unassigned —</option>']
+      .concat((properties || []).map(p => `<option value="${p.id}" ${m.propertyId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`))
+      .join('');
+    const propertyCell = `<select style="font-size:12.5px; padding:3px 4px;" onchange="assignMachineProperty('${m.id}', this.value)">${propertyOptions}</select>`;
+    html += `<tr style="${isRetired ? 'opacity:0.55;' : ''}">
+      <td><button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button>${isRetired ? ' <span class="tag tag-none">Retired</span>' : ''}</td>
+      <td>${propertyCell}</td>
       <td>${escapeHtml(m.host || '—')}</td>
       <td>${escapeHtml(m.address || '—')}</td>
       <td>${contactCell}</td>
@@ -980,7 +1210,9 @@ function renderMachines() {
       <td>${m.install || '—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="startEditMachine('${m.id}')">Edit</button>
-        <button class="btn-danger-text" onclick="deleteMachine('${m.id}')">Remove</button>
+        ${isRetired
+          ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="reactivateMachine('${m.id}')">Reactivate</button>`
+          : `<button class="btn-danger-text" onclick="retireMachine('${m.id}')">Retire</button>`}
       </td>
     </tr>`;
   });
@@ -1059,6 +1291,28 @@ function fmtWhen(iso) {
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 48) return `${hrs} hr ago`;
+  return `${Math.round(hrs / 24)} day(s) ago`;
+}
+
+// A reading older than this is treated as STALE rather than trusted as
+// "Online" — the health poll rides along with the HAHA sync schedule, so a
+// reading that hasn't refreshed in a while usually means the sync itself
+// stopped running, not that the machine is actually fine.
+const HEALTH_STALE_MINUTES = 90;
+function healthFreshness(h) {
+  if (!h) return { state: 'unknown', label: 'Unknown', tag: 'tag-none' };
+  const ageMin = (Date.now() - new Date(h.checkedAt).getTime()) / 60000;
+  if (!h.isOnline) return { state: 'offline', label: 'Offline', tag: 'tag-due' };
+  if (ageMin > HEALTH_STALE_MINUTES) return { state: 'stale', label: 'Stale', tag: 'tag-tiered' };
+  return { state: 'online', label: 'Online', tag: 'tag-paid' };
+}
 
 async function checkHealthNow(btn) {
   return withButtonBusy(btn, () => checkHealthNowImpl());
@@ -1102,7 +1356,7 @@ function renderHealth() {
   const byMachine = {};
   latestHealth.forEach(h => { byMachine[h.machineId] = h; });
 
-  const withHaha = machines.filter(m => m.hahaId);
+  const withHaha = machines.filter(m => m.hahaId && m.status !== 'retired');
   if (!withHaha.length) {
     tbl.innerHTML = ''; empty.style.display = 'block';
   } else {
@@ -1110,10 +1364,8 @@ function renderHealth() {
     let html = '<thead><tr><th>Machine</th><th>Status</th><th>Temperature</th><th>Last Checked</th><th></th></tr></thead><tbody>';
     withHaha.forEach(m => {
       const h = byMachine[m.id];
-      const online = h ? h.isOnline : null;
-      const dot = online === null ? '<span class="tag tag-none">Not checked yet</span>'
-        : online ? '<span class="tag tag-paid">● Online</span>'
-        : '<span class="tag tag-due">● Offline</span>';
+      const fresh = healthFreshness(h);
+      const dot = `<span class="tag ${fresh.tag}">● ${fresh.label}</span>`;
       let tempCell = '—';
       if (h && h.temperature !== null && h.temperature !== undefined) {
         const outOfRange = (h.warningLow !== null && h.temperature < h.warningLow) ||
@@ -1124,7 +1376,7 @@ function renderHealth() {
         <td>${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</td>
         <td>${dot}</td>
         <td>${tempCell}</td>
-        <td>${h ? fmtWhen(h.checkedAt) : '—'}</td>
+        <td>${h ? fmtWhen(h.checkedAt) + ` <span style="color:var(--graphite);">(${fmtAgo(h.checkedAt)})</span>` : 'Never checked'}</td>
         <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="selectHealthDetail('${m.id}')">History</button></td>
       </tr>`;
     });
@@ -1132,8 +1384,9 @@ function renderHealth() {
     tbl.innerHTML = html;
   }
 
-  const online = withHaha.filter(m => byMachine[m.id] && byMachine[m.id].isOnline).length;
-  const offline = withHaha.filter(m => byMachine[m.id] && !byMachine[m.id].isOnline).length;
+  const online = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'online').length;
+  const offline = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'offline').length;
+  const stale = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'stale').length;
   const tempAlerts = withHaha.filter(m => {
     const h = byMachine[m.id];
     if (!h || h.temperature === null || h.temperature === undefined) return false;
@@ -1142,7 +1395,7 @@ function renderHealth() {
   const lastChecked = latestHealth.reduce((max, h) => (!max || h.checkedAt > max) ? h.checkedAt : max, null);
 
   document.getElementById('healthOnline').textContent = online;
-  document.getElementById('healthOnlineSub').textContent = withHaha.length + ' machine(s) tracked';
+  document.getElementById('healthOnlineSub').textContent = withHaha.length + ' machine(s) tracked' + (stale ? `, ${stale} stale` : '');
   document.getElementById('healthOffline').textContent = offline;
   document.getElementById('healthTempAlerts').textContent = tempAlerts;
   document.getElementById('healthLastChecked').textContent = lastChecked ? fmtWhen(lastChecked) : '—';
@@ -1176,8 +1429,9 @@ async function loadHealthDetail(machineId) {
   // temperature chart
   const tempRows = rows.filter(r => r.temperature !== null && r.temperature !== undefined);
   const ctx = document.getElementById('healthTempChart');
-  if (charts.healthTemp) charts.healthTemp.destroy();
-  if (tempRows.length) {
+  if (!CHARTS_AVAILABLE) { chartUnavailableNote('healthTempChart'); }
+  else if (charts.healthTemp) charts.healthTemp.destroy();
+  if (CHARTS_AVAILABLE && tempRows.length) {
     charts.healthTemp = new Chart(ctx, {
       type: 'line',
       data: {
@@ -1282,9 +1536,9 @@ function buildPayPeriodOptions() {
   const sel = document.getElementById('payPeriodMonth');
   if (sel.options.length) return; // populate once
   const months = [];
-  const d = new Date();
+  const d = new Date(businessToday() + 'T12:00:00');
   for (let i = 0; i < 12; i++) {
-    months.push(d.toISOString().slice(0, 7));
+    months.push(businessDateStr(d).slice(0, 7));
     d.setMonth(d.getMonth() - 1);
   }
   sel.innerHTML = months.map(m => `<option value="${m}">${escapeHtml(monthLabel(m))}</option>`).join('');
@@ -1296,8 +1550,12 @@ async function loadPayPeriod() {
   try {
     const data = await apiGet('/api/data/orders?stats=1&month=' + encodeURIComponent(month));
     document.getElementById('payPeriodOrders').textContent = data.orderCount ?? 0;
+    document.getElementById('payPeriodRevenue').textContent = fmt(data.revenue || 0);
+    document.getElementById('payPeriodAOV').textContent = fmt(data.averageOrderValue || 0);
   } catch (e) {
     document.getElementById('payPeriodOrders').textContent = '—';
+    document.getElementById('payPeriodRevenue').textContent = '—';
+    document.getElementById('payPeriodAOV').textContent = '—';
   }
 }
 
@@ -1305,24 +1563,23 @@ async function loadPayPeriod() {
 function addDays(dateStr, days) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + Math.ceil(days));
-  return d.toISOString().slice(0, 10);
+  return businessDateStr(d);
 }
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function todayStr() { return businessToday(); }
 
-async function openMachineDetail(machineId) {
-  const m = machines.find(x => x.id === machineId);
-  if (!m) return;
-  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
-    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
-    <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
-
+// Shared by Machine Detail, the Restock Queue, and the aggregated Pick List
+// — one calculation, used everywhere, so they can never disagree.
+// "Bring N units" = enough to top the product back up to a 14-day supply at
+// its recent velocity (target = velocity × 14, bring = target − current
+// stock). That's a simple, explainable par-level heuristic, not real
+// route/case-pack optimization — good enough to know what to load today.
+async function computeMachineSellThrough(m) {
   const start14 = addDays(todayStr(), -14);
-  const [invRes, prodRes, expRes, logRes, ordersRes] = await Promise.all([
+  const [invRes, prodRes, expRes, ordersRes] = await Promise.all([
     m.hahaId ? apiGet('/api/haha-market-inventory').catch(() => null) : Promise.resolve(null),
     m.hahaId ? apiGet('/api/haha-products').catch(() => null) : Promise.resolve(null),
-    apiGet('/api/data/product-expiration?machineId=' + encodeURIComponent(machineId)).catch(() => ({ expirations: [] })),
-    apiGet('/api/data/service-log?machineId=' + encodeURIComponent(machineId)).catch(() => ({ log: [] })),
-    apiGet('/api/data/orders?machineId=' + encodeURIComponent(machineId) + '&start=' + start14 + '&end=' + todayStr() + '&limit=1000').catch(() => ({ orders: [] })),
+    apiGet('/api/data/product-expiration?machineId=' + encodeURIComponent(m.id)).catch(() => ({ expirations: [] })),
+    apiGet('/api/data/orders?machineId=' + encodeURIComponent(m.id) + '&start=' + start14 + '&end=' + todayStr() + '&limit=1000').catch(() => ({ orders: [] })),
   ]);
 
   const stockList = (invRes && invRes.ok && m.hahaId) ? (invRes.byMarket[m.hahaId] || []) : [];
@@ -1331,7 +1588,6 @@ async function openMachineDetail(machineId) {
   const expByProduct = {};
   (expRes.expirations || []).forEach(e => { expByProduct[e.productId] = e; });
 
-  // Sales velocity per product over the last 14 days, from raw orders.
   const soldByProduct = {};
   (ordersRes.orders || []).forEach(o => {
     if (o.isRefund) return;
@@ -1350,15 +1606,14 @@ async function openMachineDetail(machineId) {
     const daysRemaining = velocity > 0 ? s.stock / velocity : null;
     const stockoutDate = daysRemaining !== null ? addDays(todayStr(), daysRemaining) : null;
     const exp = expByProduct[s.productId];
+    const bring = velocity > 0 ? Math.max(0, Math.round(velocity * 14 - s.stock)) : 0;
     return {
       productId: s.productId, productName: s.productName, productImage: s.productImage,
-      stock: s.stock, cost, price, velocity, daysRemaining, stockoutDate,
+      stock: s.stock, cost, price, velocity, daysRemaining, stockoutDate, bring,
       expirationDate: exp ? exp.expirationDate : null,
     };
   });
 
-  // Next Service Required By = the soonest of every product's projected stockout
-  // date or expiration date, across the whole machine.
   const candidateDates = [];
   rows.forEach(r => {
     if (r.stockoutDate) candidateDates.push(r.stockoutDate);
@@ -1366,9 +1621,24 @@ async function openMachineDetail(machineId) {
   });
   const nextServiceBy = candidateDates.length ? candidateDates.sort()[0] : null;
   const lowestSellThroughId = rows.filter(r => r.daysRemaining !== null).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.productId;
-
   const totalCostValue = rows.reduce((s, r) => s + (r.cost !== null ? r.cost * r.stock : 0), 0);
   const totalSaleValue = rows.reduce((s, r) => s + (r.price !== null ? r.price * r.stock : 0), 0);
+
+  return { machine: m, rows, nextServiceBy, lowestSellThroughId, totalCostValue, totalSaleValue };
+}
+
+async function openMachineDetail(machineId) {
+  const m = machines.find(x => x.id === machineId);
+  if (!m) return;
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
+    <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
+
+  const [sellThrough, logRes] = await Promise.all([
+    computeMachineSellThrough(m),
+    apiGet('/api/data/service-log?machineId=' + encodeURIComponent(machineId)).catch(() => ({ log: [] })),
+  ]);
+  const { rows, nextServiceBy, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
 
   const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
   const daysUntilService = nextServiceBy ? Math.round((new Date(nextServiceBy) - new Date(todayStr())) / 86400000) : null;
@@ -1466,6 +1736,7 @@ async function promptEmailPM(machineId) {
   try {
     const res = await apiPost('/api/send-email', { to: m.contactEmail, toName: m.contactName || '', subject, message });
     alert(res.ok ? 'Email sent to ' + m.contactEmail : 'Could not send: ' + (res.error || 'unknown error'));
+    if (res.ok) await logActivityForMachine(machineId, 'email', `Emailed ${m.contactName || m.contactEmail}: ${subject}`, 'Sent');
   } catch (e) { alert('Could not send: ' + e.message); }
 }
 
@@ -1477,7 +1748,91 @@ async function promptTextPM(machineId) {
   try {
     const res = await apiPost('/api/send-sms', { to: m.contactPhone, toName: m.contactName || '', message });
     alert(res.ok ? 'Text sent to ' + m.contactPhone : 'Could not send: ' + (res.error || 'unknown error'));
+    if (res.ok) await logActivityForMachine(machineId, 'text', `Texted ${m.contactName || m.contactPhone}: ${message}`, 'Sent');
   } catch (e) { alert('Could not send: ' + e.message); }
+}
+
+// ---------------- restock queue + route pick list ----------------
+async function computeRestockQueueAll() {
+  const active = machines.filter(m => m.hahaId && m.status !== 'retired');
+  const results = await Promise.all(active.map(m => computeMachineSellThrough(m).catch(() => null)));
+  return results.filter(Boolean).filter(r => r.nextServiceBy).sort((a, b) => a.nextServiceBy.localeCompare(b.nextServiceBy));
+}
+function restockPriority(nextServiceBy) {
+  const days = Math.round((new Date(nextServiceBy) - new Date(todayStr())) / 86400000);
+  if (days <= 0) return { label: 'Critical', cls: 'tag-due' };
+  if (days <= 2) return { label: 'High', cls: 'tag-due' };
+  if (days <= 5) return { label: 'Medium', cls: 'tag-tiered' };
+  return { label: 'Low', cls: 'tag-none' };
+}
+
+let restockQueueCache = [];
+async function loadRestockQueue() {
+  restockQueueCache = await computeRestockQueueAll();
+  renderRestockQueue();
+  if (typeof renderToday === 'function') renderToday();
+}
+
+function renderRestockQueue() {
+  const body = document.getElementById('restockQueueBody');
+  if (!body) return;
+  if (!restockQueueCache.length) {
+    body.innerHTML = '<div class="empty-state">No machines with a projectable service date yet — sync sales (and optionally set expiration dates) to populate this.</div>';
+    return;
+  }
+  let html = '<div class="table-wrap"><table><thead><tr><th>Machine</th><th>Service By</th><th>Priority</th><th>Products Needed</th><th class="num">Est. Units</th><th></th></tr></thead><tbody>';
+  restockQueueCache.forEach(r => {
+    const needed = r.rows.filter(row => row.bring > 0);
+    const pr = restockPriority(r.nextServiceBy);
+    html += `<tr class="${pr.label === 'Critical' ? 'row-alert' : ''}">
+      <td><button class="link-btn" onclick="openMachineDetail('${r.machine.id}')">${escapeHtml(r.machine.name)}</button>${r.machine.host ? ' — ' + escapeHtml(r.machine.host) : ''}</td>
+      <td>${r.nextServiceBy}</td>
+      <td><span class="tag ${pr.cls}">${pr.label}</span></td>
+      <td>${needed.length} product(s)</td>
+      <td class="num">${needed.reduce((s, x) => s + x.bring, 0)}</td>
+      <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="showRestockList('${r.machine.id}')">Restock List</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  body.innerHTML = html;
+}
+
+function showRestockList(machineId) {
+  const r = restockQueueCache.find(x => x.machine.id === machineId);
+  if (!r) return;
+  const needed = r.rows.filter(row => row.bring > 0).sort((a, b) => b.bring - a.bring);
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">Restock ${escapeHtml(r.machine.name)}</div>
+    <div class="modal-sub">Service by ${r.nextServiceBy}</div>
+    ${!needed.length ? '<div class="empty-state">Nothing needs restocking right now.</div>' :
+      `<table><thead><tr><th>Product</th><th class="num">Bring</th></tr></thead><tbody>${needed.map(n => `<tr>
+        <td>${n.productImage ? `<img class="thumb" src="${escapeAttr(n.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(n.productName || n.productId)}</td>
+        <td class="num"><strong>${n.bring}</strong></td>
+      </tr>`).join('')}</tbody></table>`}
+  `);
+}
+
+function showPickList() {
+  const totals = {};
+  restockQueueCache.forEach(r => {
+    const pr = restockPriority(r.nextServiceBy);
+    if (pr.label === 'Low') return; // only aggregate machines actually due soon
+    r.rows.forEach(row => {
+      if (row.bring <= 0) return;
+      if (!totals[row.productId]) totals[row.productId] = { productName: row.productName, productImage: row.productImage, units: 0 };
+      totals[row.productId].units += row.bring;
+    });
+  });
+  const items = Object.values(totals).sort((a, b) => b.units - a.units);
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">Restock Route Pick List</div>
+    <div class="modal-sub">Combined across every machine at Medium priority or higher — load this before you leave.</div>
+    ${!items.length ? '<div class="empty-state">Nothing due soon.</div>' :
+      `<table><thead><tr><th>Product</th><th class="num">Total Units</th></tr></thead><tbody>${items.map(i => `<tr>
+        <td>${i.productImage ? `<img class="thumb" src="${escapeAttr(i.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(i.productName)}</td>
+        <td class="num"><strong>${i.units}</strong></td>
+      </tr>`).join('')}</tbody></table>`}
+  `);
 }
 
 // ---------------- supply inventory (non-machine buffer stock) ----------------
@@ -1538,6 +1893,461 @@ function renderSupply() {
   });
   html += '</tbody>';
   tbl.innerHTML = html;
+}
+
+// ---------------- properties / contacts / activity (Relationships) ----------------
+let properties = [];
+
+async function loadProperties() {
+  try {
+    const data = await apiGet('/api/data/properties');
+    properties = data.properties || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { properties = []; }
+}
+
+function unassignedMachineCount() {
+  return machines.filter(m => !m.propertyId).length;
+}
+
+async function runMigrateProperties(btn) {
+  return withButtonBusy(btn, async () => {
+    const status = document.getElementById('setupPropertiesStatus');
+    status.style.display = 'block';
+    status.textContent = 'Grouping machines by host and setting up properties…';
+    try {
+      const res = await apiPost('/api/data/migrate-properties', {});
+      status.textContent = res.propertiesCreated
+        ? `Created ${res.propertiesCreated} propert${res.propertiesCreated === 1 ? 'y' : 'ies'}, ${res.contactsCreated} contact(s), linked ${res.machinesLinked} machine(s).`
+        : (res.message || 'Nothing to do.');
+      machines = (await apiGet('/api/data/machines')).machines;
+      await loadProperties();
+      renderAll();
+      renderRelationships();
+    } catch (e) {
+      status.textContent = 'Setup failed: ' + e.message;
+    }
+  });
+}
+
+function renderRelationships() {
+  document.getElementById('setupPropertiesCard').style.display = unassignedMachineCount() > 0 ? 'block' : 'none';
+
+  const tbl = document.getElementById('propertyTable');
+  const empty = document.getElementById('propertiesEmpty');
+  if (!properties.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Property</th><th>Type</th><th>Status</th><th class="num">Machines</th><th></th></tr></thead><tbody>';
+  properties.forEach(p => {
+    const machineCount = machines.filter(m => m.propertyId === p.id).length;
+    html += `<tr>
+      <td><button class="link-btn" onclick="openPropertyDetail('${p.id}')">${escapeHtml(p.name)}</button></td>
+      <td>${escapeHtml(p.propertyType || '—')}</td>
+      <td><span class="tag ${p.status === 'active' ? 'tag-paid' : p.status === 'prospect' ? 'tag-tiered' : 'tag-none'}">${escapeHtml(p.status)}</span></td>
+      <td class="num">${machineCount}</td>
+      <td></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+
+  // refresh property dropdowns used elsewhere (task form, machine edit)
+  const tProperty = document.getElementById('tProperty');
+  if (tProperty) tProperty.innerHTML = '<option value="">—</option>' + properties.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+}
+
+async function addProperty(btn) {
+  return withButtonBusy(btn, async () => {
+    const name = document.getElementById('pName').value.trim();
+    if (!name) { alert('Give the property a name.'); return; }
+    try {
+      await apiPost('/api/data/properties', {
+        name,
+        propertyType: document.getElementById('pType').value.trim(),
+        address: document.getElementById('pAddress').value.trim(),
+        website: document.getElementById('pWebsite').value.trim(),
+        status: document.getElementById('pStatus').value,
+        relationshipStarted: document.getElementById('pRelStart').value,
+        assignedOperator: document.getElementById('pOperator').value,
+      });
+    } catch (e) { alert('Could not save property: ' + e.message); return; }
+    ['pName', 'pType', 'pAddress', 'pWebsite', 'pRelStart'].forEach(id => { document.getElementById(id).value = ''; });
+    await loadProperties();
+    renderRelationships();
+  });
+}
+
+async function openPropertyDetail(propertyId) {
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button><div class="modal-title">Loading…</div>`);
+  const [detail, activityRes] = await Promise.all([
+    apiGet('/api/data/properties?id=' + encodeURIComponent(propertyId)),
+    apiGet('/api/data/activity?propertyId=' + encodeURIComponent(propertyId)).catch(() => ({ activity: [] })),
+  ]);
+  const { property, contacts, machines: propMachines } = detail;
+  const activity = activityRes.activity || [];
+
+  const contactsHtml = !contacts.length ? '<div class="empty-state" style="padding:10px;">No contacts yet.</div>' :
+    `<table><thead><tr><th>Name</th><th>Title</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${contacts.map(c => `<tr>
+      <td>${escapeHtml(c.name)}${c.isPrimary ? ' <span class="tag tag-tiered">Primary</span>' : ''}</td>
+      <td>${escapeHtml(c.title || '—')}</td>
+      <td>${escapeHtml(c.phone || '—')}</td>
+      <td>${escapeHtml(c.email || '—')}</td>
+      <td><button class="btn-danger-text" onclick="deleteContact('${c.id}','${propertyId}')">Remove</button></td>
+    </tr>`).join('')}</tbody></table>`;
+
+  const machinesHtml = !propMachines.length ? '<div class="empty-state" style="padding:10px;">No machines linked yet.</div>' :
+    `<ul style="margin:0; padding-left:18px;">${propMachines.map(m => `<li><button class="link-btn" onclick="closeModal(); openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button></li>`).join('')}</ul>`;
+
+  const activityHtml = !activity.length ? '<div class="empty-state" style="padding:10px;">No activity logged yet.</div>' :
+    activity.map(a => `<div style="padding:8px 0; border-top:1px solid var(--border);">
+      <div style="display:flex; justify-content:space-between; gap:10px;">
+        <strong>${escapeHtml(a.type.charAt(0).toUpperCase() + a.type.slice(1).replace('_', ' '))}${a.owner ? ' — ' + escapeHtml(a.owner) : ''}</strong>
+        <span style="color:var(--graphite); font-size:12px;">${fmtWhen(a.occurredAt)}</span>
+      </div>
+      <div>${escapeHtml(a.summary)}</div>
+      ${a.notes ? `<div style="color:var(--graphite); font-size:12.5px; margin-top:2px;">${escapeHtml(a.notes)}</div>` : ''}
+      ${a.followUpDate ? `<div style="margin-top:4px;"><span class="tag tag-due">Follow up ${a.followUpDate}</span></div>` : ''}
+    </div>`).join('');
+
+  const contactOptions = contacts.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const machineOptions = propMachines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${escapeHtml(property.name)}</div>
+    <div class="modal-sub">${escapeHtml(property.propertyType || 'Property')}${property.address ? ' — ' + escapeHtml(property.address) : ''} · <span class="tag ${property.status === 'active' ? 'tag-paid' : 'tag-none'}">${escapeHtml(property.status)}</span></div>
+
+    <div class="card-title" style="margin-top:14px;">Contacts</div>
+    ${contactsHtml}
+    <div class="form-grid" style="margin-top:10px;">
+      <div><label>Name</label><input id="cName_${propertyId}" placeholder="e.g. Sarah Jones" /></div>
+      <div><label>Title</label><input id="cTitle_${propertyId}" placeholder="e.g. Property Manager" /></div>
+      <div><label>Phone</label><input id="cPhone_${propertyId}" /></div>
+      <div><label>Email</label><input id="cEmail_${propertyId}" type="email" /></div>
+      <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="cPrimary_${propertyId}" style="width:auto;" /> Primary</label></div>
+      <div><button class="btn btn-secondary" onclick="addContact('${propertyId}')">Add Contact</button></div>
+    </div>
+
+    <div class="card-title" style="margin-top:16px;">Machines at This Property</div>
+    ${machinesHtml}
+
+    <div class="card-title" style="margin-top:16px;">Log Activity</div>
+    <div class="form-grid" style="margin-bottom:8px;">
+      <div><label>Type</label><select id="aType_${propertyId}">
+        <option value="call">Call</option><option value="email">Email</option><option value="text">Text</option>
+        <option value="meeting">Meeting</option><option value="note">Note</option><option value="follow_up">Follow-up</option>
+      </select></div>
+      <div><label>Outcome</label><select id="aOutcome_${propertyId}">
+        <option value="">—</option><option>Connected</option><option>Left voicemail</option><option>Follow-up needed</option>
+        <option>Meeting scheduled</option><option>Service request</option><option>Placement discussion</option>
+        <option>Issue resolved</option><option>Not interested</option><option>Other</option>
+      </select></div>
+      <div><label>Owner</label><select id="aOwner_${propertyId}"><option value="">—</option><option>Brian</option><option>Vala</option></select></div>
+      <div><label>Contact</label><select id="aContact_${propertyId}"><option value="">—</option>${contactOptions}</select></div>
+      <div><label>Machine (optional)</label><select id="aMachine_${propertyId}"><option value="">—</option>${machineOptions}</select></div>
+      <div><label>Follow-up Date</label><input id="aFollowUp_${propertyId}" type="date" /></div>
+    </div>
+    <div class="form-grid">
+      <div style="grid-column: 1 / -1;"><label>Summary</label><input id="aSummary_${propertyId}" placeholder="e.g. Discussed adding healthier products to Fitness Center machine" /></div>
+      <div><button class="btn btn-primary" onclick="logActivity('${propertyId}')">Log It</button></div>
+    </div>
+
+    <div class="card-title" style="margin-top:16px;">Activity Timeline</div>
+    ${activityHtml}
+  `);
+}
+
+async function addContact(propertyId) {
+  const name = document.getElementById('cName_' + propertyId).value.trim();
+  if (!name) { alert('Give the contact a name.'); return; }
+  try {
+    await apiPost('/api/data/contacts', {
+      propertyId, name,
+      title: document.getElementById('cTitle_' + propertyId).value.trim(),
+      phone: document.getElementById('cPhone_' + propertyId).value.trim(),
+      email: document.getElementById('cEmail_' + propertyId).value.trim(),
+      isPrimary: document.getElementById('cPrimary_' + propertyId).checked,
+    });
+  } catch (e) { alert('Could not save contact: ' + e.message); return; }
+  openPropertyDetail(propertyId);
+}
+async function deleteContact(contactId, propertyId) {
+  if (!confirm('Remove this contact?')) return;
+  await apiDelete('/api/data/contacts?id=' + encodeURIComponent(contactId));
+  openPropertyDetail(propertyId);
+}
+
+async function logActivity(propertyId) {
+  const summary = document.getElementById('aSummary_' + propertyId).value.trim();
+  if (!summary) { alert('Add a short summary.'); return; }
+  try {
+    await apiPost('/api/data/activity', {
+      propertyId,
+      type: document.getElementById('aType_' + propertyId).value,
+      outcome: document.getElementById('aOutcome_' + propertyId).value || null,
+      owner: document.getElementById('aOwner_' + propertyId).value,
+      contactId: document.getElementById('aContact_' + propertyId).value || null,
+      machineId: document.getElementById('aMachine_' + propertyId).value || null,
+      followUpDate: document.getElementById('aFollowUp_' + propertyId).value || null,
+      summary,
+    });
+  } catch (e) { alert('Could not log activity: ' + e.message); return; }
+  await loadTasks();
+  openPropertyDetail(propertyId);
+}
+
+// Logs an activity entry against a machine's property without opening the
+// modal — used to auto-log Email PM / Text PM sends so nobody has to
+// remember to note it down manually.
+async function logActivityForMachine(machineId, type, summary, outcome) {
+  const m = machines.find(x => x.id === machineId);
+  if (!m || !m.propertyId) return; // no property yet — nothing to attach it to
+  try {
+    await apiPost('/api/data/activity', { propertyId: m.propertyId, machineId, type, summary, outcome, owner: '' });
+  } catch (e) { /* non-fatal — the message itself already sent */ }
+}
+
+// ---------------- tasks ----------------
+let tasks = [];
+let taskFilter = 'open';
+
+async function loadTasks() {
+  try {
+    const data = await apiGet('/api/data/tasks');
+    tasks = data.tasks || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { tasks = []; }
+}
+
+function setTaskFilter(filter, btn) {
+  taskFilter = filter;
+  document.querySelectorAll('#taskFilterBar .btn').forEach(b => b.className = 'btn btn-ghost');
+  btn.className = 'btn btn-secondary';
+  renderTasks();
+}
+
+async function addTask(btn) {
+  return withButtonBusy(btn, async () => {
+    const title = document.getElementById('tTitle').value.trim();
+    if (!title) { alert('Give the task a title.'); return; }
+    try {
+      await apiPost('/api/data/tasks', {
+        title,
+        owner: document.getElementById('tOwner').value,
+        dueDate: document.getElementById('tDue').value || null,
+        priority: document.getElementById('tPriority').value,
+        propertyId: document.getElementById('tProperty').value || null,
+        machineId: document.getElementById('tMachine').value || null,
+        description: document.getElementById('tDescription').value.trim(),
+      });
+    } catch (e) { alert('Could not save task: ' + e.message); return; }
+    ['tTitle', 'tDue', 'tDescription'].forEach(id => { document.getElementById(id).value = ''; });
+    await loadTasks();
+    renderTasks();
+    renderToday();
+  });
+}
+
+async function setTaskStatus(id, status) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  try {
+    await apiPost('/api/data/tasks', { ...t, id, status });
+  } catch (e) { alert('Could not update task: ' + e.message); return; }
+  await loadTasks();
+  renderTasks();
+  renderToday();
+}
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await apiDelete('/api/data/tasks?id=' + encodeURIComponent(id));
+  await loadTasks();
+  renderTasks();
+  renderToday();
+}
+
+function taskLinkLabel(t) {
+  const bits = [];
+  if (t.propertyId) { const p = properties.find(x => x.id === t.propertyId); if (p) bits.push(p.name); }
+  if (t.machineId) { const m = machines.find(x => x.id === t.machineId); if (m) bits.push(m.name); }
+  return bits.join(' — ') || '—';
+}
+
+function renderTasks() {
+  const tbl = document.getElementById('taskTable');
+  const empty = document.getElementById('tasksEmpty');
+  let rows = tasks;
+  if (taskFilter === 'open') rows = tasks.filter(t => t.status !== 'complete');
+  if (taskFilter === 'complete') rows = tasks.filter(t => t.status === 'complete');
+
+  if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const priorityTag = { critical: 'tag-due', high: 'tag-due', normal: 'tag-tiered', low: 'tag-none' };
+  let html = '<thead><tr><th>Title</th><th>Owner</th><th>Due</th><th>Priority</th><th>Related</th><th>Status</th><th></th></tr></thead><tbody>';
+  rows.forEach(t => {
+    const overdue = t.dueDate && t.status !== 'complete' && t.dueDate < todayStr();
+    html += `<tr class="${overdue ? 'row-alert' : ''}">
+      <td>${escapeHtml(t.title)}</td>
+      <td>${escapeHtml(t.owner || 'Unassigned')}</td>
+      <td>${t.dueDate || '—'}${overdue ? ' <span class="tag tag-due">overdue</span>' : ''}</td>
+      <td><span class="tag ${priorityTag[t.priority] || 'tag-none'}">${t.priority}</span></td>
+      <td>${escapeHtml(taskLinkLabel(t))}</td>
+      <td>
+        <select onchange="setTaskStatus('${t.id}', this.value)" style="width:auto; display:inline-block; padding:4px 6px; font-size:12px;">
+          <option value="to_do" ${t.status === 'to_do' ? 'selected' : ''}>To Do</option>
+          <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+          <option value="waiting" ${t.status === 'waiting' ? 'selected' : ''}>Waiting</option>
+          <option value="complete" ${t.status === 'complete' ? 'selected' : ''}>Complete</option>
+        </select>
+      </td>
+      <td><button class="btn-danger-text" onclick="deleteTask('${t.id}')">Delete</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+
+  const tMachineSel = document.getElementById('tMachine');
+  if (tMachineSel) tMachineSel.innerHTML = '<option value="">—</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+}
+
+// ---------------- today / command center ----------------
+// Pulls exclusively from state that other tabs already computed (health,
+// restockQueueCache, tasks, commissionPayments) — nothing is entered here
+// directly, so this can never drift out of sync with the tabs it summarizes.
+function switchToTab(tab) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function buildAttentionItems() {
+  const critical = [], high = [], followUp = [], info = [];
+  const today = todayStr();
+  const byMachine = {};
+  latestHealth.forEach(h => { byMachine[h.machineId] = h; });
+  const activeMachines = machines.filter(m => m.status !== 'retired');
+
+  // Machine health
+  activeMachines.filter(m => m.hahaId).forEach(m => {
+    const h = byMachine[m.id];
+    const fresh = healthFreshness(h);
+    if (fresh.state === 'offline') {
+      critical.push({ label: `${m.name} is offline`, detail: h ? `since ${fmtWhen(h.checkedAt)}` : '', action: () => switchToTab('health') });
+    } else if (fresh.state === 'stale') {
+      high.push({ label: `${m.name} hasn't reported in a while`, detail: `last checked ${fmtAgo(h.checkedAt)}`, action: () => switchToTab('health') });
+    }
+    if (h && h.temperature !== null && h.temperature !== undefined) {
+      const outOfRange = (h.warningLow !== null && h.temperature < h.warningLow) || (h.warningHigh !== null && h.temperature > h.warningHigh);
+      if (outOfRange) high.push({ label: `${m.name} temperature out of range`, detail: `${h.temperature}°`, action: () => switchToTab('health') });
+    }
+  });
+
+  // Restock queue — soonest service dates
+  (restockQueueCache || []).forEach(entry => {
+    if (!entry.nextServiceBy) return;
+    const pr = restockPriority(entry.nextServiceBy);
+    const item = { label: `${entry.machine.name} needs service`, detail: `by ${entry.nextServiceBy} (${pr.label})`, action: () => switchToTab('supply') };
+    if (pr.label === 'Critical') critical.push(item);
+    else if (pr.label === 'High') high.push(item);
+    else if (pr.label === 'Medium') followUp.push(item);
+  });
+
+  // Buffer / warehouse stock
+  (supplyItems || []).forEach(it => {
+    const low = it.reorderThreshold !== null && it.reorderThreshold !== undefined && it.quantity <= it.reorderThreshold;
+    if (low) followUp.push({ label: `${it.name} is low in storage`, detail: `${it.quantity} on hand, reorder at ${it.reorderThreshold}`, action: () => switchToTab('supply') });
+  });
+
+  // Tasks
+  (tasks || []).forEach(t => {
+    if (t.status === 'complete') return;
+    if (!t.dueDate) return;
+    const item = { label: t.title, detail: `${t.owner || 'Unassigned'} — related: ${taskLinkLabel(t)}`, action: () => switchToTab('tasks') };
+    if (t.dueDate < today) critical.push({ ...item, label: `Overdue: ${t.title}` });
+    else if (t.dueDate === today && (t.priority === 'critical' || t.priority === 'high')) high.push(item);
+    else if (t.dueDate === today) followUp.push(item);
+  });
+
+  // Commission — due / past due for the current month
+  const curMonth = monthKey(today);
+  const groups = commissionForMonth(curMonth);
+  groups.forEach(g => {
+    const payment = paymentFor(g.key, curMonth);
+    const status = payment ? payment.status : 'due';
+    if (status === 'past_due') critical.push({ label: `Commission past due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials') });
+    else if (status === 'due' && g.commissionOwed > 0) info.push({ label: `Commission due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials') });
+  });
+
+  return { critical, high, followUp, info };
+}
+
+function renderToday() {
+  const box = document.getElementById('todayAttention');
+  if (!box) return;
+  const { critical, high, followUp, info } = buildAttentionItems();
+  const all = [
+    ...critical.map(it => ({ ...it, title: 'Critical', tone: 'tag-due' })),
+    ...high.map(it => ({ ...it, title: 'High Priority', tone: 'tag-due' })),
+    ...followUp.map(it => ({ ...it, title: 'Follow-up', tone: 'tag-tiered' })),
+    ...info.map(it => ({ ...it, title: 'Info', tone: 'tag-none' })),
+  ];
+  if (!all.length) {
+    box.innerHTML = '<div class="empty-state"><strong>All clear</strong>Nothing needs attention right now.</div>';
+  } else {
+    let html = '<div style="display:flex; flex-direction:column; gap:0;">';
+    all.forEach((it, idx) => {
+      html += `<div class="attn-row" data-attn-idx="${idx}" style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid #f0f0f0; cursor:pointer;">
+        <span class="tag ${it.tone}" style="flex-shrink:0;">${it.title}</span>
+        <span style="flex:1;">${escapeHtml(it.label)}</span>
+        <span style="color:var(--graphite); font-size:12px;">${escapeHtml(it.detail || '')}</span>
+      </div>`;
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    Array.from(box.querySelectorAll('[data-attn-idx]')).forEach(el => {
+      const idx = parseInt(el.dataset.attnIdx, 10);
+      if (all[idx] && typeof all[idx].action === 'function') el.addEventListener('click', () => all[idx].action());
+    });
+  }
+
+  // headline machine-online count
+  const withHaha = machines.filter(m => m.hahaId && m.status !== 'retired');
+  const byMachine = {};
+  latestHealth.forEach(h => { byMachine[h.machineId] = h; });
+  const online = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'online').length;
+  const onlineEl = document.getElementById('todayOnline');
+  if (onlineEl) onlineEl.textContent = `${online} / ${withHaha.length}`;
+
+  const openTasks = (tasks || []).filter(t => t.status !== 'complete').length;
+  const openTasksEl = document.getElementById('todayOpenTasks');
+  if (openTasksEl) openTasksEl.textContent = openTasks;
+
+  // due today / overdue tasks list
+  const dueBody = document.getElementById('todayTasksBody');
+  if (dueBody) {
+    const today = todayStr();
+    const dueRows = (tasks || []).filter(t => t.status !== 'complete' && t.dueDate && t.dueDate <= today);
+    if (!dueRows.length) {
+      dueBody.innerHTML = '<div class="empty-state">Nothing due — nice.</div>';
+    } else {
+      const priorityTag = { critical: 'tag-due', high: 'tag-due', normal: 'tag-tiered', low: 'tag-none' };
+      let html = '<table><thead><tr><th>Title</th><th>Owner</th><th>Due</th><th>Priority</th><th>Related</th></tr></thead><tbody>';
+      dueRows.forEach(t => {
+        const overdue = t.dueDate < today;
+        html += `<tr class="${overdue ? 'row-alert' : ''}">
+          <td>${escapeHtml(t.title)}</td>
+          <td>${escapeHtml(t.owner || 'Unassigned')}</td>
+          <td>${t.dueDate}${overdue ? ' <span class="tag tag-due">overdue</span>' : ''}</td>
+          <td><span class="tag ${priorityTag[t.priority] || 'tag-none'}">${t.priority}</span></td>
+          <td>${escapeHtml(taskLinkLabel(t))}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      dueBody.innerHTML = html;
+    }
+  }
 }
 
 // ---------------- sales ----------------
@@ -1602,13 +2412,19 @@ async function addExpense() {
   const amount = parseFloat(document.getElementById('eAmount').value);
   const machineId = document.getElementById('eMachine').value || null;
   const note = document.getElementById('eNote').value.trim();
+  const vendor = document.getElementById('eVendor').value.trim();
+  const paidBy = document.getElementById('ePaidBy').value;
+  const expenseType = document.getElementById('eExpenseType').value;
+  const reimbursable = document.getElementById('eReimbursable').checked;
   if (!date) { alert('Pick a date.'); return; }
   if (isNaN(amount) || amount < 0) { alert('Enter an amount.'); return; }
   try {
-    await apiPost('/api/data/expenses', { date, category, amount, machineId, note });
+    await apiPost('/api/data/expenses', { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable });
   } catch (e) { alert('Could not save expense: ' + e.message); return; }
   document.getElementById('eAmount').value = '';
   document.getElementById('eNote').value = '';
+  document.getElementById('eVendor').value = '';
+  document.getElementById('eReimbursable').checked = false;
   expenses = (await apiGet('/api/data/expenses')).expenses;
   renderAll();
 }
@@ -1622,67 +2438,179 @@ function renderExpenses() {
   const tbl = document.getElementById('expenseTable');
   const empty = document.getElementById('expensesEmpty');
   const rows = filteredExpenses().slice().sort((a, b) => b.date.localeCompare(a.date));
+  renderReimbursementSummary();
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Date</th><th>Category</th><th>Machine</th><th class="num">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Date</th><th>Category</th><th>Machine</th><th>Paid By</th><th class="num">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
   rows.forEach(e => {
+    const capexTag = e.expenseType === 'capital' ? ' <span class="tag tag-tiered">Capital</span>' : '';
+    const reimbTag = e.reimbursable ? (e.reimbursed ? ' <span class="tag tag-paid">Reimbursed</span>' : ' <span class="tag tag-due">Owed</span>') : '';
     html += `<tr>
       <td>${e.date}</td>
-      <td>${escapeHtml(e.category)}</td>
+      <td>${escapeHtml(e.category)}${capexTag}</td>
       <td>${e.machineId ? escapeHtml(machineName(e.machineId)) : '<span style="color:var(--graphite)">Company-wide</span>'}</td>
+      <td>${escapeHtml(e.paidBy || '—')}${reimbTag}</td>
       <td class="num">${fmt(e.amount)}</td>
-      <td>${escapeHtml(e.note || '—')}</td>
-      <td><button class="btn-danger-text" onclick="deleteExpense('${e.id}')">Delete</button></td>
+      <td>${escapeHtml([e.vendor, e.note].filter(Boolean).join(' — ') || '—')}</td>
+      <td>
+        ${e.reimbursable && !e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}
+        <button class="btn-danger-text" onclick="deleteExpense('${e.id}')">Delete</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
 }
 
-// ---------------- commission ----------------
-function commissionRows() {
-  // group sales by machine + month, only for machines on the tiered plan
+async function markExpenseReimbursed(id) {
+  const e = expenses.find(x => x.id === id);
+  if (!e) return;
+  try {
+    await apiPost('/api/data/expenses', { ...e, id, reimbursed: true });
+  } catch (err) { alert('Could not update: ' + err.message); return; }
+  expenses = (await apiGet('/api/data/expenses')).expenses;
+  renderExpenses();
+}
+
+function renderReimbursementSummary() {
+  const el = document.getElementById('reimbursementSummary');
+  if (!el) return;
+  const owed = {};
+  expenses.forEach(e => {
+    if (!e.reimbursable || e.reimbursed) return;
+    const who = e.paidBy || 'Unspecified';
+    owed[who] = (owed[who] || 0) + e.amount;
+  });
+  const people = Object.keys(owed);
+  if (!people.length) { el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Nothing owed — no outstanding reimbursable expenses.</div>'; return; }
+  el.innerHTML = people.map(who => `
+    <div class="kpi-card">
+      <div class="kpi-label">${escapeHtml(who)}</div>
+      <div class="kpi-value accent">${fmt(owed[who])}</div>
+      <div class="kpi-sub">owed</div>
+    </div>`).join('');
+}
+
+// ---------------- commission (centralized — ONE authoritative calculation) ----------------
+// Business rule: the commission TIER for a month is set by the machine's
+// group's COMBINED gross sales that month, and the resulting rate is applied
+// to that group's combined net sales. "Group" = every commission-tiered
+// machine at the same Property (once machines have been assigned to
+// properties); machines not yet assigned fall back to grouping by their raw
+// `host` text, then to standing alone. This is the ONE place this rule
+// lives — the gauge, the table, the trend chart, and commission payment
+// records all derive from commissionForMonth()/commissionRows() below, so
+// they can never disagree with each other again.
+//
+// If Sidecar's real placement agreements price this differently (e.g.
+// strictly per-machine, or combined company-wide instead of per-property),
+// change ONLY groupKeyForMachine() — everything downstream updates itself.
+function groupKeyForMachine(m) {
+  if (m.propertyId) return 'prop:' + m.propertyId;
+  if (m.host && m.host.trim()) return 'host:' + m.host.trim().toLowerCase();
+  return 'machine:' + m.id;
+}
+function groupLabelForMachine(m) {
+  return m.host || m.name;
+}
+
+function commissionForMonth(month) {
   const groups = {};
   sales.forEach(s => {
+    if (monthKey(s.date) !== month) return;
     const m = machines.find(x => x.id === s.machineId);
     if (!m || m.plan !== 'tiered') return;
-    const key = s.machineId + '|' + monthKey(s.date);
-    if (!groups[key]) groups[key] = { machineId: s.machineId, month: monthKey(s.date), gross: 0, net: 0 };
+    const key = groupKeyForMachine(m);
+    if (!groups[key]) groups[key] = { key, propertyId: m.propertyId || null, label: groupLabelForMachine(m), month, gross: 0, net: 0, byMachine: {} };
+    const net = s.gross - s.cogs - s.fees;
     groups[key].gross += s.gross;
-    groups[key].net += (s.gross - s.cogs - s.fees);
+    groups[key].net += net;
+    if (!groups[key].byMachine[m.id]) groups[key].byMachine[m.id] = { machineId: m.id, gross: 0, net: 0 };
+    groups[key].byMachine[m.id].gross += s.gross;
+    groups[key].byMachine[m.id].net += net;
   });
-  return Object.values(groups).sort((a, b) => (b.month.localeCompare(a.month)) || 0);
+  return Object.values(groups).map(g => {
+    const tier = tierFor(g.gross);
+    return { ...g, tier, commissionOwed: tier.rate * g.net, machines: Object.values(g.byMachine) };
+  });
+}
+
+function allCommissionMonths() {
+  return Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
+}
+
+// Back-compat shim for callers (Overview trend chart) expecting one row per
+// (machine, month) — `.gross` here is correctly the GROUP's combined gross
+// (what sets the tier), `.net` is that one machine's own net contribution,
+// so `tierFor(r.gross).rate * r.net` still gives the right per-machine share.
+function commissionRows() {
+  const rows = [];
+  allCommissionMonths().forEach(month => {
+    commissionForMonth(month).forEach(g => {
+      g.machines.forEach(gm => rows.push({ machineId: gm.machineId, month, gross: g.gross, net: gm.net }));
+    });
+  });
+  return rows;
+}
+
+let commissionPayments = [];
+async function loadCommissionPayments() {
+  try { commissionPayments = (await apiGet('/api/data/commission-payments')).payments || []; } catch (e) { commissionPayments = []; }
+}
+function paymentFor(groupKey, month) {
+  return commissionPayments.find(p => p.groupKey === groupKey && p.month === month);
+}
+
+async function markCommissionPaid(groupKey, propertyId, month, amountOwed) {
+  const amountPaid = prompt('Amount paid:', amountOwed.toFixed(2));
+  if (amountPaid === null) return;
+  try {
+    await apiPost('/api/data/commission-payments', {
+      groupKey, propertyId, month, amountOwed,
+      status: 'paid', paidDate: todayStr(), amountPaid: parseFloat(amountPaid) || amountOwed,
+    });
+  } catch (e) { alert('Could not save payment: ' + e.message); return; }
+  await loadCommissionPayments();
+  renderCommission();
 }
 
 function renderCommission() {
   const tbl = document.getElementById('commissionTable');
   const empty = document.getElementById('commissionEmpty');
-  const rows = commissionRows();
-  if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; }
+  const months = allCommissionMonths();
+  const allGroups = [];
+  months.forEach(month => commissionForMonth(month).forEach(g => allGroups.push(g)));
+  allGroups.sort((a, b) => b.month.localeCompare(a.month));
+
+  if (!allGroups.length) { tbl.innerHTML = ''; empty.style.display = 'block'; }
   else {
     empty.style.display = 'none';
-    let html = '<thead><tr><th>Month</th><th>Machine</th><th class="num">Gross Sales</th><th>Tier</th><th class="num">Net Sales</th><th class="num">Commission Owed</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      const tier = tierFor(r.gross);
-      const commission = tier.rate * r.net;
+    let html = '<thead><tr><th>Month</th><th>Property / Host</th><th class="num">Combined Gross</th><th>Tier</th><th class="num">Combined Net</th><th class="num">Commission Owed</th><th>Status</th><th></th></tr></thead><tbody>';
+    allGroups.forEach(g => {
+      const payment = paymentFor(g.key, g.month);
+      const isPastDue = !payment && g.month < businessToday().slice(0, 7);
+      const statusTag = payment && payment.status === 'paid'
+        ? `<span class="tag tag-paid">Paid ${payment.paidDate || ''}</span>`
+        : isPastDue ? '<span class="tag tag-due">Past Due</span>' : '<span class="tag tag-none">Due</span>';
       html += `<tr>
-        <td>${monthLabel(r.month)}</td>
-        <td>${escapeHtml(machineName(r.machineId))}</td>
-        <td class="num">${fmt(r.gross)}</td>
-        <td>${tier.label}</td>
-        <td class="num">${fmt(r.net)}</td>
-        <td class="num"><strong>${fmt(commission)}</strong></td>
+        <td>${monthLabel(g.month)}</td>
+        <td>${escapeHtml(g.label)}${g.machines.length > 1 ? ` <span class="pill-note">${g.machines.length} machines</span>` : ''}</td>
+        <td class="num">${fmt(g.gross)}</td>
+        <td>${g.tier.label}</td>
+        <td class="num">${fmt(g.net)}</td>
+        <td class="num"><strong>${fmt(g.commissionOwed)}</strong></td>
+        <td>${statusTag}</td>
+        <td>${(!payment || payment.status !== 'paid') ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markCommissionPaid('${g.key}', ${g.propertyId ? `'${g.propertyId}'` : 'null'}, '${g.month}', ${g.commissionOwed})">Mark Paid</button>` : ''}</td>
       </tr>`;
     });
     html += '</tbody>';
     tbl.innerHTML = html;
   }
 
-  // gauge — based on current calendar month's combined gross across tiered machines
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const thisMonthGross = sales
-    .filter(s => { const m = machines.find(x => x.id === s.machineId); return m && m.plan === 'tiered' && monthKey(s.date) === thisMonth; })
-    .reduce((sum, s) => sum + s.gross, 0);
+  // gauge — current calendar month's combined gross for the largest tiered group
+  const thisMonth = businessToday().slice(0, 7);
+  const thisMonthGroups = commissionForMonth(thisMonth);
+  const thisMonthGross = thisMonthGroups.reduce((max, g) => Math.max(max, g.gross), 0);
   renderGauge(thisMonthGross);
 }
 
@@ -1754,12 +2682,14 @@ function arrowHtml(current, prior) {
 }
 
 function renderMomentum() {
-  const today = new Date();
-  const todayS = today.toISOString().slice(0, 10);
+  // Anchored to the Eastern business date, not the browser's local timezone
+  // or raw UTC — see businessToday()/businessDateStr() above.
+  const todayS = businessToday();
+  const todayNoon = new Date(todayS + 'T12:00:00'); // safe for getDay()/getDate(), avoids DST/midnight edge cases
 
   // Week: Sunday-start. Compare "so far this week" to the same number of days
   // into last week, so a Tuesday isn't compared against a full 7-day week.
-  const dow = today.getDay();
+  const dow = todayNoon.getDay();
   const startThisWeek = addDays(todayS, -dow);
   const startLastWeek = addDays(startThisWeek, -7);
   const endLastWeekComparable = addDays(startLastWeek, dow);
@@ -1767,10 +2697,10 @@ function renderMomentum() {
   const lastWeekGross = sumGrossInRange(startLastWeek, endLastWeekComparable);
 
   // Month: same idea, compare day 1..N of this month to day 1..N of last month.
-  const dom = today.getDate(); // 1-based day of month
+  const dom = todayNoon.getDate(); // 1-based day of month
   const startThisMonth = todayS.slice(0, 8) + '01';
-  const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const startLastMonth = lastMonthDate.toISOString().slice(0, 8) + '01';
+  const lastMonthAnchor = new Date(todayNoon.getFullYear(), todayNoon.getMonth() - 1, 1, 12);
+  const startLastMonth = businessDateStr(lastMonthAnchor).slice(0, 8) + '01';
   const endLastMonthComparable = addDays(startLastMonth, dom - 1);
   const thisMonthGross = sumGrossInRange(startThisMonth, todayS);
   const lastMonthGross = sumGrossInRange(startLastMonth, endLastMonthComparable);
@@ -1779,6 +2709,15 @@ function renderMomentum() {
   document.getElementById('momWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross);
   document.getElementById('momMonthValue').textContent = fmt(thisMonthGross);
   document.getElementById('momMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross);
+
+  // Mirror onto the Today tab's headline KPIs, if present.
+  const tw = document.getElementById('todayWeekValue');
+  if (tw) {
+    tw.textContent = fmt(thisWeekGross);
+    document.getElementById('todayWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross);
+    document.getElementById('todayMonthValue').textContent = fmt(thisMonthGross);
+    document.getElementById('todayMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross);
+  }
 }
 
 function renderTrendChart() {
@@ -1790,6 +2729,7 @@ function renderTrendChart() {
   const profitByMonth = netByMonth.map((n, i) => n - expByMonth[i] - commByMonth[i]);
 
   const ctx = document.getElementById('trendChart');
+  if (!CHARTS_AVAILABLE) { chartUnavailableNote('trendChart'); return; }
   if (charts.trend) charts.trend.destroy();
   if (!months.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
   charts.trend = new Chart(ctx, {
@@ -1815,6 +2755,7 @@ function renderExpenseChart(eRows) {
   eRows.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
   const labels = Object.keys(byCat);
   const ctx = document.getElementById('expenseChart');
+  if (!CHARTS_AVAILABLE) { chartUnavailableNote('expenseChart'); return; }
   if (charts.expense) charts.expense.destroy();
   if (!labels.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
   const palette = ['#29ABE2', '#1A7EB5', '#FF6B2B', '#5A5A5A', '#8BC7E6', '#B3401F', '#3D3D3D', '#C9D2D6', '#7FB8DC', '#E89A6B'];
@@ -1830,6 +2771,7 @@ function renderMachineChart(sRows) {
   sRows.forEach(s => { byMachine[s.machineId] = (byMachine[s.machineId] || 0) + (s.gross - s.cogs - s.fees); });
   const ids = Object.keys(byMachine);
   const ctx = document.getElementById('machineChart');
+  if (!CHARTS_AVAILABLE) { chartUnavailableNote('machineChart'); return; }
   if (charts.machine) charts.machine.destroy();
   if (!ids.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
   charts.machine = new Chart(ctx, {
@@ -1867,13 +2809,14 @@ function renderPatternChart() {
   const rows = filteredSaleHours();
   const empty = document.getElementById('patternEmpty');
   const ctx = document.getElementById('patternChart');
-  if (charts.pattern) charts.pattern.destroy();
   if (!rows.length) {
     empty.style.display = 'block';
     ctx.getContext('2d').clearRect(0, 0, 999, 999);
     return;
   }
   empty.style.display = 'none';
+  if (!CHARTS_AVAILABLE) { chartUnavailableNote('patternChart'); return; }
+  if (charts.pattern) charts.pattern.destroy();
 
   let labels, data;
   if (salesPatternMode === 'hour') {
@@ -1925,16 +2868,29 @@ function warnMigrationNeeded(file) {
      </div>`);
 }
 
+// Rendering (especially charts) must never throw back up into a caller that
+// just finished reporting a successful data operation — e.g. syncFromHahaImpl
+// sets "Synced X days..." then calls renderAll(); if a chart threw from in
+// there, the outer try/catch used to overwrite that with "Sync failed: Chart
+// is not defined" even though the sync itself was 100% successful. Each
+// section below is isolated so one broken piece can't blank out the rest of
+// the dashboard or masquerade as a data failure.
+function renderSection(name, fn) {
+  try { fn(); } catch (err) { console.error(`renderAll: ${name} failed to render`, err); }
+}
 function renderAll() {
-  buildRangeOptions();
-  renderMachines();
-  renderSales();
-  renderPatternChart();
-  renderExpenses();
-  renderCommission();
-  renderOverview();
-  renderHealth();
-  renderSupply();
+  renderSection('range options', buildRangeOptions);
+  renderSection('machines', renderMachines);
+  renderSection('sales', renderSales);
+  renderSection('sales pattern chart', renderPatternChart);
+  renderSection('expenses', renderExpenses);
+  renderSection('commission', renderCommission);
+  renderSection('overview', renderOverview);
+  renderSection('health', renderHealth);
+  renderSection('supply inventory', renderSupply);
+  renderSection('relationships', renderRelationships);
+  renderSection('tasks', renderTasks);
+  renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
 }
 
 async function init() {
@@ -1976,8 +2932,12 @@ async function init() {
   } catch (err) { latestHealth = []; }
 
   await loadSupplyItems();
+  await loadCommissionPayments();
+  await loadProperties();
+  await loadTasks();
   buildPayPeriodOptions();
   loadPayPeriod();
+  loadRestockQueue(); // not awaited — fires several parallel HAHA calls per machine, renders in when ready
 
   renderAll();
 }

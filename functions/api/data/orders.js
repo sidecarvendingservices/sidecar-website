@@ -34,15 +34,16 @@ export async function onRequestGet({ request, env }) {
   try {
     if (url.searchParams.get('stats') === '1') {
       const month = url.searchParams.get('month');
-      let query = `SELECT machine_id as machineId, COUNT(*) as n FROM orders WHERE is_refund = 0`;
+      let query = `SELECT machine_id as machineId, COUNT(*) as n, SUM(net) as revenue FROM orders WHERE is_refund = 0`;
       const binds = [];
       if (month) { binds.push(month + '%'); query += ` AND date LIKE ?${binds.length}`; }
       query += ' GROUP BY machine_id';
       const { results } = await env.DB.prepare(query).bind(...binds).all();
       const byMachine = {};
       let orderCount = 0;
-      results.forEach((r) => { byMachine[r.machineId] = r.n; orderCount += r.n; });
-      return Response.json({ orderCount, byMachine });
+      let revenue = 0;
+      results.forEach((r) => { byMachine[r.machineId] = r.n; orderCount += r.n; revenue += (r.revenue || 0); });
+      return Response.json({ orderCount, revenue, averageOrderValue: orderCount ? revenue / orderCount : 0, byMachine });
     }
 
     let query = `SELECT id, machine_id as machineId, order_dtm as orderDtm, date, gross, net, status, is_refund as isRefund, source
