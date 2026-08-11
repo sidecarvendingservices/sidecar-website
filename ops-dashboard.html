@@ -3629,13 +3629,18 @@ function escapeHtml(str) {
 }
 const escapeAttr = escapeHtml;
 
-let migrationWarningShown = false;
+// Several independent endpoints (health, sale-hours, products, tasks,
+// properties, commission payments, etc.) each call this with whichever
+// migration file *their* table needs — dedupe by filename and show one
+// banner per pending migration, rather than a single hardcoded message that
+// only ever fires once for whichever endpoint happens to resolve first.
+const migrationWarningsShown = new Set();
 function warnMigrationNeeded(file) {
-  if (migrationWarningShown) return;
-  migrationWarningShown = true;
+  if (migrationWarningsShown.has(file)) return;
+  migrationWarningsShown.add(file);
   document.querySelector('.app').insertAdjacentHTML('afterbegin',
     `<div class="card" style="border-color:#f0c896; background:#fff8ee;">
-       <strong>Machine Health and Sales Pattern are waiting on a database update.</strong>
+       <strong>Some features are waiting on a database update.</strong>
        Run <code>${escapeHtml(file)}</code> against the D1 database, then reload this page.
        Everything else on the dashboard works normally in the meantime.
      </div>`);
