@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Sidecar Vending — Operations Dashboard</title>
+<title>Sidecar Command Center</title>
 
 <!-- PWA / "Add to Home Screen" support -->
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -12,21 +12,27 @@
 <link rel="apple-touch-icon" href="/images/dashboard-icon-180.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Sidecar Ops" />
+<meta name="apple-mobile-web-app-title" content="Command Center" />
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root {
     --sky: #29ABE2;
     --sky-deep: #1A7EB5;
+    --sky-ink: #0E5A82;
     --tangerine: #FF6B2B;
-    --charcoal: #3D3D3D;
-    --graphite: #5A5A5A;
-    --bg: #F5F7F8;
+    --tangerine-deep: #E0500F;
+    --charcoal: #24292C;
+    --graphite: #55626A;
+    --bg: #E3EAEE;
     --card: #FFFFFF;
-    --border: #E2E8EB;
-    --border-strong: #C9D2D6;
+    --border: #C7D3D9;
+    --border-strong: #8FA1AA;
     --good: #1A7EB5;
+    --green: #1f7a44;
+    --green-bg: #DCF0E3;
+    --amber: #B3401F;
+    --amber-bg: #FCE3D4;
     --radius: 10px;
     font-family: 'Segoe UI', 'Nunito Sans', Arial, Helvetica, sans-serif;
   }
@@ -37,7 +43,7 @@
     color: var(--charcoal);
     -webkit-font-smoothing: antialiased;
   }
-  .app { max-width: 1180px; margin: 0 auto; padding: 20px 20px 60px; }
+  .app { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
 
   /* ---------- header ---------- */
   .app-header {
@@ -45,36 +51,52 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 6px 0 18px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 18px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--sky-ink), var(--sky-deep));
+    margin: 0 -20px 20px;
     flex-wrap: wrap;
+    border-bottom: 3px solid var(--tangerine);
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { height: 52px; width: auto; display: block; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand img { height: 44px; width: auto; display: block; background: #fff; border-radius: 6px; padding: 3px 6px; }
   .brand-fallback {
-    font-weight: 800; font-size: 26px; color: var(--charcoal); letter-spacing: -0.02em;
+    font-weight: 800; font-size: 24px; color: #fff; letter-spacing: -0.02em;
   }
-  .brand-sub { font-size: 12px; color: var(--graphite); margin-top: 1px; }
-  .header-actions { display: flex; gap: 8px; align-items: center; }
-  .month-filter { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--graphite); }
+  .brand-sub { font-size: 12px; color: #DCEEF8; margin-top: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .month-filter { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #EAF6FC; font-weight: 600; }
   .month-filter select {
-    border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; font-size: 13px;
-    background: var(--card); color: var(--charcoal); font-family: inherit;
+    border: 1px solid rgba(255,255,255,.5); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+    background: rgba(255,255,255,.12); color: #fff; font-family: inherit;
   }
+  .month-filter select option { color: var(--charcoal); }
+  .haha-sync-status {
+    display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); border-radius: 20px; padding: 6px 12px;
+  }
+  .sync-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sync-dot-fresh { background: #3ddc84; box-shadow: 0 0 0 3px rgba(61,220,132,.25); }
+  .sync-dot-stale { background: #ffc94d; box-shadow: 0 0 0 3px rgba(255,201,77,.25); }
+  .sync-dot-none { background: #c9d2d6; }
+  .btn-header-sync {
+    background: var(--tangerine); color: #fff; border: 1px solid var(--tangerine-deep);
+    border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
+  }
+  .btn-header-sync:hover { background: var(--tangerine-deep); }
 
   /* ---------- tabs ---------- */
   .tabbar {
-    display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
-    overflow-x: auto;
+    display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border-strong);
+    overflow-x: auto; background: var(--card); border-radius: 10px 10px 0 0; padding: 6px 6px 0;
+    border: 1px solid var(--border); border-bottom: 2px solid var(--border-strong);
   }
   .tab-btn {
-    border: none; background: transparent; padding: 10px 16px; font-size: 14px; font-weight: 600;
-    color: var(--graphite); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
-    font-family: inherit;
+    border: none; background: transparent; padding: 10px 16px; font-size: 13.5px; font-weight: 700;
+    color: var(--graphite); cursor: pointer; border-radius: 8px 8px 0 0; white-space: nowrap;
+    font-family: inherit; border-bottom: 3px solid transparent; margin-bottom: -2px;
   }
-  .tab-btn:hover { color: var(--sky-deep); }
-  .tab-btn.active { color: var(--sky-deep); border-bottom-color: var(--tangerine); }
+  .tab-btn:hover { color: var(--sky-deep); background: #EEF6FA; }
+  .tab-btn.active { color: #fff; background: var(--sky-deep); border-bottom-color: var(--tangerine); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; animation: fadein .15s ease; }
   @keyframes fadein { from { opacity: 0; transform: translateY(2px);} to { opacity:1; transform:none; } }
@@ -84,23 +106,28 @@
   @media (max-width: 860px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 480px) {
     .kpi-grid { grid-template-columns: 1fr; }
-    .app { padding: 14px 12px 50px; }
+    .app { padding: 0 12px 50px; }
+    .app-header { margin: 0 -12px 16px; padding: 14px 12px; }
     .kpi-value { font-size: 22px; }
     .form-grid { grid-template-columns: 1fr; }
     .btn { padding: 11px 16px; } /* larger touch target */
   }
   .kpi-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px 18px;
+    background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--sky-deep); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: 0 1px 2px rgba(20,30,40,.05);
   }
-  .kpi-label { font-size: 12px; color: var(--graphite); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .kpi-label { font-size: 12px; color: var(--graphite); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
   .kpi-value { font-size: 26px; font-weight: 800; color: var(--charcoal); margin-top: 6px; }
   .kpi-value.accent { color: var(--sky-deep); }
   .kpi-sub { font-size: 12px; color: var(--graphite); margin-top: 4px; }
 
+  .clickable-card { cursor: pointer; transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+  .clickable-card:hover { box-shadow: 0 6px 16px rgba(20,50,70,.14); transform: translateY(-2px); border-color: var(--sky-deep); }
+  .clickable-card:active { transform: translateY(0); }
+
   .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 18px 20px; margin-bottom: 18px;
+    background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--sky-deep); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(20,30,40,.05);
   }
   .card-title { font-size: 15px; font-weight: 800; color: var(--charcoal); margin: 0 0 4px; }
   .card-desc { font-size: 12.5px; color: var(--graphite); margin: 0 0 14px; }
@@ -111,35 +138,39 @@
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
   label { font-size: 11.5px; font-weight: 700; color: var(--graphite); text-transform: uppercase; letter-spacing: .02em; display: block; margin-bottom: 4px; }
   input, select {
-    width: 100%; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 7px;
+    width: 100%; padding: 8px 10px; border: 1.5px solid var(--border-strong); border-radius: 7px;
     font-size: 13.5px; color: var(--charcoal); font-family: inherit; background: #fff;
   }
   input:focus, select:focus { outline: 2px solid var(--sky); outline-offset: 0; border-color: var(--sky); }
   .btn {
-    border: none; border-radius: 7px; padding: 9px 16px; font-size: 13.5px; font-weight: 700;
+    border: 1.5px solid transparent; border-radius: 7px; padding: 9px 16px; font-size: 13.5px; font-weight: 700;
     cursor: pointer; font-family: inherit;
   }
-  .btn-primary { background: var(--tangerine); color: #fff; }
-  .btn-primary:hover { background: #e85a1a; }
-  .btn-secondary { background: transparent; color: var(--sky-deep); border: 1px solid var(--sky-deep); }
-  .btn-secondary:hover { background: #eaf6fc; }
-  .btn-ghost { background: transparent; color: var(--graphite); border: 1px solid var(--border-strong); }
-  .btn-danger-text { background: transparent; color: #b3401f; border: none; font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 4px 6px; }
+  .btn-primary { background: var(--tangerine); color: #fff; border-color: var(--tangerine-deep); }
+  .btn-primary:hover { background: var(--tangerine-deep); }
+  .btn-secondary { background: #EAF6FC; color: var(--sky-deep); border: 1.5px solid var(--sky-deep); }
+  .btn-secondary:hover { background: #D8EEF9; }
+  .btn-ghost { background: transparent; color: var(--graphite); border: 1.5px solid var(--border-strong); }
+  .btn-danger-text { background: transparent; color: var(--amber); border: none; font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 4px 6px; }
   .btn-danger-text:hover { text-decoration: underline; }
 
   /* ---------- tables ---------- */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--graphite);
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #fff; background: var(--sky-deep);
        border-bottom: 1px solid var(--border-strong); padding: 8px 10px; font-weight: 700; }
+  th:first-child { border-radius: 6px 0 0 0; }
+  th:last-child { border-radius: 0 6px 0 0; }
   td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--charcoal); }
+  tbody tr:nth-child(even) { background: #F3F7F9; }
+  tbody tr:hover { background: #E9F3F8; }
   tr:last-child td { border-bottom: none; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .table-wrap { overflow-x: auto; }
-  .tag { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .tag-tiered { background: #E9F6FE; color: var(--sky-deep); }
-  .tag-none { background: #F0F0F0; color: var(--graphite); }
-  .tag-paid { background: #E7F3EC; color: #1f7a44; }
-  .tag-due { background: #FDECE3; color: #b3401f; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+  .tag-tiered { background: #E9F6FE; color: var(--sky-deep); border-color: #BEE3F5; }
+  .tag-none { background: #EBEEF0; color: var(--graphite); border-color: var(--border); }
+  .tag-paid { background: var(--green-bg); color: var(--green); border-color: #B8DFC5; }
+  .tag-due { background: var(--amber-bg); color: var(--amber); border-color: #F3C1A5; }
 
   .empty-state { text-align: center; padding: 30px 10px; color: var(--graphite); font-size: 13.5px; }
   .empty-state strong { display:block; color: var(--charcoal); font-size: 14.5px; margin-bottom: 4px; }
@@ -149,7 +180,7 @@
 
   /* ---------- tier gauge ---------- */
   .gauge-wrap { margin-top: 8px; }
-  .gauge-track { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-strong); }
+  .gauge-track { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border-strong); }
   .gauge-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; position: relative; }
   .gauge-marker {
     position: absolute; top: -8px; width: 2px; height: 50px; background: var(--charcoal);
@@ -164,16 +195,16 @@
   .footer-note button { margin-top: 8px; }
 
   .section-flex { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-  .pill-note { font-size: 12px; color: var(--graphite); background: #F0F4F6; border-radius: 20px; padding: 5px 12px; }
+  .pill-note { font-size: 12px; color: var(--graphite); background: #EAF0F3; border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; }
 
   /* ---------- modal ---------- */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(20,25,28,.5); z-index: 100;
+    position: fixed; inset: 0; background: rgba(14,20,26,.6); z-index: 100;
     display: flex; align-items: flex-start; justify-content: center; padding: 30px 16px; overflow-y: auto;
   }
   .modal-box {
-    background: var(--card); border-radius: 12px; max-width: 760px; width: 100%;
-    padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    background: var(--card); border-radius: 12px; max-width: 760px; width: 100%; border-top: 4px solid var(--tangerine);
+    padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.35);
   }
   .modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--graphite); line-height: 1; padding: 4px; }
   .modal-title { font-size: 18px; font-weight: 800; color: var(--charcoal); margin: 0 0 2px; }
@@ -181,11 +212,11 @@
   .link-btn { background: none; border: none; padding: 0; color: var(--sky-deep); font-weight: 700; cursor: pointer; font-family: inherit; font-size: inherit; text-decoration: none; }
   .link-btn:hover { text-decoration: underline; }
   .thumb { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 8px; background: #F0F4F6; border: 1px solid var(--border); }
-  .arrow-up { color: #1f7a44; font-weight: 800; }
-  .arrow-down { color: #b3401f; font-weight: 800; }
+  .arrow-up { color: var(--green); font-weight: 800; }
+  .arrow-down { color: var(--amber); font-weight: 800; }
   .arrow-flat { color: var(--graphite); font-weight: 800; }
-  .row-low-stock { background: #FDECE3; }
-  .row-alert { color: #b3401f; font-weight: 700; }
+  .row-low-stock { background: var(--amber-bg); }
+  .row-alert { color: var(--amber); font-weight: 700; background: #FFF6F0; }
 </style>
 </head>
 <body>
@@ -197,10 +228,15 @@
            onerror="this.style.display='none'; document.getElementById('brandFallback').style.display='block';" />
       <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
       <div>
-        <div class="brand-sub">Operations Dashboard — Sales, Expenses &amp; Commission</div>
+        <div class="brand-sub">Sidecar Command Center</div>
       </div>
     </div>
     <div class="header-actions">
+      <div class="haha-sync-status" id="hahaSyncPill" title="Reflects the most recent HAHA health/sales sync, from any source">
+        <span class="sync-dot sync-dot-none" id="hahaSyncDot"></span>
+        <span id="hahaSyncHeaderTime">Last HAHA refresh: —</span>
+      </div>
+      <button class="btn-header-sync" onclick="globalHahaSync(this)">Sync HAHA Now</button>
       <div class="month-filter">
         <span>Showing:</span>
         <select id="rangeSelect"></select>
@@ -233,22 +269,22 @@
       <div id="todayAttention"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openMomentumDetail('week')" title="View day-by-day breakdown">
         <div class="kpi-label">This Week</div>
         <div class="kpi-value" id="todayWeekValue">$0.00</div>
         <div class="kpi-sub" id="todayWeekArrow">&nbsp;</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openMomentumDetail('month')" title="View day-by-day breakdown">
         <div class="kpi-label">This Month</div>
         <div class="kpi-value" id="todayMonthValue">$0.00</div>
         <div class="kpi-sub" id="todayMonthArrow">&nbsp;</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="switchToTab('health')" title="Open Machine Health">
         <div class="kpi-label">Machines Online</div>
         <div class="kpi-value accent" id="todayOnline">0 / 0</div>
         <div class="kpi-sub">&nbsp;</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="switchToTab('tasks')" title="Open Tasks">
         <div class="kpi-label">Open Tasks</div>
         <div class="kpi-value" id="todayOpenTasks">0</div>
         <div class="kpi-sub">&nbsp;</div>
@@ -266,22 +302,22 @@
   <!-- ============ OVERVIEW ============ -->
   <div class="tab-panel" id="panel-overview">
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('gross')" title="View breakdown by machine">
         <div class="kpi-label">Gross Sales</div>
         <div class="kpi-value" id="kpiGross">$0.00</div>
         <div class="kpi-sub" id="kpiGrossSub">&nbsp;</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('net')" title="View breakdown by machine">
         <div class="kpi-label">Net Sales</div>
         <div class="kpi-value" id="kpiNet">$0.00</div>
         <div class="kpi-sub" id="kpiNetSub">after COGS &amp; fees</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('costs')" title="View breakdown by category">
         <div class="kpi-label">Expenses + Commission</div>
         <div class="kpi-value" id="kpiCosts">$0.00</div>
         <div class="kpi-sub" id="kpiCostsSub">operating costs paid out</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('profit')" title="View breakdown by machine">
         <div class="kpi-label">Net Profit</div>
         <div class="kpi-value accent" id="kpiProfit">$0.00</div>
         <div class="kpi-sub" id="kpiMargin">&nbsp;</div>
@@ -292,12 +328,12 @@
       <div class="card-title">Sales Momentum</div>
       <div class="card-desc">Gross sales this week/month vs. the equivalent period before it (calendar week Sun–Sat, calendar month) — not affected by the "Showing" filter above.</div>
       <div class="kpi-grid" style="margin-bottom:0;">
-        <div class="kpi-card">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('week')" title="View day-by-day breakdown">
           <div class="kpi-label">This Week</div>
           <div class="kpi-value" id="momWeekValue">$0.00</div>
           <div class="kpi-sub" id="momWeekArrow">&nbsp;</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('month')" title="View day-by-day breakdown">
           <div class="kpi-label">This Month</div>
           <div class="kpi-value" id="momMonthValue">$0.00</div>
           <div class="kpi-sub" id="momMonthArrow">&nbsp;</div>
@@ -306,19 +342,19 @@
     </div>
 
     <div class="grid-2">
-      <div class="card">
+      <div class="card clickable-card" onclick="switchToTab('sales')" title="Open Sales">
         <div class="card-title">Sales &amp; Profit Trend</div>
         <div class="card-desc">Gross sales, net sales, and profit by month.</div>
         <div class="chart-box"><canvas id="trendChart"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card clickable-card" onclick="switchToTab('financials')" title="Open Financials">
         <div class="card-title">Expense Breakdown</div>
         <div class="card-desc">Where operating costs are going this period.</div>
         <div class="chart-box"><canvas id="expenseChart"></canvas></div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card clickable-card" onclick="switchToTab('machines')" title="Open Machines">
       <div class="card-title">By Machine</div>
       <div class="card-desc">Net sales per machine for the selected period.</div>
       <div class="chart-box small"><canvas id="machineChart"></canvas></div>
@@ -372,17 +408,17 @@
   <!-- ============ MACHINE HEALTH ============ -->
   <div class="tab-panel" id="panel-health">
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('online')" title="Filter table to online machines">
         <div class="kpi-label">Online Now</div>
         <div class="kpi-value accent" id="healthOnline">0</div>
         <div class="kpi-sub" id="healthOnlineSub">&nbsp;</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('offline')" title="Filter table to offline machines">
         <div class="kpi-label">Offline Now</div>
         <div class="kpi-value" id="healthOffline">0</div>
         <div class="kpi-sub">check these first</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('tempAlert')" title="Filter table to temperature alerts">
         <div class="kpi-label">Temp Out of Range</div>
         <div class="kpi-value" id="healthTempAlerts">0</div>
         <div class="kpi-sub">refrigerated units only</div>
@@ -401,6 +437,7 @@
       </div>
       <div class="card-desc">Online status + temperature update automatically on the same schedule as the HAHA sales sync. "Check Now" polls immediately instead of waiting for the next run.</div>
       <div id="healthCheckStatus" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px;"></div>
+      <div id="healthFilterBar" class="pill-note" style="display:none; margin-top:0; margin-bottom:10px; cursor:pointer; background:var(--amber-bg); color:var(--amber); border-color:#F3C1A5;"></div>
       <div class="table-wrap"><table id="healthTable"></table></div>
       <div id="healthEmpty" class="empty-state" style="display:none;">
         <strong>No health data yet</strong>
@@ -433,17 +470,17 @@
         <select id="payPeriodMonth" onchange="loadPayPeriod()" style="max-width:180px;"></select>
       </div>
       <div class="kpi-grid" style="margin-bottom:0;">
-        <div class="kpi-card">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
           <div class="kpi-label">Orders</div>
           <div class="kpi-value accent" id="payPeriodOrders">—</div>
           <div class="kpi-sub">non-refunded, HAHA-synced machines</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
           <div class="kpi-label">Revenue</div>
           <div class="kpi-value" id="payPeriodRevenue">—</div>
           <div class="kpi-sub">gross, this period</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
           <div class="kpi-label">Average Order Value</div>
           <div class="kpi-value" id="payPeriodAOV">—</div>
           <div class="kpi-sub">revenue ÷ orders</div>
@@ -768,6 +805,7 @@ let editingMachineId = null;
 let salesPatternMode = 'hour'; // 'hour' | 'day'
 let healthDetailMachineId = null;
 let charts = {};
+let lastHahaSyncAt = null; // ISO timestamp — most recent successful health check or sales sync, from any source
 
 const fmt = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const monthKey = (dateStr) => (dateStr || '').slice(0, 7); // YYYY-MM
@@ -1051,6 +1089,7 @@ async function syncFromHahaImpl() {
     sales = (await apiGet('/api/data/sales')).sales;
     saleHours = (await apiGet('/api/data/sale-hours')).hours;
     status.textContent = `Synced ${totalDays} day(s) across ${totalMachines} machine(s). Gross Sales and Cost of Goods are both filled in from HAHA — only Processing Fees still need your input, since HAHA doesn't report those.`;
+    markHahaSynced();
     renderAll();
   } catch (e) {
     status.textContent = 'Sync failed: ' + e.message;
@@ -1314,6 +1353,44 @@ function healthFreshness(h) {
   return { state: 'online', label: 'Online', tag: 'tag-paid' };
 }
 
+// ---------------- global HAHA sync (header — available from every tab) ----------------
+// Tracks the most recent successful HAHA touch (health poll OR sales sync),
+// wherever it was triggered from, so the header pill is accurate no matter
+// which tab the user is on.
+function markHahaSynced() {
+  lastHahaSyncAt = new Date().toISOString();
+  updateHahaSyncDisplay();
+}
+function updateHahaSyncDisplay() {
+  const timeEl = document.getElementById('hahaSyncHeaderTime');
+  const dotEl = document.getElementById('hahaSyncDot');
+  if (!timeEl) return;
+  if (!lastHahaSyncAt) {
+    timeEl.textContent = 'Last HAHA refresh: —';
+    if (dotEl) dotEl.className = 'sync-dot sync-dot-none';
+    return;
+  }
+  timeEl.textContent = `Last HAHA refresh: ${fmtWhen(lastHahaSyncAt)} (${fmtAgo(lastHahaSyncAt)})`;
+  if (dotEl) {
+    const ageMin = (Date.now() - new Date(lastHahaSyncAt).getTime()) / 60000;
+    dotEl.className = 'sync-dot ' + (ageMin > HEALTH_STALE_MINUTES ? 'sync-dot-stale' : 'sync-dot-fresh');
+  }
+}
+// Refreshed periodically so "X min ago" keeps advancing even with no new sync.
+setInterval(updateHahaSyncDisplay, 60000);
+
+async function globalHahaSync(btn) {
+  return withButtonBusy(btn, async () => {
+    const pill = document.getElementById('hahaSyncHeaderTime');
+    if (pill) pill.textContent = 'Checking machine status…';
+    try { await checkHealthNowImpl(); } catch (e) { /* checkHealthNowImpl already reports this on the Health tab */ }
+    if (pill) pill.textContent = 'Syncing sales…';
+    try { await syncFromHahaImpl(); } catch (e) { /* syncFromHahaImpl already reports this on the Sales tab */ }
+    markHahaSynced();
+    loadRestockQueue();
+  });
+}
+
 async function checkHealthNow(btn) {
   return withButtonBusy(btn, () => checkHealthNowImpl());
 }
@@ -1343,11 +1420,19 @@ async function checkHealthNowImpl() {
     if (readings.length) await apiPost('/api/data/health', { readings });
     latestHealth = (await apiGet('/api/data/health?latest=1')).health;
     status.textContent = `Checked ${readings.length} machine(s) just now.`;
+    markHahaSynced();
     renderHealth();
+    if (typeof renderToday === 'function') renderToday();
     if (healthDetailMachineId) loadHealthDetail(healthDetailMachineId);
   } catch (e) {
     status.textContent = 'Check failed: ' + e.message;
   }
+}
+
+let healthFilterState = null; // null | 'online' | 'offline' | 'stale' | 'tempAlert'
+function filterHealthTable(state) {
+  healthFilterState = (healthFilterState === state) ? null : state;
+  renderHealth();
 }
 
 function renderHealth() {
@@ -1356,9 +1441,28 @@ function renderHealth() {
   const byMachine = {};
   latestHealth.forEach(h => { byMachine[h.machineId] = h; });
 
-  const withHaha = machines.filter(m => m.hahaId && m.status !== 'retired');
+  const allWithHaha = machines.filter(m => m.hahaId && m.status !== 'retired');
+  const isTempAlert = (m) => {
+    const h = byMachine[m.id];
+    if (!h || h.temperature === null || h.temperature === undefined) return false;
+    return (h.warningLow !== null && h.temperature < h.warningLow) || (h.warningHigh !== null && h.temperature > h.warningHigh);
+  };
+  const withHaha = healthFilterState
+    ? allWithHaha.filter(m => healthFilterState === 'tempAlert' ? isTempAlert(m) : healthFreshness(byMachine[m.id]).state === healthFilterState)
+    : allWithHaha;
+
+  const filterBar = document.getElementById('healthFilterBar');
+  if (filterBar) {
+    filterBar.style.display = healthFilterState ? 'block' : 'none';
+    filterBar.textContent = healthFilterState ? `Filtered to: ${healthFilterState === 'tempAlert' ? 'temp out of range' : healthFilterState} — click the KPI card again, or here, to clear` : '';
+    filterBar.onclick = () => filterHealthTable(healthFilterState);
+  }
+
   if (!withHaha.length) {
     tbl.innerHTML = ''; empty.style.display = 'block';
+    empty.innerHTML = healthFilterState
+      ? '<strong>No machines match this filter</strong>Click the filter pill above to clear it.'
+      : '<strong>No health data yet</strong>Add machines with a HAHA Market ID, then hit "Check Now" — or wait for the next scheduled sync.';
   } else {
     empty.style.display = 'none';
     let html = '<thead><tr><th>Machine</th><th>Status</th><th>Temperature</th><th>Last Checked</th><th></th></tr></thead><tbody>';
@@ -1384,28 +1488,24 @@ function renderHealth() {
     tbl.innerHTML = html;
   }
 
-  const online = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'online').length;
-  const offline = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'offline').length;
-  const stale = withHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'stale').length;
-  const tempAlerts = withHaha.filter(m => {
-    const h = byMachine[m.id];
-    if (!h || h.temperature === null || h.temperature === undefined) return false;
-    return (h.warningLow !== null && h.temperature < h.warningLow) || (h.warningHigh !== null && h.temperature > h.warningHigh);
-  }).length;
+  const online = allWithHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'online').length;
+  const offline = allWithHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'offline').length;
+  const stale = allWithHaha.filter(m => healthFreshness(byMachine[m.id]).state === 'stale').length;
+  const tempAlerts = allWithHaha.filter(isTempAlert).length;
   const lastChecked = latestHealth.reduce((max, h) => (!max || h.checkedAt > max) ? h.checkedAt : max, null);
 
   document.getElementById('healthOnline').textContent = online;
-  document.getElementById('healthOnlineSub').textContent = withHaha.length + ' machine(s) tracked' + (stale ? `, ${stale} stale` : '');
+  document.getElementById('healthOnlineSub').textContent = allWithHaha.length + ' machine(s) tracked' + (stale ? `, ${stale} stale` : '');
   document.getElementById('healthOffline').textContent = offline;
   document.getElementById('healthTempAlerts').textContent = tempAlerts;
   document.getElementById('healthLastChecked').textContent = lastChecked ? fmtWhen(lastChecked) : '—';
 
-  // refresh detail machine dropdown
+  // refresh detail machine dropdown — always from the full (unfiltered) list
   const sel = document.getElementById('healthDetailSelect');
   const curVal = sel.value || healthDetailMachineId;
-  sel.innerHTML = withHaha.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
-  if (withHaha.length) {
-    const nextId = withHaha.some(m => m.id === curVal) ? curVal : withHaha[0].id;
+  sel.innerHTML = allWithHaha.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  if (allWithHaha.length) {
+    const nextId = allWithHaha.some(m => m.id === curVal) ? curVal : allWithHaha[0].id;
     sel.value = nextId;
     if (nextId !== healthDetailMachineId) selectHealthDetail(nextId);
     else if (!charts.healthTemp) loadHealthDetail(nextId);
@@ -1488,20 +1588,22 @@ function closeModal() {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
 // ---------------- order drill-down ----------------
-async function openOrderDrilldown(machineId, date) {
+async function openOrderDrilldown(machineId, date, start, end) {
   openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
     <div class="modal-title">Orders</div>
     <div class="modal-sub">Loading…</div>`);
   const params = new URLSearchParams();
   if (machineId) params.set('machineId', machineId);
   if (date) params.set('date', date);
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
   let orders = [];
   try {
     orders = (await apiGet('/api/data/orders?' + params.toString())).orders || [];
   } catch (e) { /* leave empty */ }
 
   const who = machineId ? machineName(machineId) : 'All machines';
-  const when = date ? date : 'all dates';
+  const when = date ? date : (start && end ? `${start} – ${end}` : 'all dates');
   const sub = `${escapeHtml(who)} — ${escapeHtml(when)} — ${orders.length} order(s)`;
 
   let body;
@@ -1557,6 +1659,21 @@ async function loadPayPeriod() {
     document.getElementById('payPeriodRevenue').textContent = '—';
     document.getElementById('payPeriodAOV').textContent = '—';
   }
+}
+
+// YYYY-MM -> [firstDay, lastDay] as YYYY-MM-DD strings.
+function monthBounds(monthStr) {
+  const start = monthStr + '-01';
+  const [y, m] = monthStr.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate(); // day 0 of next month = last day of this month
+  const end = monthStr + '-' + String(lastDay).padStart(2, '0');
+  return [start, end];
+}
+function openPayPeriodOrders() {
+  const month = document.getElementById('payPeriodMonth').value;
+  if (!month) return;
+  const [start, end] = monthBounds(month);
+  openOrderDrilldown(null, null, start, end);
 }
 
 // ---------------- machine detail (inventory, sell-through, service, expiration) ----------------
@@ -2720,6 +2837,90 @@ function renderMomentum() {
   }
 }
 
+// ---------------- widget click-through detail modals ----------------
+function machineBreakdownRows(sRows) {
+  const byMachine = {};
+  sRows.forEach(s => {
+    if (!byMachine[s.machineId]) byMachine[s.machineId] = { machineId: s.machineId, gross: 0, cogs: 0, fees: 0, count: 0 };
+    byMachine[s.machineId].gross += s.gross;
+    byMachine[s.machineId].cogs += s.cogs;
+    byMachine[s.machineId].fees += s.fees;
+    byMachine[s.machineId].count += 1;
+  });
+  return Object.values(byMachine).sort((a, b) => b.gross - a.gross);
+}
+
+function openOverviewKpiDetail(kind) {
+  const sRows = filteredSales();
+  const eRows = filteredExpenses();
+  const range = document.getElementById('rangeSelect').value;
+  const rangeLabel = (!range || range === 'all') ? 'All time' : monthLabel(range);
+
+  let title, bodyHtml;
+  if (kind === 'gross' || kind === 'net' || kind === 'profit') {
+    title = kind === 'gross' ? 'Gross Sales' : kind === 'net' ? 'Net Sales' : 'Net Profit';
+    const byM = machineBreakdownRows(sRows);
+    const rowsHtml = byM.map(r => {
+      const net = r.gross - r.cogs - r.fees;
+      return `<tr>
+        <td><button class="link-btn" onclick="closeModal(); openMachineDetail('${r.machineId}')">${escapeHtml(machineName(r.machineId))}</button></td>
+        <td class="num">${fmt(r.gross)}</td>
+        <td class="num">${fmt(net)}</td>
+        <td class="num">${r.count}</td>
+      </tr>`;
+    }).join('');
+    bodyHtml = `<div class="table-wrap"><table><thead><tr><th>Machine</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Entries</th></tr></thead>
+      <tbody>${rowsHtml || '<tr><td colspan="4" style="color:var(--graphite);">No sales in this range.</td></tr>'}</tbody></table></div>`;
+  } else {
+    title = 'Expenses + Commission';
+    const byCategory = {};
+    eRows.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+    const rowsHtml = Object.entries(byCategory).sort((a, b) => b[1] - a[1])
+      .map(([cat, amt]) => `<tr><td>${escapeHtml(cat)}</td><td class="num">${fmt(amt)}</td></tr>`).join('');
+    const cRows = commissionRows().filter(r => range === 'all' || range === r.month);
+    const commissionTotal = cRows.reduce((s, r) => s + tierFor(r.gross).rate * r.net, 0);
+    bodyHtml = `<div class="table-wrap"><table><thead><tr><th>Category</th><th class="num">Amount</th></tr></thead>
+      <tbody>${rowsHtml || '<tr><td colspan="2" style="color:var(--graphite);">No expenses in this range.</td></tr>'}
+      <tr><td><strong>Commission</strong></td><td class="num"><strong>${fmt(commissionTotal)}</strong></td></tr></tbody></table></div>`;
+  }
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${title}</div>
+    <div class="modal-sub">${escapeHtml(rangeLabel)} — by ${kind === 'costs' ? 'category' : 'machine'}</div>
+    ${bodyHtml}`);
+}
+
+function openMomentumDetail(period) {
+  const todayS = businessToday();
+  const todayNoon = new Date(todayS + 'T12:00:00');
+  let startCur, endCur, startPrior, endPrior, title;
+  if (period === 'week') {
+    const dow = todayNoon.getDay();
+    startCur = addDays(todayS, -dow); endCur = todayS;
+    startPrior = addDays(startCur, -7); endPrior = addDays(startPrior, dow);
+    title = 'This Week — Day by Day';
+  } else {
+    const dom = todayNoon.getDate();
+    startCur = todayS.slice(0, 8) + '01'; endCur = todayS;
+    const lastMonthAnchor = new Date(todayNoon.getFullYear(), todayNoon.getMonth() - 1, 1, 12);
+    startPrior = businessDateStr(lastMonthAnchor).slice(0, 8) + '01';
+    endPrior = addDays(startPrior, dom - 1);
+    title = 'This Month — Day by Day';
+  }
+  const days = [];
+  let d = startCur;
+  while (d <= endCur) { days.push(d); d = addDays(d, 1); }
+  const rowsHtml = days.slice().reverse().map(day => {
+    const g = sales.filter(s => s.date === day).reduce((a, s) => a + s.gross, 0);
+    return `<tr><td>${day}</td><td class="num">${fmt(g)}</td></tr>`;
+  }).join('');
+  const bodyHtml = `<div class="table-wrap"><table><thead><tr><th>Date</th><th class="num">Gross Sales</th></tr></thead>
+    <tbody>${rowsHtml || '<tr><td colspan="2" style="color:var(--graphite);">No sales yet this period.</td></tr>'}</tbody></table></div>`;
+  openModal(`<button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title">${title}</div>
+    <div class="modal-sub">Comparing to ${startPrior} – ${endPrior}</div>
+    ${bodyHtml}`);
+}
+
 function renderTrendChart() {
   const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
   const grossByMonth = months.map(m => sales.filter(s => monthKey(s.date) === m).reduce((a, s) => a + s.gross, 0));
@@ -2930,6 +3131,13 @@ async function init() {
     latestHealth = hl.health || [];
     if (hl._migrationNeeded) warnMigrationNeeded(hl._migrationNeeded);
   } catch (err) { latestHealth = []; }
+
+  // Seed the header's "last refresh" pill from the most recent health poll on
+  // file (the worker's scheduled sync rides the same cadence) until a manual
+  // sync from this session sets something more current.
+  const seedChecked = latestHealth.reduce((max, h) => (!max || h.checkedAt > max) ? h.checkedAt : max, null);
+  if (seedChecked) lastHahaSyncAt = seedChecked;
+  updateHahaSyncDisplay();
 
   await loadSupplyItems();
   await loadCommissionPayments();
