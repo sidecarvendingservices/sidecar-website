@@ -24,7 +24,7 @@
 // Added via migrations/008_fifo_inventory.sql — degrades gracefully if not
 // run yet (falls back to the pre-FIFO product_costs shape).
 
-import { genId, latestUnitCost } from '../_lib/fifo.js';
+import { genId, latestUnitCost } from '../../_lib/fifo.js';
 
 function isMissingColumnOrTable(err) {
   return /no such (table|column)/i.test(String(err && err.message || err));

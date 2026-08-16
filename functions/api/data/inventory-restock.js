@@ -14,7 +14,7 @@
 // Requires a D1 database bound as "DB". Sits behind Cloudflare Access.
 // Added via migrations/008_fifo_inventory.sql.
 
-import { genId, consumeFifo, logMoves } from '../_lib/fifo.js';
+import { genId, consumeFifo, logMoves } from '../../_lib/fifo.js';
 
 function isMissingColumnOrTable(err) {
   return /no such (table|column)/i.test(String(err && err.message || err));
