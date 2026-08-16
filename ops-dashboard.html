@@ -114,7 +114,7 @@
   .brand-fallback {
     font-family: var(--font-head); font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -0.02em;
   }
-  .brand-sub { font-family: var(--font-head); font-size: 14.5px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
+  .brand-sub { font-family: var(--font-head); font-size: 16px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
   .sidebar-date { font-size: 12px; color: rgba(255,255,255,.8); font-weight: 700; margin-top: 3px; }
   .dashboard-version { font-size: 10.5px; color: rgba(255,255,255,.65); letter-spacing: 0.02em; margin-top: 6px; }
 
@@ -451,7 +451,7 @@
            onerror="this.style.display='none'; document.getElementById('brandFallback').style.display='block';" />
       <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
     </div>
-    <div class="brand-sub">Sidecar Command Center</div>
+    <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
     <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">{{BUILD_VERSION}}</div>
 
@@ -460,6 +460,7 @@
         <button class="tab-btn" data-tab="overview">Overview</button>
         <button class="tab-btn active" data-tab="today">Today</button>
         <button class="tab-btn" data-tab="tasks">Tasks<span class="nav-badge" id="navBadgeTasks" style="display:none;">0</span></button>
+        <button class="tab-btn tab-btn-secondary" data-tab="team">Team</button>
         <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties<span class="nav-badge" id="navBadgeProperties" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines<span class="nav-badge" id="navBadgeMachines" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
@@ -484,6 +485,9 @@
           <button role="menuitem" onclick="closeQuickAddMenu(); quickScheduleCall();">Schedule Call</button>
           <button role="menuitem" onclick="closeQuickAddMenu(); quickLogCall();">Log Call</button>
         </div>
+      </div>
+      <div class="haha-sync-status" id="whoamiPill" style="display:none;" title="Matched via your login email against the Team list">
+        <span id="whoamiText" aria-live="polite"></span>
       </div>
       <div class="haha-sync-status" id="hahaSyncPill" title="Reflects the most recent HAHA health/sales sync, from any source">
         <span class="sync-dot sync-dot-none" id="hahaSyncDot" aria-hidden="true"></span>
@@ -1133,6 +1137,49 @@
   </div>
 
   <!-- ============ RELATIONSHIPS (properties, contacts, activity) ============ -->
+  <!-- ============ TEAM ============ -->
+  <div class="tab-panel" id="panel-team">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Team</div>
+        <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
+        <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
+        <div id="teamEmpty" class="empty-state" style="display:none;">
+          <strong>No team members yet</strong>
+          Add one to the right — they'll then show up as an Account Manager / Stocker option on Properties and an Owner option on Tasks.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="teamFormTitle">Add Team Member</div>
+        <div class="form-grid" id="teamForm">
+          <input type="hidden" id="teamId" value="" />
+          <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" /></div>
+          <div><label>Email</label><input id="teamEmail" type="email" placeholder="login email" /></div>
+          <div>
+            <label>Role</label>
+            <select id="teamRole">
+              <option>Owner</option>
+              <option>Account Manager</option>
+              <option>Stocker</option>
+              <option>Admin</option>
+            </select>
+          </div>
+          <div><label>Phone</label><input id="teamPhone" placeholder="optional" /></div>
+          <div>
+            <label>Status</label>
+            <select id="teamStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+          </div>
+          <div class="field-wide"><label>Notes</label><input id="teamNotes" placeholder="optional" /></div>
+          <div class="field-wide" style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="submitTeamMember(this)">Save</button>
+            <button class="btn btn-secondary" id="teamCancelBtn" style="display:none;" onclick="cancelTeamEdit()">Cancel Edit</button>
+          </div>
+        </div>
+        <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="panel-relationships">
     <div class="card" id="setupPropertiesCard" style="display:none;">
       <div class="section-flex">
@@ -1170,6 +1217,8 @@
             <label>Assigned Operator</label>
             <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
           </div>
+          <div><label>Account Manager</label><select id="pAccountManager"><option value="">—</option></select></div>
+          <div><label>Stocker</label><select id="pStocker"><option value="">—</option></select></div>
           <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
         </div>
       </div>
@@ -1186,6 +1235,7 @@
             <button class="btn btn-secondary" data-status="open" onclick="setTaskFilter('open', this)">Open</button>
             <button class="btn btn-ghost" data-status="all" onclick="setTaskFilter('all', this)">All</button>
             <button class="btn btn-ghost" data-status="complete" onclick="setTaskFilter('complete', this)">Complete</button>
+            <button class="btn btn-ghost" id="myTasksToggle" style="display:none;" onclick="toggleMyTasks(this)">My Tasks</button>
           </div>
         </div>
         <div class="table-wrap responsive-cards"><table id="taskTable"></table></div>
@@ -1200,14 +1250,14 @@
           <div class="field-wide"><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
           <div>
             <label>Owner</label>
-            <select id="tOwner"><option>Unassigned</option><option>Brian</option><option>Vala</option></select>
+            <select id="tOwner"><option>Unassigned</option></select>
           </div>
           <div><label>Due Date</label><input id="tDue" type="date" /></div>
           <div>
             <label>Priority</label>
             <select id="tPriority"><option value="normal">Normal</option><option value="critical">Critical</option><option value="high">High</option><option value="low">Low</option></select>
           </div>
-          <div><label>Property</label><select id="tProperty"><option value="">—</option></select></div>
+          <div><label>Property</label><select id="tProperty" onchange="onTaskPropertyChange()"><option value="">—</option></select></div>
           <div><label>Machine</label><select id="tMachine"><option value="">—</option></select></div>
           <div class="field-wide"><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
           <div class="field-wide"><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
@@ -2339,6 +2389,11 @@ async function openMachineDetail(machineId) {
   ]);
   const { rows, nextServiceBy, soonestExpiration, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
 
+  const linkedProperty = m.propertyId ? properties.find(p => p.id === m.propertyId) : null;
+  const teamBits = linkedProperty ? [
+    linkedProperty.accountManagerName ? `Account Manager: ${linkedProperty.accountManagerName}` : null,
+    linkedProperty.stockerName ? `Stocker: ${linkedProperty.stockerName}` : null,
+  ].filter(Boolean).join(' · ') : '';
   const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
   const daysUntilService = nextServiceBy ? Math.round((new Date(nextServiceBy) - new Date(todayStr())) / 86400000) : null;
   const serviceBadge = !nextServiceBy
@@ -2396,7 +2451,7 @@ async function openMachineDetail(machineId) {
 
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
-    <div class="modal-sub">${escapeHtml(m.address || 'No address on file')}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}</div>
+    <div class="modal-sub">${escapeHtml(m.address || 'No address on file')}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}${teamBits ? ' · ' + escapeHtml(teamBits) : ''}</div>
 
     <div class="section-flex">
       <div>Next Service Required By: ${serviceBadge} ${expirationBadge}</div>
@@ -3063,6 +3118,184 @@ async function loadProperties() {
   } catch (e) { properties = []; }
 }
 
+// ---------------- team + Cloudflare Access identity ----------------
+let team = [];
+let whoami = { email: null, member: null };
+
+async function loadTeam() {
+  try {
+    const data = await apiGet('/api/data/team');
+    team = data.members || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { team = []; }
+  populateTeamSelects();
+}
+
+async function loadWhoami() {
+  try {
+    whoami = await apiGet('/api/whoami');
+  } catch (e) { whoami = { email: null, member: null }; }
+  renderWhoamiPill();
+}
+
+function renderWhoamiPill() {
+  const pill = document.getElementById('whoamiPill');
+  const text = document.getElementById('whoamiText');
+  if (pill && text) {
+    if (whoami.member) {
+      pill.style.display = 'flex';
+      text.textContent = `Logged in as ${whoami.member.name} (${whoami.member.role})`;
+    } else if (whoami.email) {
+      pill.style.display = 'flex';
+      text.textContent = `Logged in as ${whoami.email} — not on Team yet`;
+    } else {
+      pill.style.display = 'none';
+    }
+  }
+  const myTasksBtn = document.getElementById('myTasksToggle');
+  if (myTasksBtn) myTasksBtn.style.display = whoami.member ? 'inline-block' : 'none';
+}
+
+// Refreshes every select that offers a Team member as a choice: Account
+// Manager / Stocker on the Property form, and Owner on the Task form.
+function populateTeamSelects() {
+  const active = team.filter(t => t.status === 'active').slice().sort((a, b) => a.name.localeCompare(b.name));
+  const opts = active.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (${escapeHtml(t.role)})</option>`).join('');
+  ['pAccountManager', 'pStocker'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + opts;
+    if (current) sel.value = current;
+  });
+  const tOwner = document.getElementById('tOwner');
+  if (tOwner) {
+    const current = tOwner.value;
+    tOwner.innerHTML = '<option>Unassigned</option>' + active.map(t => `<option>${escapeHtml(t.name)}</option>`).join('');
+    if (current && Array.from(tOwner.options).some(o => o.value === current)) tOwner.value = current;
+  }
+}
+
+// Cascade: picking a Property on the Task form defaults Owner to that
+// property's Account Manager — only as a default, never overriding a
+// choice the user already made.
+function onTaskPropertyChange() {
+  const propId = document.getElementById('tProperty').value;
+  const tOwner = document.getElementById('tOwner');
+  if (!propId || !tOwner) return;
+  const prop = properties.find(p => p.id === propId);
+  if (prop && prop.accountManagerName && tOwner.value === 'Unassigned') {
+    tOwner.value = prop.accountManagerName;
+  }
+}
+
+function toggleMyTasks(btn) {
+  myTasksOnly = !myTasksOnly;
+  btn.className = myTasksOnly ? 'btn btn-secondary' : 'btn btn-ghost';
+  renderTasks();
+}
+
+function renderTeam() {
+  const tbl = document.getElementById('teamTable');
+  const empty = document.getElementById('teamEmpty');
+  if (!tbl) return;
+  if (!team.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  let html = '<thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead><tbody>';
+  team.forEach(t => {
+    html += `<tr>
+      <td>${escapeHtml(t.name)}</td>
+      <td>${escapeHtml(t.role)}</td>
+      <td>${escapeHtml(t.email)}</td>
+      <td>${escapeHtml(t.phone || '—')}</td>
+      <td><span class="tag ${t.status === 'active' ? 'tag-paid' : 'tag-none'}">${escapeHtml(t.status)}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="editTeamMember('${t.id}')">Edit</button>
+        <button class="btn-danger-text" onclick="deleteTeamMember('${t.id}')">Remove</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function editTeamMember(id) {
+  const t = team.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('teamId').value = t.id;
+  document.getElementById('teamName').value = t.name;
+  document.getElementById('teamEmail').value = t.email;
+  document.getElementById('teamRole').value = t.role;
+  document.getElementById('teamPhone').value = t.phone || '';
+  document.getElementById('teamStatus').value = t.status;
+  document.getElementById('teamNotes').value = t.notes || '';
+  document.getElementById('teamFormTitle').textContent = 'Edit Team Member';
+  document.getElementById('teamCancelBtn').style.display = 'inline-block';
+  switchToTab('team');
+}
+
+function cancelTeamEdit() {
+  document.getElementById('teamId').value = '';
+  ['teamName', 'teamEmail', 'teamPhone', 'teamNotes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('teamRole').value = 'Owner';
+  document.getElementById('teamStatus').value = 'active';
+  document.getElementById('teamFormTitle').textContent = 'Add Team Member';
+  document.getElementById('teamCancelBtn').style.display = 'none';
+}
+
+async function submitTeamMember(btn) {
+  return withButtonBusy(btn, async () => {
+    const name = document.getElementById('teamName').value.trim();
+    const email = document.getElementById('teamEmail').value.trim();
+    if (!name) { alert('Give them a name.'); return; }
+    if (!email) { alert("Enter their login email — this is what ties them to a dashboard login."); return; }
+    const id = document.getElementById('teamId').value || undefined;
+    const statusEl = document.getElementById('teamFormStatus');
+    try {
+      await apiPost('/api/data/team', {
+        id, name, email, role: document.getElementById('teamRole').value,
+        phone: document.getElementById('teamPhone').value.trim(),
+        status: document.getElementById('teamStatus').value,
+        notes: document.getElementById('teamNotes').value.trim(),
+      });
+    } catch (e) {
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Could not save: ' + e.message; } else alert('Could not save: ' + e.message);
+      return;
+    }
+    cancelTeamEdit();
+    await loadTeam();
+    renderTeam();
+    await loadProperties();
+    renderRelationships();
+  });
+}
+
+async function deleteTeamMember(id) {
+  if (!confirm('Remove this team member?')) return;
+  try {
+    await apiDelete('/api/data/team?id=' + encodeURIComponent(id));
+  } catch (e) { alert('Could not remove: ' + e.message); return; }
+  await loadTeam();
+  renderTeam();
+}
+
+async function saveTeamAssignment(propertyId) {
+  const p = properties.find(x => x.id === propertyId);
+  if (!p) return;
+  const accountManagerId = document.getElementById('detailAccountManager_' + propertyId).value || null;
+  const stockerId = document.getElementById('detailStocker_' + propertyId).value || null;
+  try {
+    await apiPost('/api/data/properties', {
+      id: p.id, name: p.name, propertyType: p.propertyType, address: p.address, website: p.website,
+      notes: p.notes, placementType: p.placementType, status: p.status, relationshipStarted: p.relationshipStarted,
+      assignedOperator: p.assignedOperator, accountManagerId, stockerId,
+    });
+  } catch (e) { alert('Could not save assignment: ' + e.message); return; }
+  await loadProperties();
+  renderRelationships();
+  openPropertyDetail(propertyId);
+}
+
 function unassignedMachineCount() {
   return machines.filter(m => !m.propertyId).length;
 }
@@ -3094,13 +3327,15 @@ function renderRelationships() {
   const empty = document.getElementById('propertiesEmpty');
   if (!properties.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Property</th><th>Type</th><th>Status</th><th class="num">Machines</th><th></th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Property</th><th>Type</th><th>Status</th><th>Account Manager</th><th>Stocker</th><th class="num">Machines</th><th></th></tr></thead><tbody>';
   properties.forEach(p => {
     const machineCount = machines.filter(m => m.propertyId === p.id).length;
     html += `<tr>
       <td><button class="link-btn" onclick="openPropertyDetail('${p.id}')">${escapeHtml(p.name)}</button></td>
       <td>${escapeHtml(p.propertyType || '—')}</td>
       <td><span class="tag ${p.status === 'active' ? 'tag-paid' : p.status === 'prospect' ? 'tag-tiered' : 'tag-none'}">${escapeHtml(p.status)}</span></td>
+      <td>${escapeHtml(p.accountManagerName || '—')}</td>
+      <td>${escapeHtml(p.stockerName || '—')}</td>
       <td class="num">${machineCount}</td>
       <td></td>
     </tr>`;
@@ -3126,9 +3361,13 @@ async function addProperty(btn) {
         status: document.getElementById('pStatus').value,
         relationshipStarted: document.getElementById('pRelStart').value,
         assignedOperator: document.getElementById('pOperator').value,
+        accountManagerId: document.getElementById('pAccountManager').value || null,
+        stockerId: document.getElementById('pStocker').value || null,
       });
     } catch (e) { alert('Could not save property: ' + e.message); return; }
     ['pName', 'pType', 'pAddress', 'pWebsite', 'pRelStart'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('pAccountManager').value = '';
+    document.getElementById('pStocker').value = '';
     await loadProperties();
     renderRelationships();
   });
@@ -3168,10 +3407,20 @@ async function openPropertyDetail(propertyId) {
 
   const contactOptions = contacts.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   const machineOptions = propMachines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  const teamOptionsHtml = (selectedId) => '<option value="">—</option>' + team.filter(t => t.status === 'active').map(t =>
+    `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)} (${escapeHtml(t.role)})</option>`).join('');
 
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(property.name)}</div>
     <div class="modal-sub">${escapeHtml(property.propertyType || 'Property')}${property.address ? ' — ' + escapeHtml(property.address) : ''} · <span class="tag ${property.status === 'active' ? 'tag-paid' : 'tag-none'}">${escapeHtml(property.status)}</span></div>
+
+    <div class="card-title" style="margin-top:14px;">Team Assignment</div>
+    <div class="card-desc">Cascades to every machine at this property — no separate assignment needed per machine.</div>
+    <div class="form-grid" style="margin-bottom:8px;">
+      <div><label>Account Manager</label><select id="detailAccountManager_${propertyId}">${teamOptionsHtml(property.accountManagerId)}</select></div>
+      <div><label>Stocker</label><select id="detailStocker_${propertyId}">${teamOptionsHtml(property.stockerId)}</select></div>
+      <div><button class="btn btn-secondary" onclick="saveTeamAssignment('${propertyId}')">Save Assignment</button></div>
+    </div>
 
     <div class="card-title" style="margin-top:14px;">Contacts</div>
     ${contactsHtml}
@@ -3266,6 +3515,7 @@ async function logActivityForMachine(machineId, type, summary, outcome) {
 // ---------------- tasks ----------------
 let tasks = [];
 let taskFilter = 'open';
+let myTasksOnly = false;
 
 async function loadTasks() {
   try {
@@ -3399,6 +3649,7 @@ function renderTasks() {
   let rows = tasks;
   if (taskFilter === 'open') rows = tasks.filter(t => t.status !== 'complete');
   if (taskFilter === 'complete') rows = tasks.filter(t => t.status === 'complete');
+  if (myTasksOnly && whoami.member) rows = rows.filter(t => t.owner === whoami.member.name);
 
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
@@ -4558,6 +4809,7 @@ function renderAll() {
   renderSection('qmos', renderQmos);
   renderSection('products', () => { if (typeof renderProducts === 'function') renderProducts(); });
   renderSection('relationships', renderRelationships);
+  renderSection('team', renderTeam);
   renderSection('tasks', renderTasks);
   renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
   renderSection('nav badges', updateNavBadges);
@@ -4616,6 +4868,8 @@ async function init() {
   await loadBackstockLots();
   await loadQmosLog();
   await loadCommissionPayments();
+  await loadTeam();
+  await loadWhoami();
   await loadProperties();
   await loadTasks();
   await loadProductCostLots();
