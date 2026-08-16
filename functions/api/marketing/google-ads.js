@@ -54,7 +54,7 @@ export async function onRequestGet({ request, env }) {
     );
     const data = await res.json();
     if (!res.ok) {
-      return Response.json({ connected: true, error: 'Google Ads API error: ' + JSON.stringify(data) }, { status: 502 });
+      return Response.json({ connected: true, error: 'Google Ads API error: ' + JSON.stringify(data) });
     }
 
     const campaigns = (data.results || []).map((r) => ({
@@ -72,6 +72,6 @@ export async function onRequestGet({ request, env }) {
 
     return Response.json({ connected: true, days, totalSpend, totalClicks, totalConversions, campaigns, syncedAt: new Date().toISOString() });
   } catch (err) {
-    return Response.json({ connected: true, error: String(err.message || err) }, { status: 500 });
+    return Response.json({ connected: true, error: String(err.message || err) });
   }
 }

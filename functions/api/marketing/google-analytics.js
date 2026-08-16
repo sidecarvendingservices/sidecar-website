@@ -75,6 +75,6 @@ export async function onRequestGet({ request, env }) {
 
     return Response.json({ connected: true, days, totalSessions, totalUsers, totalPageviews, byDay, topPages, syncedAt: new Date().toISOString() });
   } catch (err) {
-    return Response.json({ connected: true, error: String(err.message || err) }, { status: 500 });
+    return Response.json({ connected: true, error: String(err.message || err) });
   }
 }
