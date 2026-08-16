@@ -459,13 +459,14 @@
       <div class="tabbar" id="tabbar">
         <button class="tab-btn" data-tab="overview">Overview</button>
         <button class="tab-btn active" data-tab="today">Today</button>
-        <button class="tab-btn" data-tab="tasks">Tasks<span class="nav-badge" id="navBadgeTasks" style="display:none;">0</span></button>
+        <button class="tab-btn" data-tab="tasks">Tasks &amp; Calls<span class="nav-badge" id="navBadgeTasks" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="team">Team</button>
         <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties<span class="nav-badge" id="navBadgeProperties" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines<span class="nav-badge" id="navBadgeMachines" style="display:none;">0</span></button>
-        <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="contacts">Contacts</button>
         <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
         <button class="tab-btn tab-btn-secondary" data-tab="financials">Expenses</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
       </div>
       <div class="tabbar-more">
         <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
@@ -1176,6 +1177,35 @@
           </div>
         </div>
         <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONTACTS ============ -->
+  <div class="tab-panel" id="panel-contacts">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Contacts</div>
+        <div class="card-desc">Every property manager and prospect, in one place. Contacts without a Property yet are prospects — Tasks & Calls logged against them show up here and on the property once they're linked.</div>
+        <div style="margin-bottom:10px;"><input id="contactSearch" placeholder="Search contacts…" oninput="renderContacts()" style="max-width:320px;" /></div>
+        <div class="table-wrap responsive-cards"><table id="contactsTable"></table></div>
+        <div id="contactsEmpty" class="empty-state" style="display:none;">
+          <strong>No contacts yet</strong>
+          Add one to the right — link a Property if they have one, or leave it blank for a prospect you haven't placed yet.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Add Contact</div>
+        <div class="form-grid" id="contactForm">
+          <div><label>Property (optional)</label><select id="ctProperty" onchange="onContactPropertyChange()"><option value="">— Prospect, no property yet —</option></select></div>
+          <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" /></div>
+          <div class="field-wide"><label>Name</label><input id="ctName" placeholder="e.g. Sarah Jones" /></div>
+          <div><label>Title</label><input id="ctTitle" placeholder="e.g. Property Manager" /></div>
+          <div><label>Phone</label><input id="ctPhone" /></div>
+          <div class="field-wide"><label>Email</label><input id="ctEmail" type="email" /></div>
+          <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="ctPrimary" style="width:auto;" /> Primary contact</label></div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="addContactStandalone(this)">Add Contact</button></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2383,9 +2413,10 @@ async function openMachineDetail(machineId) {
     <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
     <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
 
-  const [sellThrough, logRes] = await Promise.all([
+  const [sellThrough, logRes, taskCallHistory] = await Promise.all([
     computeMachineSellThrough(m),
     apiGet('/api/data/service-log?machineId=' + encodeURIComponent(machineId)).catch(() => ({ log: [] })),
+    loadCombinedHistory({ machineId }),
   ]);
   const { rows, nextServiceBy, soonestExpiration, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
 
@@ -2471,6 +2502,9 @@ async function openMachineDetail(machineId) {
 
     <div class="card-title" style="margin-top:18px;">Service Log</div>
     ${serviceLogHtml}
+
+    <div class="card-title" style="margin-top:18px;">Tasks &amp; Calls History</div>
+    ${combinedHistoryHtml(taskCallHistory)}
   `);
 }
 
@@ -3375,12 +3409,11 @@ async function addProperty(btn) {
 
 async function openPropertyDetail(propertyId) {
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button><div class="modal-title">Loading…</div>`);
-  const [detail, activityRes] = await Promise.all([
+  const [detail, history] = await Promise.all([
     apiGet('/api/data/properties?id=' + encodeURIComponent(propertyId)),
-    apiGet('/api/data/activity?propertyId=' + encodeURIComponent(propertyId)).catch(() => ({ activity: [] })),
+    loadCombinedHistory({ propertyId }),
   ]);
   const { property, contacts, machines: propMachines } = detail;
-  const activity = activityRes.activity || [];
 
   const contactsHtml = !contacts.length ? '<div class="empty-state" style="padding:10px;">No contacts yet.</div>' :
     `<table><thead><tr><th>Name</th><th>Title</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${contacts.map(c => `<tr>
@@ -3393,17 +3426,6 @@ async function openPropertyDetail(propertyId) {
 
   const machinesHtml = !propMachines.length ? '<div class="empty-state" style="padding:10px;">No machines linked yet.</div>' :
     `<ul style="margin:0; padding-left:18px;">${propMachines.map(m => `<li><button class="link-btn" onclick="closeModal(); openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button></li>`).join('')}</ul>`;
-
-  const activityHtml = !activity.length ? '<div class="empty-state" style="padding:10px;">No activity logged yet.</div>' :
-    activity.map(a => `<div style="padding:8px 0; border-top:1px solid var(--border);">
-      <div style="display:flex; justify-content:space-between; gap:10px;">
-        <strong>${escapeHtml(a.type.charAt(0).toUpperCase() + a.type.slice(1).replace('_', ' '))}${a.owner ? ' — ' + escapeHtml(a.owner) : ''}</strong>
-        <span style="color:var(--graphite); font-size:12px;">${fmtWhen(a.occurredAt)}</span>
-      </div>
-      <div>${escapeHtml(a.summary)}</div>
-      ${a.notes ? `<div style="color:var(--graphite); font-size:12.5px; margin-top:2px;">${escapeHtml(a.notes)}</div>` : ''}
-      ${a.followUpDate ? `<div style="margin-top:4px;"><span class="tag tag-due">Follow up ${a.followUpDate}</span></div>` : ''}
-    </div>`).join('');
 
   const contactOptions = contacts.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   const machineOptions = propMachines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
@@ -3457,8 +3479,8 @@ async function openPropertyDetail(propertyId) {
       <div><button class="btn btn-primary" onclick="logActivity('${propertyId}')">Log It</button></div>
     </div>
 
-    <div class="card-title" style="margin-top:16px;">Activity Timeline</div>
-    ${activityHtml}
+    <div class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</div>
+    ${combinedHistoryHtml(history)}
   `);
 }
 
@@ -3480,6 +3502,201 @@ async function deleteContact(contactId, propertyId) {
   if (!confirm('Remove this contact?')) return;
   await apiDelete('/api/data/contacts?id=' + encodeURIComponent(contactId));
   openPropertyDetail(propertyId);
+}
+
+// ---------------- contacts (standalone tab — PMs + prospects) ----------------
+let allContacts = [];
+
+async function loadContacts() {
+  try {
+    const data = await apiGet('/api/data/contacts');
+    allContacts = data.contacts || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { allContacts = []; }
+}
+
+function onContactPropertyChange() {
+  const propId = document.getElementById('ctProperty').value;
+  const companyField = document.getElementById('ctCompany');
+  if (companyField) companyField.disabled = !!propId;
+  if (propId && companyField) companyField.value = '';
+}
+
+function renderContacts() {
+  const propSel = document.getElementById('ctProperty');
+  if (propSel && propSel.dataset.wired !== '1') {
+    propSel.dataset.wired = '1';
+  }
+  if (propSel) {
+    const current = propSel.value;
+    propSel.innerHTML = '<option value="">— Prospect, no property yet —</option>' +
+      properties.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    if (current) propSel.value = current;
+  }
+
+  const search = (document.getElementById('contactSearch')?.value || '').toLowerCase().trim();
+  let rows = allContacts;
+  if (search) {
+    rows = rows.filter(c => [c.name, c.title, c.email, c.phone, c.company, c.propertyName].some(v => (v || '').toLowerCase().includes(search)));
+  }
+
+  const tbl = document.getElementById('contactsTable');
+  const empty = document.getElementById('contactsEmpty');
+  if (!tbl) return;
+  if (!rows.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  let html = '<thead><tr><th>Name</th><th>Property / Company</th><th>Title</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>';
+  rows.forEach(c => {
+    html += `<tr>
+      <td><button class="link-btn" onclick="openContactDetail('${c.id}')">${escapeHtml(c.name)}</button>${c.isPrimary ? ' <span class="tag tag-tiered">Primary</span>' : ''}</td>
+      <td>${c.propertyId ? escapeHtml(c.propertyName || '—') : (c.company ? escapeHtml(c.company) + ' <span class="tag tag-none">prospect</span>' : '<span class="tag tag-none">prospect</span>')}</td>
+      <td>${escapeHtml(c.title || '—')}</td>
+      <td>${escapeHtml(c.phone || '—')}</td>
+      <td>${escapeHtml(c.email || '—')}</td>
+      <td><button class="btn-danger-text" onclick="deleteContactStandalone('${c.id}')">Remove</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+async function addContactStandalone(btn) {
+  return withButtonBusy(btn, async () => {
+    const name = document.getElementById('ctName').value.trim();
+    if (!name) { alert('Give the contact a name.'); return; }
+    const propertyId = document.getElementById('ctProperty').value || null;
+    try {
+      await apiPost('/api/data/contacts', {
+        propertyId,
+        company: document.getElementById('ctCompany').value.trim(),
+        name,
+        title: document.getElementById('ctTitle').value.trim(),
+        phone: document.getElementById('ctPhone').value.trim(),
+        email: document.getElementById('ctEmail').value.trim(),
+        isPrimary: document.getElementById('ctPrimary').checked,
+      });
+    } catch (e) { alert('Could not save contact: ' + e.message); return; }
+    ['ctCompany', 'ctName', 'ctTitle', 'ctPhone', 'ctEmail'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('ctProperty').value = '';
+    document.getElementById('ctPrimary').checked = false;
+    await loadContacts();
+    renderContacts();
+  });
+}
+
+async function deleteContactStandalone(id) {
+  if (!confirm('Remove this contact?')) return;
+  await apiDelete('/api/data/contacts?id=' + encodeURIComponent(id));
+  await loadContacts();
+  renderContacts();
+}
+
+// Shared "Tasks & Calls" timeline — merges open/completed Tasks with logged
+// Activity (calls/emails/etc) for a property, machine, or contact, sorted
+// newest-relevant first. Used on Property, Machine, and Contact detail so
+// completing a task or logging a call anywhere shows up everywhere that
+// record is referenced, instead of three separate disconnected lists.
+async function loadCombinedHistory({ propertyId, machineId, contactId }) {
+  const taskParams = new URLSearchParams();
+  if (propertyId) taskParams.set('propertyId', propertyId);
+  if (machineId) taskParams.set('machineId', machineId);
+  const activityParams = new URLSearchParams();
+  if (propertyId) activityParams.set('propertyId', propertyId);
+  if (contactId) activityParams.set('contactId', contactId);
+  if (machineId) activityParams.set('machineId', machineId);
+
+  const [taskRes, activityRes] = await Promise.all([
+    apiGet('/api/data/tasks?' + taskParams.toString()).catch(() => ({ tasks: [] })),
+    (propertyId || contactId || machineId) ? apiGet('/api/data/activity?' + activityParams.toString()).catch(() => ({ activity: [] })) : Promise.resolve({ activity: [] }),
+  ]);
+
+  let relevantTasks = taskRes.tasks || [];
+  if (contactId) relevantTasks = relevantTasks.filter(t => t.contactId === contactId || t.propertyId === propertyId);
+
+  const items = [
+    ...relevantTasks.map(t => ({
+      kind: 'task', date: t.dueDate || (t.createdAt || '').slice(0, 10), sortKey: t.dueDate || t.createdAt || '',
+      title: t.title, status: t.status, owner: t.owner, priority: t.priority, category: t.category, id: t.id,
+    })),
+    ...(activityRes.activity || []).map(a => ({
+      kind: 'call', date: (a.occurredAt || '').slice(0, 10), sortKey: a.occurredAt || '',
+      title: a.summary, type: a.type, outcome: a.outcome, owner: a.owner, id: a.id,
+    })),
+  ];
+  items.sort((a, b) => (b.sortKey || '').localeCompare(a.sortKey || ''));
+  return items;
+}
+
+function combinedHistoryHtml(items) {
+  if (!items.length) return '<div class="empty-state" style="padding:10px;">Nothing logged yet.</div>';
+  return items.map(it => {
+    if (it.kind === 'task') {
+      const done = it.status === 'complete';
+      return `<div style="padding:8px 0; border-top:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; gap:10px;">
+          <strong style="${done ? 'text-decoration:line-through; color:var(--graphite);' : ''}">Task: ${escapeHtml(it.title)}</strong>
+          <span style="color:var(--graphite); font-size:12px;">${escapeHtml(it.date || '—')}</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--graphite);">${escapeHtml(it.owner || 'Unassigned')} · <span class="tag ${done ? 'tag-paid' : 'tag-tiered'}">${escapeHtml(it.status)}</span>${it.category && it.category.startsWith('auto') ? ' <span class="tag tag-none">auto</span>' : ''}</div>
+      </div>`;
+    }
+    return `<div style="padding:8px 0; border-top:1px solid var(--border);">
+      <div style="display:flex; justify-content:space-between; gap:10px;">
+        <strong>${escapeHtml((it.type || 'call').charAt(0).toUpperCase() + (it.type || 'call').slice(1))}${it.owner ? ' — ' + escapeHtml(it.owner) : ''}</strong>
+        <span style="color:var(--graphite); font-size:12px;">${escapeHtml(it.date || '—')}</span>
+      </div>
+      <div>${escapeHtml(it.title)}</div>
+      ${it.outcome ? `<div style="font-size:12.5px; color:var(--graphite);">${escapeHtml(it.outcome)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function openContactDetail(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button><div class="modal-title">Loading…</div>`);
+  const history = await loadCombinedHistory({ propertyId: c.propertyId, contactId: c.id });
+
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">${escapeHtml(c.name)}</div>
+    <div class="modal-sub">${escapeHtml(c.title || 'Contact')}${c.propertyId ? ' — ' + escapeHtml(c.propertyName || '') : (c.company ? ' — ' + escapeHtml(c.company) : '')}${!c.propertyId ? ' · <span class="tag tag-none">prospect</span>' : ''}</div>
+    <div class="card-desc" style="margin-top:6px;">${[c.phone, c.email].filter(Boolean).map(escapeHtml).join(' · ') || 'No phone/email on file'}</div>
+
+    <div class="card-title" style="margin-top:14px;">Log a Call</div>
+    <div class="form-grid" style="margin-bottom:8px;">
+      <div><label>Outcome</label><select id="ccOutcome_${id}">
+        <option value="">—</option><option>Connected</option><option>Left voicemail</option><option>Follow-up needed</option>
+        <option>Meeting scheduled</option><option>Placement discussion</option><option>Not interested</option><option>Other</option>
+      </select></div>
+      <div><label>Owner</label><select id="ccOwner_${id}"><option value="">—</option><option>Brian</option><option>Vala</option></select></div>
+      <div><label>Follow-up Date (optional)</label><input id="ccFollowUp_${id}" type="date" /></div>
+      <div class="field-wide"><label>Summary</label><input id="ccSummary_${id}" placeholder="e.g. Introduced Sidecar, sent proposal" /></div>
+      <div><button class="btn btn-primary" onclick="logContactCall('${id}')">Log It</button></div>
+    </div>
+
+    <div class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</div>
+    ${combinedHistoryHtml(history)}
+  `);
+}
+
+async function logContactCall(contactId) {
+  const summary = document.getElementById('ccSummary_' + contactId).value.trim();
+  if (!summary) { alert('Add a short summary.'); return; }
+  const c = allContacts.find(x => x.id === contactId);
+  try {
+    await apiPost('/api/data/activity', {
+      propertyId: c ? c.propertyId : null,
+      contactId,
+      type: 'call',
+      outcome: document.getElementById('ccOutcome_' + contactId).value || null,
+      owner: document.getElementById('ccOwner_' + contactId).value,
+      followUpDate: document.getElementById('ccFollowUp_' + contactId).value || null,
+      summary,
+    });
+  } catch (e) { alert('Could not log call: ' + e.message); return; }
+  await loadTasks();
+  renderTasks();
+  openContactDetail(contactId);
 }
 
 async function logActivity(propertyId) {
@@ -3603,6 +3820,7 @@ function taskLinkLabel(t) {
   const bits = [];
   if (t.propertyId) { const p = properties.find(x => x.id === t.propertyId); if (p) bits.push(p.name); }
   if (t.machineId) { const m = machines.find(x => x.id === t.machineId); if (m) bits.push(m.name); }
+  if (t.contactId) { const c = allContacts.find(x => x.id === t.contactId); if (c) bits.push(c.name); }
   return bits.join(' — ') || '—';
 }
 
@@ -3808,20 +4026,26 @@ async function quickLoadContactOptions(selectId, propertyId) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
   sel.innerHTML = '<option value="">—</option>';
-  if (!propertyId) return;
   try {
-    const { contacts } = await apiGet('/api/data/contacts?propertyId=' + encodeURIComponent(propertyId));
-    sel.innerHTML = '<option value="">—</option>' + (contacts || [])
-      .map(c => `<option value="${c.id}">${escapeHtml(c.name)}${c.isPrimary ? ' (primary)' : ''}</option>`).join('');
+    if (propertyId) {
+      const { contacts } = await apiGet('/api/data/contacts?propertyId=' + encodeURIComponent(propertyId));
+      sel.innerHTML = '<option value="">—</option>' + (contacts || [])
+        .map(c => `<option value="${c.id}">${escapeHtml(c.name)}${c.isPrimary ? ' (primary)' : ''}</option>`).join('');
+    } else {
+      // No property picked — offer standalone prospects (contacts with no property of their own).
+      const prospects = (allContacts || []).filter(c => !c.propertyId);
+      sel.innerHTML = '<option value="">—</option>' + prospects
+        .map(c => `<option value="${c.id}">${escapeHtml(c.name)}${c.company ? ' (' + escapeHtml(c.company) + ')' : ''}</option>`).join('');
+    }
   } catch (e) { /* leave it at — if this fails, contact is optional anyway */ }
 }
 
 function quickAddContact() {
-  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before adding a contact.'); return; }
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">New Contact</div>
     <div class="form-grid" style="margin-top:10px;">
-      <div class="field-wide"><label>Property</label><select id="qcProperty">${quickPropertyOptions()}</select></div>
+      <div class="field-wide"><label>Property (optional)</label><select id="qcProperty"><option value="">— Prospect, no property yet —</option>${quickPropertyOptions()}</select></div>
+      <div class="field-wide"><label>Company (if no property)</label><input id="qcCompany" placeholder="optional" /></div>
       <div class="field-wide"><label>Name</label><input id="qcName" placeholder="e.g. Sarah Jones" /></div>
       <div><label>Title</label><input id="qcTitle" placeholder="e.g. Property Manager" /></div>
       <div><label>Phone</label><input id="qcPhone" /></div>
@@ -3832,12 +4056,13 @@ function quickAddContact() {
 }
 async function submitQuickContact(btn) {
   return withButtonBusy(btn, async () => {
-    const propertyId = document.getElementById('qcProperty').value;
+    const propertyId = document.getElementById('qcProperty').value || null;
     const name = document.getElementById('qcName').value.trim();
-    if (!propertyId || !name) { alert('Property and name are required.'); return; }
+    if (!name) { alert('Give the contact a name.'); return; }
     try {
       await apiPost('/api/data/contacts', {
         propertyId, name,
+        company: document.getElementById('qcCompany').value.trim(),
         title: document.getElementById('qcTitle').value.trim(),
         phone: document.getElementById('qcPhone').value.trim(),
         email: document.getElementById('qcEmail').value.trim(),
@@ -3846,6 +4071,8 @@ async function submitQuickContact(btn) {
     } catch (e) { alert('Could not save contact: ' + e.message); return; }
     closeModal();
     if (typeof renderRelationships === 'function') renderRelationships();
+    await loadContacts();
+    if (typeof renderContacts === 'function') renderContacts();
   });
 }
 
@@ -3854,11 +4081,10 @@ async function submitQuickContact(btn) {
 // already happened) — see quickLogCall() below. Same underlying tables the
 // Properties detail modal already uses, just reachable from anywhere.
 function quickScheduleCall() {
-  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before scheduling a call.'); return; }
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Schedule a Call</div>
     <div class="form-grid" style="margin-top:10px;">
-      <div class="field-wide"><label>Property</label><select id="qscProperty" onchange="quickLoadContactOptions('qscContact', this.value)">${quickPropertyOptions()}</select></div>
+      <div class="field-wide"><label>Property (optional)</label><select id="qscProperty" onchange="quickLoadContactOptions('qscContact', this.value)"><option value="">—</option>${quickPropertyOptions()}</select></div>
       <div><label>Contact</label><select id="qscContact"><option value="">—</option></select></div>
       <div><label>Call Date</label><input id="qscDate" type="date" /></div>
       <div><label>Owner</label><select id="qscOwner"><option value="">—</option><option>Brian</option><option>Vala</option></select></div>
@@ -3869,9 +4095,9 @@ function quickScheduleCall() {
 }
 async function submitQuickScheduleCall(btn) {
   return withButtonBusy(btn, async () => {
-    const propertyId = document.getElementById('qscProperty').value;
-    if (!propertyId) { alert('Pick a property.'); return; }
+    const propertyId = document.getElementById('qscProperty').value || null;
     const contactId = document.getElementById('qscContact').value || null;
+    if (!propertyId && !contactId) { alert('Pick a property or a contact.'); return; }
     const notes = document.getElementById('qscNotes').value.trim();
     const propName = (properties.find(p => p.id === propertyId) || {}).name || '';
     const contactName = contactId ? (document.getElementById('qscContact').selectedOptions[0]?.textContent || '') : '';
@@ -3895,11 +4121,10 @@ async function submitQuickScheduleCall(btn) {
 }
 
 function quickLogCall() {
-  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before logging a call.'); return; }
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">Log a Call</div>
     <div class="form-grid" style="margin-top:10px;">
-      <div class="field-wide"><label>Property</label><select id="qlcProperty" onchange="quickLoadContactOptions('qlcContact', this.value)">${quickPropertyOptions()}</select></div>
+      <div class="field-wide"><label>Property (optional)</label><select id="qlcProperty" onchange="quickLoadContactOptions('qlcContact', this.value)"><option value="">—</option>${quickPropertyOptions()}</select></div>
       <div><label>Contact</label><select id="qlcContact"><option value="">—</option></select></div>
       <div><label>Outcome</label><select id="qlcOutcome">
         <option value="">—</option><option>Connected</option><option>Left voicemail</option><option>Follow-up needed</option>
@@ -3915,16 +4140,18 @@ function quickLogCall() {
 }
 async function submitQuickLogCall(btn) {
   return withButtonBusy(btn, async () => {
-    const propertyId = document.getElementById('qlcProperty').value;
+    const propertyId = document.getElementById('qlcProperty').value || null;
+    const contactId = document.getElementById('qlcContact').value || null;
     const summary = document.getElementById('qlcSummary').value.trim();
-    if (!propertyId || !summary) { alert('Property and summary are required.'); return; }
+    if (!propertyId && !contactId) { alert('Pick a property or a contact.'); return; }
+    if (!summary) { alert('Add a short summary.'); return; }
     try {
       await apiPost('/api/data/activity', {
         propertyId,
         type: 'call',
         outcome: document.getElementById('qlcOutcome').value || null,
         owner: document.getElementById('qlcOwner').value,
-        contactId: document.getElementById('qlcContact').value || null,
+        contactId,
         followUpDate: document.getElementById('qlcFollowUp').value || null,
         summary,
       });
@@ -4810,6 +5037,7 @@ function renderAll() {
   renderSection('products', () => { if (typeof renderProducts === 'function') renderProducts(); });
   renderSection('relationships', renderRelationships);
   renderSection('team', renderTeam);
+  renderSection('contacts', renderContacts);
   renderSection('tasks', renderTasks);
   renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
   renderSection('nav badges', updateNavBadges);
@@ -4871,6 +5099,7 @@ async function init() {
   await loadTeam();
   await loadWhoami();
   await loadProperties();
+  await loadContacts();
   await loadTasks();
   await loadProductCostLots();
   buildPayPeriodOptions();

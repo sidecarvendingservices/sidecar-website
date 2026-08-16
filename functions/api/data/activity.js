@@ -1,22 +1,28 @@
-// /api/data/activity
-// GET ?propertyId=&limit=   -> { activity: [...] }  newest first (all properties if omitted)
-// POST { propertyId, machineId?, contactId?, type, direction?, outcome?, summary, notes?,
+// /api/data/activity  ("Tasks & Calls" log — calls/emails/texts/meetings/notes)
+// GET ?propertyId=&contactId=&machineId=&limit=   -> { activity: [...] } newest first.
+//   Pass none of the id filters to get the most recent activity across everything.
+// POST { propertyId?, machineId?, contactId?, type, direction?, outcome?, summary, notes?,
 //        followUpDate?, owner?, occurredAt? }
-//   If followUpDate is set, a linked Task is auto-created (title derived from summary).
+//   At least one of propertyId/contactId is required — a call can be logged against a
+//   standalone contact with no property yet. If followUpDate is set, a linked Task is
+//   auto-created (title derived from summary).
 // DELETE ?id=...
 //
 // Requires a D1 database bound as "DB". Sits behind Cloudflare Access.
+// property_id became nullable via migrations/010_contacts_calls.sql.
 
 function genId(prefix) {
   return prefix + '_' + crypto.randomUUID();
 }
-function isMissingTableError(err) {
-  return /no such table/i.test(String(err && err.message || err));
+function isMissingTableOrColumn(err) {
+  return /no such (table|column)/i.test(String(err && err.message || err));
 }
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const propertyId = url.searchParams.get('propertyId');
+  const contactId = url.searchParams.get('contactId');
+  const machineId = url.searchParams.get('machineId');
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '200', 10) || 200, 1000);
   try {
     let query = `SELECT id, property_id as propertyId, machine_id as machineId, contact_id as contactId,
@@ -25,13 +31,15 @@ export async function onRequestGet({ request, env }) {
                  FROM activity_log WHERE 1=1`;
     const binds = [];
     if (propertyId) { binds.push(propertyId); query += ` AND property_id = ?${binds.length}`; }
+    if (contactId) { binds.push(contactId); query += ` AND contact_id = ?${binds.length}`; }
+    if (machineId) { binds.push(machineId); query += ` AND machine_id = ?${binds.length}`; }
     query += ' ORDER BY occurred_at DESC';
     binds.push(limit);
     query += ` LIMIT ?${binds.length}`;
     const { results } = await env.DB.prepare(query).bind(...binds).all();
     return Response.json({ activity: results });
   } catch (err) {
-    if (isMissingTableError(err)) {
+    if (isMissingTableOrColumn(err)) {
       return Response.json({ activity: [], _migrationNeeded: 'migrations/005_properties_contacts_activity_tasks.sql' });
     }
     return Response.json({ error: String(err.message || err) }, { status: 500 });
@@ -41,12 +49,13 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const {
-    propertyId, machineId = null, contactId = null, type, direction = null, outcome = null,
+    propertyId = null, machineId = null, contactId = null, type, direction = null, outcome = null,
     summary, notes = '', followUpDate = null, owner = '', occurredAt,
   } = body;
-  if (!propertyId || !type || !summary) {
-    return Response.json({ error: 'propertyId, type, and summary are required' }, { status: 400 });
+  if (!propertyId && !contactId) {
+    return Response.json({ error: 'Either propertyId or contactId is required' }, { status: 400 });
   }
+  if (!type || !summary) return Response.json({ error: 'type and summary are required' }, { status: 400 });
 
   try {
     const id = genId('act');
@@ -68,8 +77,8 @@ export async function onRequestPost({ request, env }) {
 
     return Response.json({ id, propertyId, machineId, contactId, type, direction, outcome, summary, notes, followUpDate, owner, occurredAt: when, taskId });
   } catch (err) {
-    if (isMissingTableError(err)) {
-      return Response.json({ error: 'The activity_log table doesn\'t exist yet — run migrations/005_properties_contacts_activity_tasks.sql, then try again.' }, { status: 500 });
+    if (isMissingTableOrColumn(err)) {
+      return Response.json({ error: 'Run migrations/005_properties_contacts_activity_tasks.sql and migrations/010_contacts_calls.sql, then try again.' }, { status: 500 });
     }
     return Response.json({ error: String(err.message || err) }, { status: 500 });
   }
