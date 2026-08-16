@@ -1,36 +1,46 @@
 // /api/whoami
-// GET -> { email, member } — reads Cloudflare Access's identity header
-// (Cf-Access-Authenticated-User-Email, set automatically by Access on every
-// request once it's turned on for this domain) and matches it against the
+// GET -> { email, member } — verifies Cloudflare Access's signed identity JWT
+// (Cf-Access-Jwt-Assertion) and matches the email it contains against the
 // team_members table, so the dashboard can show who's logged in and drive
 // "My Tasks" filtering without any custom auth of its own.
 //
-// If Access isn't enabled yet (e.g. testing locally) the header is simply
-// absent — this degrades to { email: null, member: null } rather than
-// erroring, since Access is a deploy-time setting, not something this code
-// controls.
+// NOTE (found 2026-08-16): apps hosted on Cloudflare Pages/Workers do NOT get
+// the simple Cf-Access-Authenticated-User-Email header some Access docs show —
+// that's only added for traditional reverse-proxied origins. Pages/Workers get
+// a signed JWT instead (Cf-Access-Jwt-Assertion) and are expected to verify it
+// themselves — see functions/_lib/access-jwt.js for the verification and the
+// two env vars (CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD) it needs set.
+//
+// If Access isn't enabled yet, or those env vars aren't set, this degrades to
+// { email: null, member: null } rather than erroring — same as before.
 //
 // Requires a D1 database bound as "DB".
+
+import { verifyAccessEmail } from '../_lib/access-jwt.js';
 
 function isMissingTableError(err) {
   return /no such (table|column)/i.test(String(err && err.message || err));
 }
 
 export async function onRequestGet({ request, env }) {
-  // TEMPORARY: ?debug=1 dumps every header this Function actually received, to
-  // diagnose why Cf-Access-Authenticated-User-Email isn't showing up even though
-  // Access successfully challenges/authenticates on this exact URL. Safe to
-  // remove once resolved — /api/whoami is already an Access-protected
-  // destination, so this doesn't expose anything to anyone who couldn't already
-  // reach this endpoint.
+  // ?debug=1 dumps every header this Function received, plus what the JWT
+  // verifier concluded — handy if this ever needs re-diagnosing (e.g. after
+  // rotating the Access app, which changes the AUD tag).
   const debugUrl = new URL(request.url);
   if (debugUrl.searchParams.get('debug') === '1') {
     const headers = {};
     for (const [key, value] of request.headers.entries()) headers[key] = value;
-    return Response.json({ url: request.url, headers });
+    const verifiedEmail = await verifyAccessEmail(request, env).catch(e => 'ERROR: ' + e.message);
+    return Response.json({
+      url: request.url,
+      headers,
+      envHasTeamDomain: !!env.CF_ACCESS_TEAM_DOMAIN,
+      envHasAud: !!env.CF_ACCESS_AUD,
+      verifiedEmail,
+    });
   }
 
-  const email = (request.headers.get('Cf-Access-Authenticated-User-Email') || '').trim().toLowerCase();
+  const email = await verifyAccessEmail(request, env);
   if (!email) return Response.json({ email: null, member: null });
 
   try {

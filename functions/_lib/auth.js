@@ -15,11 +15,14 @@
 // for defining the others once a real non-admin user needs access.
 //
 // Requires a D1 database bound as "DB". Identity comes from the same
-// Cf-Access-Authenticated-User-Email header whoami.js uses — this file
-// doesn't do its own auth, it trusts Cloudflare Access the same way.
+// verified Access JWT whoami.js uses (see access-jwt.js) — this file
+// doesn't do its own auth, it trusts Cloudflare Access the same way, and
+// needs the same CF_ACCESS_TEAM_DOMAIN / CF_ACCESS_AUD env vars set.
+
+import { verifyAccessEmail } from './access-jwt.js';
 
 export async function getCurrentMember(request, env) {
-  const email = (request.headers.get('Cf-Access-Authenticated-User-Email') || '').trim().toLowerCase();
+  const email = await verifyAccessEmail(request, env);
   if (!email) return { email: null, member: null };
   try {
     const member = await env.DB.prepare(
