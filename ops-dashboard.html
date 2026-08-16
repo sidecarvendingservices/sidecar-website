@@ -460,6 +460,7 @@
 </head>
 <body>
 <a href="#mainContent" class="skip-link">Skip to main content</a>
+<h1 style="position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;">Sidecar Command Center</h1>
 <div class="app-shell">
 
   <nav class="app-sidebar" id="appSidebar">
@@ -531,12 +532,12 @@
       <div id="todayAttention"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card clickable-card" onclick="switchToTab('health')" title="Open Machine Health">
+      <div class="kpi-card clickable-card" onclick="switchToTab('health')" title="Open Machine Health" role="button" tabindex="0" aria-label="Open Machine Health" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Machines Online</div>
         <div class="kpi-value accent" id="todayOnline">0 / 0</div>
         <div class="kpi-sub">&nbsp;</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="switchToTab('tasks')" title="Open Tasks">
+      <div class="kpi-card clickable-card" onclick="switchToTab('tasks')" title="Open Tasks" role="button" tabindex="0" aria-label="Open Tasks" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Open Tasks</div>
         <div class="kpi-value" id="todayOpenTasks">0</div>
         <div class="kpi-sub">&nbsp;</div>
@@ -561,22 +562,22 @@
       </div>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('gross')" title="View breakdown by machine">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('gross')" title="View breakdown by machine" role="button" tabindex="0" aria-label="View breakdown by machine" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Gross Sales</div>
         <div class="kpi-value" id="kpiGross">$0.00</div>
         <div class="kpi-sub" id="kpiGrossSub">&nbsp;</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('net')" title="View breakdown by machine">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('net')" title="View breakdown by machine" role="button" tabindex="0" aria-label="View breakdown by machine" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Net Sales</div>
         <div class="kpi-value" id="kpiNet">$0.00</div>
         <div class="kpi-sub" id="kpiNetSub">after COGS &amp; fees</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('costs')" title="View breakdown by category">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('costs')" title="View breakdown by category" role="button" tabindex="0" aria-label="View breakdown by category" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Expenses + Commission</div>
         <div class="kpi-value" id="kpiCosts">$0.00</div>
         <div class="kpi-sub" id="kpiCostsSub">operating costs paid out</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('profit')" title="View breakdown by machine">
+      <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('profit')" title="View breakdown by machine" role="button" tabindex="0" aria-label="View breakdown by machine" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Net Profit</div>
         <div class="kpi-value accent" id="kpiProfit">$0.00</div>
         <div class="kpi-sub" id="kpiMargin">&nbsp;</div>
@@ -587,22 +588,22 @@
       <div class="card-title">Sales Momentum</div>
       <div class="card-desc">Gross sales this week/month vs. the equivalent period before it (calendar week Sun–Sat, calendar month) — not affected by the "Showing" filter above.</div>
       <div class="kpi-grid" style="margin-bottom:0;">
-        <div class="kpi-card clickable-card" onclick="openMomentumDetail('today')" title="View vs. yesterday">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('today')" title="View vs. yesterday" role="button" tabindex="0" aria-label="View vs. yesterday" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">Today</div>
           <div class="kpi-value" id="momTodayValue">$0.00</div>
           <div class="kpi-sub" id="momTodayArrow">&nbsp;</div>
         </div>
-        <div class="kpi-card clickable-card" onclick="openMomentumDetail('week')" title="View day-by-day breakdown">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('week')" title="View day-by-day breakdown" role="button" tabindex="0" aria-label="View day-by-day breakdown" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">This Week</div>
           <div class="kpi-value" id="momWeekValue">$0.00</div>
           <div class="kpi-sub" id="momWeekArrow">&nbsp;</div>
         </div>
-        <div class="kpi-card clickable-card" onclick="openMomentumDetail('month')" title="View day-by-day breakdown">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('month')" title="View day-by-day breakdown" role="button" tabindex="0" aria-label="View day-by-day breakdown" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">This Month</div>
           <div class="kpi-value" id="momMonthValue">$0.00</div>
           <div class="kpi-sub" id="momMonthArrow">&nbsp;</div>
         </div>
-        <div class="kpi-card clickable-card" onclick="openMomentumDetail('quarter')" title="View month-by-month breakdown">
+        <div class="kpi-card clickable-card" onclick="openMomentumDetail('quarter')" title="View month-by-month breakdown" role="button" tabindex="0" aria-label="View month-by-month breakdown" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">This Quarter</div>
           <div class="kpi-value" id="momQuarterValue">$0.00</div>
           <div class="kpi-sub" id="momQuarterArrow">&nbsp;</div>
@@ -611,7 +612,7 @@
     </div>
 
     <div class="grid-2">
-      <div class="card clickable-card" onclick="switchToTab('sales')" title="Open Sales">
+      <div class="card clickable-card" onclick="switchToTab('sales')" title="Open Sales" role="button" tabindex="0" aria-label="Open Sales" onkeydown="cardKeyHandler(event)">
         <div class="section-flex">
           <div class="card-title" style="margin:0;">Sales &amp; Profit Trend</div>
           <div class="trend-gran-toggle" onclick="event.stopPropagation();">
@@ -621,19 +622,25 @@
           </div>
         </div>
         <div class="card-desc">Gross sales, net sales, and profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
-        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+        <div class="chart-box"><canvas id="trendChart" role="img" aria-label="Sales and profit trend over time"></canvas></div>
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('trendChart')">View data table</button>
+        <div class="table-wrap" id="trendChart_table" hidden style="margin-top:8px;"></div>
       </div>
-      <div class="card clickable-card" onclick="switchToTab('financials')" title="Open Financials">
+      <div class="card clickable-card" onclick="switchToTab('financials')" title="Open Financials" role="button" tabindex="0" aria-label="Open Financials" onkeydown="cardKeyHandler(event)">
         <div class="card-title">Expense Breakdown</div>
         <div class="card-desc">Where operating costs are going this period.</div>
-        <div class="chart-box"><canvas id="expenseChart"></canvas></div>
+        <div class="chart-box"><canvas id="expenseChart" role="img" aria-label="Expense breakdown by category"></canvas></div>
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('expenseChart')">View data table</button>
+        <div class="table-wrap" id="expenseChart_table" hidden style="margin-top:8px;"></div>
       </div>
     </div>
 
-    <div class="card clickable-card" onclick="switchToTab('machines')" title="Open Machines">
+    <div class="card clickable-card" onclick="switchToTab('machines')" title="Open Machines" role="button" tabindex="0" aria-label="Open Machines" onkeydown="cardKeyHandler(event)">
       <div class="card-title">By Machine</div>
       <div class="card-desc">Net sales per machine for the selected period.</div>
-      <div class="chart-box small"><canvas id="machineChart"></canvas></div>
+      <div class="chart-box small"><canvas id="machineChart" role="img" aria-label="Net sales per machine"></canvas></div>
+      <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('machineChart')">View data table</button>
+      <div class="table-wrap" id="machineChart_table" hidden style="margin-top:8px;"></div>
     </div>
   </div>
 
@@ -719,17 +726,17 @@
       <button class="subnav-btn active" data-tab="health" onclick="switchToTab('health')">Health</button>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card clickable-card" onclick="filterHealthTable('online')" title="Filter table to online machines">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('online')" title="Filter table to online machines" role="button" tabindex="0" aria-label="Filter table to online machines" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Online Now</div>
         <div class="kpi-value accent" id="healthOnline">0</div>
         <div class="kpi-sub" id="healthOnlineSub">&nbsp;</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="filterHealthTable('offline')" title="Filter table to offline machines">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('offline')" title="Filter table to offline machines" role="button" tabindex="0" aria-label="Filter table to offline machines" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Offline Now</div>
         <div class="kpi-value" id="healthOffline">0</div>
         <div class="kpi-sub">check these first</div>
       </div>
-      <div class="kpi-card clickable-card" onclick="filterHealthTable('tempAlert')" title="Filter table to temperature alerts">
+      <div class="kpi-card clickable-card" onclick="filterHealthTable('tempAlert')" title="Filter table to temperature alerts" role="button" tabindex="0" aria-label="Filter table to temperature alerts" onkeydown="cardKeyHandler(event)">
         <div class="kpi-label">Temp Out of Range</div>
         <div class="kpi-value" id="healthTempAlerts">0</div>
         <div class="kpi-sub">refrigerated units only</div>
@@ -781,17 +788,17 @@
         <select id="payPeriodMonth" onchange="loadPayPeriod()" style="max-width:180px;"></select>
       </div>
       <div class="kpi-grid" style="margin-bottom:0;">
-        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period" role="button" tabindex="0" aria-label="View orders for this period" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">Orders</div>
           <div class="kpi-value accent" id="payPeriodOrders">—</div>
           <div class="kpi-sub">non-refunded, HAHA-synced machines</div>
         </div>
-        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period" role="button" tabindex="0" aria-label="View orders for this period" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">Revenue</div>
           <div class="kpi-value" id="payPeriodRevenue">—</div>
           <div class="kpi-sub">gross, this period</div>
         </div>
-        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period">
+        <div class="kpi-card clickable-card" onclick="openPayPeriodOrders()" title="View orders for this period" role="button" tabindex="0" aria-label="View orders for this period" onkeydown="cardKeyHandler(event)">
           <div class="kpi-label">Average Order Value</div>
           <div class="kpi-value" id="payPeriodAOV">—</div>
           <div class="kpi-sub">revenue ÷ orders</div>
@@ -2439,15 +2446,91 @@ async function loadHealthDetail(machineId) {
 }
 
 // ---------------- modal ----------------
+// v1.10.1 F4 — full dialog accessibility: accessible naming, a real focus
+// trap (Tab/Shift+Tab cycle within the dialog only), background inertness
+// (everything behind the dialog is unreachable by keyboard/screen reader
+// while it's open), body scroll locking, and focus restoration back to
+// whatever triggered the dialog on close. Applied once here so every modal
+// in the app (Sync, Restock List, Add Task, confirm dialogs, Machine
+// Workspace's old detail modal, etc.) gets this for free.
+let modalTriggerElement = null;
+let modalKeydownHandler = null;
+
 function openModal(html) {
-  document.getElementById('modalBox').innerHTML = html;
+  modalTriggerElement = document.activeElement;
+
+  const box = document.getElementById('modalBox');
+  box.innerHTML = html;
   document.getElementById('modalOverlay').style.display = 'flex';
-  wireLabelAssociations(document.getElementById('modalBox'));
-  document.getElementById('modalBox').focus();
+  wireLabelAssociations(box);
+
+  // Accessible name: point the dialog at its own .modal-title if present,
+  // so screen readers announce what the dialog is, not just "dialog".
+  const titleEl = box.querySelector('.modal-title');
+  if (titleEl) {
+    if (!titleEl.id) titleEl.id = 'modalTitle_' + Math.random().toString(36).slice(2, 9);
+    box.setAttribute('aria-labelledby', titleEl.id);
+    box.removeAttribute('aria-label');
+  } else {
+    box.setAttribute('aria-label', 'Dialog');
+  }
+
+  // Background inertness — everything except the dialog itself becomes
+  // unreachable by keyboard/AT while it's open. #modalOverlay lives inside
+  // .app, so we inert the sidebar plus every other direct child of .app
+  // rather than the whole shell (which would inert the dialog too).
+  // `inert` degrades harmlessly on browsers that don't support it yet —
+  // the focus trap below still catches Tab-order containment either way.
+  if ('inert' in HTMLElement.prototype) {
+    const sidebar = document.getElementById('appSidebar');
+    if (sidebar) sidebar.inert = true;
+    document.querySelectorAll('.app > *').forEach(el => {
+      if (el.id !== 'modalOverlay') el.inert = true;
+    });
+  }
+
+  // Scroll lock.
+  document.body.style.overflow = 'hidden';
+
+  box.focus();
+
+  // Focus trap: Tab/Shift+Tab cycles only through focusable elements
+  // inside the dialog.
+  if (modalKeydownHandler) box.removeEventListener('keydown', modalKeydownHandler);
+  modalKeydownHandler = function (e) {
+    if (e.key !== 'Tab') return;
+    const focusable = box.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
+  box.addEventListener('keydown', modalKeydownHandler);
 }
+
 function closeModal() {
   document.getElementById('modalOverlay').style.display = 'none';
   document.getElementById('modalBox').innerHTML = '';
+  document.body.style.overflow = '';
+
+  if ('inert' in HTMLElement.prototype) {
+    const sidebar = document.getElementById('appSidebar');
+    if (sidebar) sidebar.inert = false;
+    document.querySelectorAll('.app > *').forEach(el => { el.inert = false; });
+  }
+
+  // Focus restoration — return focus to whatever opened the dialog, so a
+  // keyboard user doesn't get dropped back at the top of the page.
+  if (modalTriggerElement && document.contains(modalTriggerElement) && typeof modalTriggerElement.focus === 'function') {
+    modalTriggerElement.focus();
+  }
+  modalTriggerElement = null;
 }
 
 // Reusable "are you sure?" dialog, styled like every other modal instead of
@@ -4665,11 +4748,11 @@ function switchToTab(tab) {
   const panel = document.getElementById('panel-' + tab);
   if (!panel) return;
   const btn = document.querySelector(`[data-tab="${tab}"]`);
-  document.querySelectorAll('.tab-btn, .subnav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn, .subnav-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b => b.classList.add('active'));
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b => { b.classList.add('active'); b.setAttribute('aria-selected', 'true'); });
   const parentTab = TAB_PARENT[tab];
-  if (parentTab) document.querySelectorAll(`.tab-btn[data-tab="${parentTab}"]`).forEach(b => b.classList.add('active'));
+  if (parentTab) document.querySelectorAll(`.tab-btn[data-tab="${parentTab}"]`).forEach(b => { b.classList.add('active'); b.setAttribute('aria-selected', 'true'); });
   panel.classList.add('active');
   // On the condensed mobile nav, surface which tab is active even when it's
   // tucked inside "More" so context isn't lost.
@@ -4679,6 +4762,40 @@ function switchToTab(tab) {
     moreBtn.classList.toggle('has-active', isSecondary);
     moreBtn.textContent = isSecondary ? (btn.textContent.trim() + ' ▾') : 'More ▾';
   }
+}
+
+// v1.10.1 F6 — wire real ARIA tab semantics (role="tablist"/"tab"/"tabpanel",
+// aria-selected, aria-controls/aria-labelledby) onto the top-level tabbar and
+// every in-panel subnav group, plus Left/Right arrow-key navigation within
+// each group — none of this existed before; buttons just toggled a CSS
+// class with no tab semantics for assistive tech. Run once at init, since
+// this markup is static (not rebuilt on re-render).
+function wireTabSemantics() {
+  document.querySelectorAll('.tabbar, .subnav').forEach(container => {
+    if (container.id === 'tabbarMoreMenu') return; // already role="menu", different pattern
+    container.setAttribute('role', 'tablist');
+    const btns = Array.from(container.querySelectorAll('.tab-btn, .subnav-btn'));
+    btns.forEach((btn, i) => {
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false');
+      const tab = btn.dataset.tab;
+      if (tab) {
+        const panel = document.getElementById('panel-' + tab);
+        if (panel) {
+          if (!btn.id) btn.id = 'tabctl-' + tab + '-' + i + '-' + Math.random().toString(36).slice(2, 7);
+          btn.setAttribute('aria-controls', 'panel-' + tab);
+          panel.setAttribute('role', 'tabpanel');
+          panel.setAttribute('aria-labelledby', btn.id);
+        }
+      }
+      btn.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        const dir = e.key === 'ArrowRight' ? 1 : -1;
+        btns[(i + dir + btns.length) % btns.length].focus();
+      });
+    });
+  });
 }
 
 // ---------------- nav: sticky tabbar overflow menu + back-to-top ----------------
@@ -5951,6 +6068,13 @@ function renderTrendChart() {
     : 0); // commission is only tracked per calendar month, not per week/day
   const profitByKey = netByKey.map((n, i) => n - expByKey[i] - commByKey[i]);
 
+  const trendTableWrap = document.getElementById('trendChart_table');
+  if (trendTableWrap) {
+    trendTableWrap.innerHTML = chartTableHtml(
+      ['Period', 'Gross Sales', 'Net Sales', 'Profit'],
+      keys.map((k, i) => [labelFn(k), fmt(grossByKey[i]), fmt(netByKey[i]), fmt(profitByKey[i])])
+    );
+  }
   const ctx = document.getElementById('trendChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('trendChart'); return; }
   if (charts.trend) charts.trend.destroy();
@@ -5977,6 +6101,10 @@ function renderExpenseChart(eRows) {
   const byCat = {};
   eRows.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
   const labels = Object.keys(byCat);
+  const expenseTableWrap = document.getElementById('expenseChart_table');
+  if (expenseTableWrap) {
+    expenseTableWrap.innerHTML = chartTableHtml(['Category', 'Amount'], labels.map(l => [l, fmt(byCat[l])]));
+  }
   const ctx = document.getElementById('expenseChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('expenseChart'); return; }
   if (charts.expense) charts.expense.destroy();
@@ -5993,6 +6121,10 @@ function renderMachineChart(sRows) {
   const byMachine = {};
   sRows.forEach(s => { byMachine[s.machineId] = (byMachine[s.machineId] || 0) + (s.gross - s.cogs - s.fees); });
   const ids = Object.keys(byMachine);
+  const machineTableWrap = document.getElementById('machineChart_table');
+  if (machineTableWrap) {
+    machineTableWrap.innerHTML = chartTableHtml(['Machine', 'Net Sales'], ids.map(id => [machineName(id), fmt(byMachine[id])]));
+  }
   const ctx = document.getElementById('machineChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('machineChart'); return; }
   if (charts.machine) charts.machine.destroy();
@@ -6076,6 +6208,33 @@ function renderPatternChart() {
 }
 
 // ---------------- misc ----------------
+// Keyboard operability for div-based "clickable cards" (KPI tiles, drill-down
+// summaries) — v1.10.1 F3. These stay <div>s rather than converting to real
+// <button> elements (which would risk breaking the nested-content HTML
+// structure across ~19 call sites); role="button" + tabindex="0" + this
+// handler makes them fully keyboard-operable in the meantime, and they
+// already pick up the site-wide [tabindex]:focus-visible outline style.
+function cardKeyHandler(event) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    event.currentTarget.click();
+  }
+}
+
+// v1.10.1 F7 — accessible data-table alternative for charts. The table
+// itself is built by each chart's own render function (renderChartTable*
+// below); this just toggles visibility of whichever one's already there.
+function toggleChartTable(canvasId) {
+  const wrap = document.getElementById(canvasId + '_table');
+  if (!wrap) return;
+  wrap.hidden = !wrap.hidden;
+}
+function chartTableHtml(headers, rows) {
+  if (!rows.length) return '<div class="empty-state" style="padding:10px;">No data for this range yet.</div>';
+  return `<table><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -6150,6 +6309,7 @@ function renderAll() {
 
 async function init() {
   updateSidebarDate();
+  wireTabSemantics();
   document.querySelectorAll('#panel-overview .trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.range === overviewRange));
   document.getElementById('sDate').valueAsDate = new Date();
   document.getElementById('eDate').valueAsDate = new Date();
