@@ -317,6 +317,18 @@
   @media (max-width: 1400px) { .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .grid-3 { grid-template-columns: minmax(0, 1fr); } }
 
+  /* ---------- machine workspace (v1.10.1 F2 — replaces the old Machine Detail modal) ---------- */
+  .workspace-header {
+    position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 14px; box-shadow: var(--shadow-card);
+  }
+  .workspace-title { font-family: var(--font-head); font-size: 20px; font-weight: 900; color: var(--charcoal); margin: 0 0 4px; }
+  .workspace-sub { font-size: 12.5px; color: var(--graphite); margin-bottom: 10px; }
+  .workspace-status-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 12.5px; color: var(--graphite); margin-bottom: 12px; }
+  .workspace-status-row strong { color: var(--charcoal); }
+  .workspace-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .workspace-pane { min-width: 0; }
+
   /* ---------- forms ---------- */
   /* min-width tuned so short fields (dates, phone, small selects) comfortably
      pair up 2-per-line, while .field-wide fields (names, addresses, emails,
@@ -458,7 +470,7 @@
     </div>
     <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
-    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.1</div>
+    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.2</div>
 
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
@@ -673,6 +685,31 @@
         <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
       </div>
     </div>
+  </div>
+
+  <!-- ============ MACHINE WORKSPACE (replaces the old Machine Detail modal — v1.10.1 F2) ============ -->
+  <div class="tab-panel" id="panel-machine-workspace">
+    <button class="btn btn-ghost" onclick="closeMachineWorkspace()" style="margin-bottom:12px;">&larr; Back to Machines</button>
+
+    <div class="workspace-header" id="workspaceHeader">
+      <div class="empty-state">Loading machine…</div>
+    </div>
+
+    <div class="subnav" role="tablist" aria-label="Machine sections" id="workspaceTabs">
+      <button class="subnav-btn active" role="tab" aria-selected="true" aria-controls="workspacePane-overview" id="workspaceTab-overview" onclick="switchWorkspaceTab('overview')">Overview</button>
+      <button class="subnav-btn" role="tab" aria-selected="false" aria-controls="workspacePane-inventory" id="workspaceTab-inventory" onclick="switchWorkspaceTab('inventory')">Inventory &amp; Restock</button>
+      <button class="subnav-btn" role="tab" aria-selected="false" aria-controls="workspacePane-assortment" id="workspaceTab-assortment" onclick="switchWorkspaceTab('assortment')">Assortment &amp; Pricing</button>
+      <button class="subnav-btn" role="tab" aria-selected="false" aria-controls="workspacePane-controls" id="workspaceTab-controls" onclick="switchWorkspaceTab('controls')">Health &amp; Controls</button>
+      <button class="subnav-btn" role="tab" aria-selected="false" aria-controls="workspacePane-service" id="workspaceTab-service" onclick="switchWorkspaceTab('service')">Service &amp; Activity</button>
+      <button class="subnav-btn" role="tab" aria-selected="false" aria-controls="workspacePane-documents" id="workspaceTab-documents" onclick="switchWorkspaceTab('documents')">Documents</button>
+    </div>
+
+    <div class="workspace-pane" id="workspacePane-overview" role="tabpanel" aria-labelledby="workspaceTab-overview"></div>
+    <div class="workspace-pane" id="workspacePane-inventory" role="tabpanel" aria-labelledby="workspaceTab-inventory" hidden></div>
+    <div class="workspace-pane" id="workspacePane-assortment" role="tabpanel" aria-labelledby="workspaceTab-assortment" hidden></div>
+    <div class="workspace-pane" id="workspacePane-controls" role="tabpanel" aria-labelledby="workspaceTab-controls" hidden></div>
+    <div class="workspace-pane" id="workspacePane-service" role="tabpanel" aria-labelledby="workspaceTab-service" hidden></div>
+    <div class="workspace-pane" id="workspacePane-documents" role="tabpanel" aria-labelledby="workspaceTab-documents" hidden></div>
   </div>
 
   <!-- ============ MACHINE HEALTH ============ -->
@@ -2620,35 +2657,139 @@ async function computeMachineSellThrough(m) {
   return { machine: m, rows, nextServiceBy, soonestExpiration, lowestSellThroughId, totalCostValue, totalSaleValue };
 }
 
+let currentWorkspaceMachineId = null;
+let currentWorkspaceTab = 'overview';
+let workspaceData = null;
+const WORKSPACE_TABS = ['overview', 'inventory', 'assortment', 'controls', 'service', 'documents'];
+
 async function openMachineDetail(machineId) {
   const m = machines.find(x => x.id === machineId);
   if (!m) return;
-  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
-    <div class="modal-sub">Loading inventory, sell-through, and service history…</div>`);
+  currentWorkspaceMachineId = machineId;
+  currentWorkspaceTab = 'overview';
+
+  // Machine Workspace replaces the old Machine Detail modal (v1.10.1 F2) — a
+  // real page section instead of a dialog, since the modal had grown to
+  // 90+ controls and would only keep growing as planogram/pricing/controls/
+  // contracts/expiration-batches land in v1.10.2.
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-machine-workspace');
+  panel.classList.add('active');
+  document.querySelectorAll('.tab-btn, .subnav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[data-tab="machines"]').forEach(b => b.classList.add('active'));
+  switchWorkspaceTab('overview');
+  window.scrollTo({ top: 0, behavior: 'auto' });
+
+  document.getElementById('workspaceHeader').innerHTML = '<div class="empty-state">Loading machine…</div>';
+  WORKSPACE_TABS.forEach(t => { document.getElementById('workspacePane-' + t).innerHTML = ''; });
 
   const [sellThrough, logRes, taskCallHistory] = await Promise.all([
     computeMachineSellThrough(m),
     apiGet('/api/data/service-log?machineId=' + encodeURIComponent(machineId)).catch(() => ({ log: [] })),
     loadCombinedHistory({ machineId }),
   ]);
-  const { rows, nextServiceBy, soonestExpiration, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
 
+  workspaceData = { m, sellThrough, logRes, taskCallHistory };
+  renderWorkspaceHeader();
+  renderWorkspaceOverview();
+  renderWorkspaceInventory();
+  renderWorkspaceAssortment();
+  renderWorkspaceControls();
+  renderWorkspaceService();
+  renderWorkspaceDocuments();
+}
+
+function closeMachineWorkspace() {
+  currentWorkspaceMachineId = null;
+  workspaceData = null;
+  switchToTab('machines');
+}
+
+function switchWorkspaceTab(tab) {
+  currentWorkspaceTab = tab;
+  WORKSPACE_TABS.forEach(t => {
+    const pane = document.getElementById('workspacePane-' + t);
+    const btn = document.getElementById('workspaceTab-' + t);
+    const active = t === tab;
+    if (pane) pane.hidden = !active;
+    if (btn) {
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    }
+  });
+}
+
+function renderWorkspaceHeader() {
+  if (!workspaceData) return;
+  const { m, sellThrough } = workspaceData;
+  const { nextServiceBy, soonestExpiration } = sellThrough;
   const linkedProperty = m.propertyId ? properties.find(p => p.id === m.propertyId) : null;
-  const teamBits = linkedProperty ? [
-    linkedProperty.accountManagerName ? `Account Manager: ${linkedProperty.accountManagerName}` : null,
-    linkedProperty.stockerName ? `Stocker: ${linkedProperty.stockerName}` : null,
-  ].filter(Boolean).join(' · ') : '';
-  const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
+  const health = (latestHealth || []).find(h => h.machineId === m.id);
   const daysUntilService = nextServiceBy ? Math.round((new Date(nextServiceBy) - new Date(todayStr())) / 86400000) : null;
   const serviceBadge = !nextServiceBy
-    ? '<span class="tag tag-none">Not enough data yet</span>'
+    ? '<span class="tag tag-none">Not enough sales history yet</span>'
     : daysUntilService <= 2
       ? `<span class="tag tag-due">${escapeHtml(nextServiceBy)} — ${daysUntilService <= 0 ? 'due now' : daysUntilService + ' day(s)'}</span>`
       : `<span class="tag tag-tiered">${escapeHtml(nextServiceBy)} — ${daysUntilService} day(s)</span>`;
   const expirationBadge = soonestExpiration
     ? `<span class="tag tag-due" title="Service-by date above is already pulled to 3 days before this">Earliest expiration: ${escapeHtml(soonestExpiration)}</span>`
     : '';
+  const onlineBadge = !health
+    ? '<span class="tag tag-none">No health data yet</span>'
+    : health.isOnline
+      ? '<span class="tag tag-paid">Online</span>'
+      : '<span class="tag tag-due">Offline</span>';
+  const heartbeatText = health && health.checkedAt ? `Last heartbeat: ${fmtWhen(health.checkedAt)} (${fmtAgo(health.checkedAt)})` : 'Last heartbeat: —';
+  const tempText = health && health.temperature !== null && health.temperature !== undefined ? `Temp: ${fmtTemp(health.temperature, health.temperatureUnit)}` : 'Temp: —';
+  const syncText = lastHahaSyncAt ? `Last HAHA sync: ${fmtAgo(lastHahaSyncAt)}` : 'Last HAHA sync: never';
+  const contactBits = [m.contactPhone, m.contactEmail].filter(Boolean).join(' · ');
+
+  document.getElementById('workspaceHeader').innerHTML = `
+    <h1 class="workspace-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</h1>
+    <div class="workspace-sub">${escapeHtml(linkedProperty ? linkedProperty.name : (m.address || 'No property linked'))}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}</div>
+    <div class="workspace-status-row">
+      <span>${onlineBadge}</span>
+      <span>${heartbeatText}</span>
+      <span>${tempText}</span>
+      <span>Next service: ${serviceBadge}</span>
+      ${expirationBadge ? `<span>${expirationBadge}</span>` : ''}
+      <span>${syncText}</span>
+    </div>
+    <div class="workspace-actions">
+      <button class="btn btn-primary" onclick="showRestockList('${m.id}')">Restock</button>
+      <button class="btn btn-secondary" onclick="switchWorkspaceTab('service')">Log Service</button>
+      <button class="btn btn-secondary" onclick="promptEmailPM('${m.id}')" ${m.contactEmail ? '' : 'disabled'}>Email PM</button>
+      <button class="btn btn-secondary" onclick="promptTextPM('${m.id}')" ${m.contactPhone ? '' : 'disabled'}>Text PM</button>
+    </div>
+  `;
+}
+
+function renderWorkspaceOverview() {
+  if (!workspaceData) return;
+  const { m, sellThrough } = workspaceData;
+  const { rows, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
+  const pane = document.getElementById('workspacePane-overview');
+  const fastestRow = rows.find(r => r.productId === lowestSellThroughId);
+  pane.innerHTML = `
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">At a Glance</h2>
+      <div class="card-desc">A quick read on this machine — full inventory detail lives on the Inventory &amp; Restock tab.</div>
+      <div class="kpi-grid" style="margin-bottom:0;">
+        <div class="kpi-card"><div class="kpi-label">Products Tracked</div><div class="kpi-value">${rows.length}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Inventory Value (Cost)</div><div class="kpi-value accent">${m.hahaId ? fmt(totalCostValue) : '—'}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Inventory Value (Sale)</div><div class="kpi-value">${m.hahaId ? fmt(totalSaleValue) : '—'}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Fastest Seller</div><div class="kpi-value" style="font-size:16px;">${fastestRow ? escapeHtml(fastestRow.productName || fastestRow.productId) : '—'}</div></div>
+      </div>
+    </div>
+    ${!m.hahaId ? '<div class="card"><div class="empty-state">Link a HAHA Market ID on the Machines tab to see live inventory, sell-through, and health data for this machine.</div></div>' : ''}
+  `;
+}
+
+function renderWorkspaceInventory() {
+  if (!workspaceData) return;
+  const { m, sellThrough } = workspaceData;
+  const { rows, lowestSellThroughId, totalCostValue, totalSaleValue } = sellThrough;
+  const pane = document.getElementById('workspacePane-inventory');
 
   const invTableHtml = !m.hahaId
     ? '<div class="empty-state">Link a HAHA Market ID on the Machines tab to see live inventory and sell-through.</div>'
@@ -2660,11 +2801,11 @@ async function openMachineDetail(machineId) {
             <td data-label="Product">${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" alt="" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName || r.productId)}</td>
             <td data-label="Stock" class="num">${r.stock}</td>
             <td data-label="Sold/day (14d)" class="num">${r.velocity > 0 ? r.velocity.toFixed(1) : '—'}</td>
-            <td data-label="Days Left" class="num">${r.daysRemaining !== null ? Math.round(r.daysRemaining) : '—'}</td>
+            <td data-label="Days Left" class="num">${r.daysRemaining !== null ? Math.round(r.daysRemaining) : 'Not enough sales history'}</td>
             <td data-label="Projected Out">${r.stockoutDate || '—'}</td>
             <td data-label="Expires">
               <input type="date" aria-label="Expiration date for ${escapeAttr(r.productName || r.productId)}" style="width:130px; display:inline-block;" value="${r.expirationDate || ''}"
-                     onchange="saveProductExpiration('${machineId}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
+                     onchange="saveProductExpiration('${m.id}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
               ${(() => {
                 if (!r.expirationDate) return '';
                 const daysToExp = Math.round((new Date(r.expirationDate) - new Date(todayStr())) / 86400000);
@@ -2674,52 +2815,105 @@ async function openMachineDetail(machineId) {
             </td>
             <td data-label="Capacity" class="num">
               <input type="number" min="0" step="1" aria-label="Full capacity for ${escapeAttr(r.productName || r.productId)}" style="width:70px; display:inline-block;" value="${r.capacity !== null && r.capacity !== undefined ? r.capacity : ''}" placeholder="—"
-                     onchange="saveProductCapacity('${machineId}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
+                     onchange="saveProductCapacity('${m.id}','${escapeAttr(r.productId)}','${escapeAttr((r.productName || '').replace(/'/g, "\\'"))}', this.value)" />
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`;
 
-  const logRows = (logRes.log || []);
-  const serviceLogHtml = `
-    <div class="form-grid" style="margin-bottom:10px;">
-      <div><label>Serviced On</label><input id="svcDate_${machineId}" type="date" value="${todayStr()}" /></div>
-      <div><label>Serviced By</label><input id="svcBy_${machineId}" placeholder="e.g. Brian" /></div>
-      <div><label>Notes</label><input id="svcNotes_${machineId}" placeholder="optional" /></div>
-      <div><button class="btn btn-primary" onclick="addServiceLogEntry('${machineId}')">Log Service</button></div>
-    </div>
-    ${!logRows.length ? '<div class="empty-state" style="padding:10px;">No service history logged yet.</div>' :
-      `<div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>By</th><th>Notes</th></tr></thead>
-        <tbody>${logRows.map(l => `<tr><td>${l.servicedAt}</td><td>${escapeHtml(l.servicedBy || '—')}</td><td>${escapeHtml(l.notes || '—')}</td></tr>`).join('')}</tbody>
-      </table></div>`}
-  `;
-
-  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">${escapeHtml(m.name)}${m.host ? ' — ' + escapeHtml(m.host) : ''}</div>
-    <div class="modal-sub">${escapeHtml(m.address || 'No address on file')}${contactBits ? ' · ' + escapeHtml(contactBits) : ''}${teamBits ? ' · ' + escapeHtml(teamBits) : ''}</div>
-
-    <div class="section-flex">
-      <div>Next Service Required By: ${serviceBadge} ${expirationBadge}</div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-secondary" onclick="promptEmailPM('${machineId}')" ${m.contactEmail ? '' : 'disabled'}>Email PM</button>
-        <button class="btn btn-secondary" onclick="promptTextPM('${machineId}')" ${m.contactPhone ? '' : 'disabled'}>Text PM</button>
+  pane.innerHTML = `
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Inventory &amp; Sell-Through</h2>
+        <button class="btn btn-secondary" onclick="showRestockList('${m.id}')">Restock This Machine</button>
       </div>
+      <div class="card-desc">Velocity is based on the last 14 days of synced orders. The row in red has the fastest-selling / soonest-to-empty product. Set an "Expires" date on any product and the service-by date on Overview automatically pulls to at least 3 days before it.</div>
+      ${invTableHtml}
+      ${m.hahaId ? `<div class="pill-note" style="margin-top:10px; display:inline-block;">Inventory value: ${fmt(totalCostValue)} at cost, ${fmt(totalSaleValue)} if sold at current price</div>` : ''}
     </div>
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Expiration Batches</h2>
+      <div class="card-desc">Coming in v1.10.2 — track quantity + best-by date per batch instead of one date per product, so you can see exactly what's nearest to expiring and how much of it there is.</div>
+    </div>
+  `;
+}
 
-    <div class="card-title" style="margin-top:16px;">Inventory &amp; Sell-Through</div>
-    <div class="card-desc">Velocity is based on the last 14 days of synced orders. The row in red has the fastest-selling / soonest-to-empty product. Set an "Expires" date on any product and the service-by date above automatically pulls to at least 3 days before it.</div>
-    ${invTableHtml}
+function renderWorkspaceAssortment() {
+  const pane = document.getElementById('workspacePane-assortment');
+  pane.innerHTML = `
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Planogram (Shelf Layout)</h2>
+      <div class="card-desc">Coming in v1.10.2 — view and edit which product is assigned to each lane, pulled from and pushed back to HAHA.</div>
+      <div class="empty-state">Not built yet.</div>
+    </div>
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Pricing</h2>
+      <div class="card-desc">Coming in v1.10.2 — view and edit this machine's price per product, plus net margin flagged if under 50%.</div>
+      <div class="empty-state">Not built yet.</div>
+    </div>
+  `;
+}
 
-    ${m.hahaId ? `<div class="pill-note" style="margin-top:10px; display:inline-block;">
-      Inventory value: ${fmt(totalCostValue)} at cost, ${fmt(totalSaleValue)} if sold at current price
-    </div>` : ''}
+function renderWorkspaceControls() {
+  if (!workspaceData) return;
+  const { m } = workspaceData;
+  const health = (latestHealth || []).find(h => h.machineId === m.id);
+  const pane = document.getElementById('workspacePane-controls');
+  pane.innerHTML = `
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Telemetry</h2>
+      <div class="card-desc">Current reading from the last HAHA health check — updates on the same schedule as the sales sync, or immediately via "Check Now" on the Machine Health tab.</div>
+      ${!health ? '<div class="empty-state">No health data recorded for this machine yet.</div>' : `
+        <div class="kpi-grid" style="margin-bottom:0;">
+          <div class="kpi-card"><div class="kpi-label">Status</div><div class="kpi-value" style="font-size:18px;">${health.isOnline ? 'Online' : 'Offline'}</div></div>
+          <div class="kpi-card"><div class="kpi-label">Temperature</div><div class="kpi-value" style="font-size:18px;">${health.temperature !== null && health.temperature !== undefined ? fmtTemp(health.temperature, health.temperatureUnit) : '—'}</div></div>
+          <div class="kpi-card"><div class="kpi-label">Last Checked</div><div class="kpi-value" style="font-size:14px;">${fmtAgo(health.checkedAt)}</div></div>
+        </div>
+      `}
+    </div>
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Remote Controls</h2>
+      <div class="card-desc">Coming in v1.10.2 — set temperature, freeze the unit, open the door, or restart it remotely, each behind a confirmation step and Admin-only access.</div>
+      <div class="empty-state">Not built yet.</div>
+    </div>
+  `;
+}
 
-    <div class="card-title" style="margin-top:18px;">Service Log</div>
-    ${serviceLogHtml}
+function renderWorkspaceService() {
+  if (!workspaceData) return;
+  const { m, logRes, taskCallHistory } = workspaceData;
+  const pane = document.getElementById('workspacePane-service');
+  const logRows = (logRes.log || []);
+  pane.innerHTML = `
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Service Log</h2>
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div><label>Serviced On</label><input id="svcDate_${m.id}" type="date" value="${todayStr()}" /></div>
+        <div><label>Serviced By</label><input id="svcBy_${m.id}" placeholder="e.g. Brian" /></div>
+        <div><label>Notes</label><input id="svcNotes_${m.id}" placeholder="optional" /></div>
+        <div><button class="btn btn-primary" onclick="addServiceLogEntry('${m.id}')">Log Service</button></div>
+      </div>
+      ${!logRows.length ? '<div class="empty-state" style="padding:10px;">No service history logged yet.</div>' :
+        `<div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>By</th><th>Notes</th></tr></thead>
+          <tbody>${logRows.map(l => `<tr><td>${l.servicedAt}</td><td>${escapeHtml(l.servicedBy || '—')}</td><td>${escapeHtml(l.notes || '—')}</td></tr>`).join('')}</tbody>
+        </table></div>`}
+    </div>
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Tasks &amp; Calls History</h2>
+      ${combinedHistoryHtml(taskCallHistory)}
+    </div>
+  `;
+}
 
-    <div class="card-title" style="margin-top:18px;">Tasks &amp; Calls History</div>
-    ${combinedHistoryHtml(taskCallHistory)}
-  `);
+function renderWorkspaceDocuments() {
+  const pane = document.getElementById('workspacePane-documents');
+  pane.innerHTML = `
+    <div class="card">
+      <h2 class="card-title" style="margin-top:0;">Contracts</h2>
+      <div class="card-desc">Coming in v1.10.2 — signed contracts covering this machine, uploaded from the property level and tagged per machine.</div>
+      <div class="empty-state">Not built yet.</div>
+    </div>
+  `;
 }
 
 async function saveProductExpiration(machineId, productId, productName, expirationDate) {
