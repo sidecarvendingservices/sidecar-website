@@ -17,6 +17,19 @@ function isMissingTableError(err) {
 }
 
 export async function onRequestGet({ request, env }) {
+  // TEMPORARY: ?debug=1 dumps every header this Function actually received, to
+  // diagnose why Cf-Access-Authenticated-User-Email isn't showing up even though
+  // Access successfully challenges/authenticates on this exact URL. Safe to
+  // remove once resolved — /api/whoami is already an Access-protected
+  // destination, so this doesn't expose anything to anyone who couldn't already
+  // reach this endpoint.
+  const debugUrl = new URL(request.url);
+  if (debugUrl.searchParams.get('debug') === '1') {
+    const headers = {};
+    for (const [key, value] of request.headers.entries()) headers[key] = value;
+    return Response.json({ url: request.url, headers });
+  }
+
   const email = (request.headers.get('Cf-Access-Authenticated-User-Email') || '').trim().toLowerCase();
   if (!email) return Response.json({ email: null, member: null });
 
