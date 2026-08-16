@@ -22,6 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const ROOT = __dirname;
 const SRC_DIR = path.join(ROOT, 'src');
@@ -327,10 +328,30 @@ function build() {
   fs.writeFileSync(path.join(OUT_DIR, 'sitemap.xml'), sitemapXml, 'utf8');
   console.log(`Generated sitemap.xml (${sitemapUrls.length} URLs)`);
 
+  // ops-dashboard.html shows a small build-version tag in its header so
+  // it's obvious at a glance whether a given code change has actually gone
+  // live yet, vs. still sitting unpushed/undeployed. Computed fresh on every
+  // build from the git commit + build time — nothing to remember to bump.
+  function buildVersionStamp() {
+    let hash = 'unknown';
+    try {
+      hash = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    } catch (e) {
+      console.warn('Could not read git commit for build version stamp:', e.message);
+    }
+    const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+    return `build ${hash} — deployed ${stamp}`;
+  }
+
   for (const file of PASSTHROUGH_PAGES) {
     const src = path.join(ROOT, file);
     if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(OUT_DIR, file));
+      if (file === 'ops-dashboard.html') {
+        const html = fs.readFileSync(src, 'utf8').replace('{{BUILD_VERSION}}', buildVersionStamp());
+        fs.writeFileSync(path.join(OUT_DIR, file), html, 'utf8');
+      } else {
+        fs.copyFileSync(src, path.join(OUT_DIR, file));
+      }
       console.log(`Copied passthrough page ${file}`);
     }
   }

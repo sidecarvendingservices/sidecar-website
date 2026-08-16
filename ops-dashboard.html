@@ -68,6 +68,11 @@
     -webkit-font-smoothing: antialiased;
   }
   .app { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
+  /* Desktop: use the full page width instead of capping at 1180px. Mobile
+     (<=640px, see the .app override below) is unaffected. */
+  @media (min-width: 641px) {
+    .app { max-width: none; padding-left: 32px; padding-right: 32px; }
+  }
 
   /* ---------- accessibility ---------- */
   .skip-link {
@@ -92,6 +97,12 @@
     flex-wrap: wrap;
     border-bottom: 1px solid var(--border);
   }
+  /* Desktop: keep the toolbar (logo, HAHA sync status/button, range filter)
+     pinned at the very top of the viewport while scrolling, same idea as
+     the tab bar below it. */
+  @media (min-width: 641px) {
+    .app-header { position: sticky; top: 0; z-index: 50; }
+  }
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand img { height: 54px; width: auto; display: block; }
   @media (max-width: 640px) { .brand img { height: 46px; } }
@@ -100,6 +111,7 @@
   }
   .brand-sub { font-family: var(--font-head); font-size: 12px; color: var(--sky-deep); margin-top: 1px; font-weight: 800; letter-spacing: .01em; }
   .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .dashboard-version { font-size: 10.5px; color: var(--graphite); opacity: 0.7; letter-spacing: 0.02em; margin-top: 2px; }
   .month-filter { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--graphite); font-weight: 600; }
   .month-filter select {
     border: 1px solid var(--border-strong); border-radius: 999px; padding: 6px 14px; font-size: 13px;
@@ -125,6 +137,16 @@
     .haha-sync-status { order: 3; width: 100%; justify-content: center; }
   }
 
+  /* ---------- sub-nav pills (Machines<->Health, Inventory<->Products) ---------- */
+  .subnav { display: flex; gap: 6px; margin-bottom: 14px; }
+  .subnav-btn {
+    border: 1px solid var(--border-strong); background: var(--card); color: var(--graphite);
+    font-family: var(--font-body); font-weight: 700; font-size: 12.5px; padding: 7px 14px;
+    border-radius: 999px; cursor: pointer;
+  }
+  .subnav-btn:hover { border-color: var(--sky-deep); color: var(--sky-deep); }
+  .subnav-btn.active { background: var(--sky-deep); border-color: var(--sky-deep); color: #fff; }
+
   /* ---------- tabs ---------- */
   /* Sticky so the nav is always reachable while scrolling a long tab (the
      "menu should always remain visible" requirement) — pinned just under
@@ -133,6 +155,11 @@
     position: sticky; top: 0; z-index: 45;
     display: flex; align-items: center; gap: 8px;
     background: var(--bg); margin: 0 -20px 20px; padding: 10px 20px;
+  }
+  @media (min-width: 641px) {
+    /* ~83px matches the header's rendered height (54px logo + 14px*2
+       padding + 1px border) so the tab bar sits flush beneath it. */
+    .tabbar-wrap { top: 83px; }
   }
   .tabbar {
     display: flex; gap: 2px; flex: 1; min-width: 0;
@@ -220,6 +247,12 @@
   .card-desc { font-size: 12.5px; color: var(--graphite); margin: 0 0 14px; }
   .grid-2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
   @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  /* Up to 3 columns on very wide desktop screens, 2 on typical laptop
+     widths, 1 on narrow/mobile — used for panels with several small
+     parallel cards (not full-width tables). */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 1400px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
 
   /* ---------- forms ---------- */
   /* min-width tuned so short fields (dates, phone, small selects) comfortably
@@ -357,6 +390,7 @@
       <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
       <div>
         <div class="brand-sub">Sidecar Command Center</div>
+        <div class="dashboard-version" id="dashboardVersion" title="Build version — confirms which deploy is currently live">{{BUILD_VERSION}}</div>
       </div>
     </div>
     <div class="header-actions">
@@ -378,11 +412,9 @@
       <button class="tab-btn" data-tab="overview">Overview</button>
       <button class="tab-btn" data-tab="tasks">Tasks</button>
       <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="health">Machine Health</button>
       <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
       <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="products">Products</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="relationships">Relationships</button>
+      <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties</button>
       <button class="tab-btn tab-btn-secondary" data-tab="financials">Financials</button>
     </div>
     <div class="tabbar-more">
@@ -501,6 +533,10 @@
 
   <!-- ============ MACHINES ============ -->
   <div class="tab-panel" id="panel-machines">
+    <div class="subnav">
+      <button class="subnav-btn active" data-tab="machines" onclick="switchToTab('machines')">Fleet</button>
+      <button class="subnav-btn" data-tab="health" onclick="switchToTab('health')">Health</button>
+    </div>
     <div class="card">
       <div class="card-title">Add a Machine</div>
       <div class="card-desc">One row per machine — this feeds every other tab.</div>
@@ -545,6 +581,10 @@
 
   <!-- ============ MACHINE HEALTH ============ -->
   <div class="tab-panel" id="panel-health">
+    <div class="subnav">
+      <button class="subnav-btn" data-tab="machines" onclick="switchToTab('machines')">Fleet</button>
+      <button class="subnav-btn active" data-tab="health" onclick="switchToTab('health')">Health</button>
+    </div>
     <div class="kpi-grid">
       <div class="kpi-card clickable-card" onclick="filterHealthTable('online')" title="Filter table to online machines">
         <div class="kpi-label">Online Now</div>
@@ -686,6 +726,10 @@
 
   <!-- ============ SUPPLY INVENTORY (non-machine buffer stock) ============ -->
   <div class="tab-panel" id="panel-supply">
+    <div class="subnav">
+      <button class="subnav-btn active" data-tab="supply" onclick="switchToTab('supply')">Inventory</button>
+      <button class="subnav-btn" data-tab="products" onclick="switchToTab('products')">Products</button>
+    </div>
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Restock Queue</div>
@@ -732,6 +776,10 @@
 
   <!-- ============ PRODUCTS (catalog + cost lots) ============ -->
   <div class="tab-panel" id="panel-products">
+    <div class="subnav">
+      <button class="subnav-btn" data-tab="supply" onclick="switchToTab('supply')">Inventory</button>
+      <button class="subnav-btn active" data-tab="products" onclick="switchToTab('products')">Products</button>
+    </div>
     <div class="card">
       <div class="card-title">Products</div>
       <div class="card-desc">Every product currently stocked in a machine, pulled from HAHA's catalogue and each machine's live inventory. "In N Machines" counts active, non-retired machines. Click a product to log a new purchase cost or see its cost history.</div>
@@ -916,7 +964,7 @@
       <div class="table-wrap responsive-cards"><table id="taskTable"></table></div>
       <div id="tasksEmpty" class="empty-state" style="display:none;">
         <strong>Nothing here</strong>
-        Add a task above, or these fill in automatically from follow-up dates logged on the Relationships tab.
+        Add a task above, or these fill in automatically from follow-up dates logged on the Properties tab.
       </div>
     </div>
   </div>
@@ -2869,17 +2917,21 @@ function renderTasks() {
 // restockQueueCache, tasks, commissionPayments) — nothing is entered here
 // directly, so this can never drift out of sync with the tabs it summarizes.
 function switchToTab(tab) {
-  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-  if (!btn) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  // Matches both top-level tabbar buttons and the in-panel sub-nav pills
+  // (Machines<->Health, Inventory<->Products) — some tabs (health, products)
+  // are only reachable via a sub-nav pill now, not the main tabbar.
+  const panel = document.getElementById('panel-' + tab);
+  if (!panel) return;
+  const btn = document.querySelector(`[data-tab="${tab}"]`);
+  document.querySelectorAll('.tab-btn, .subnav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b => b.classList.add('active'));
+  panel.classList.add('active');
   // On the condensed mobile nav, surface which tab is active even when it's
   // tucked inside "More" so context isn't lost.
   const moreBtn = document.getElementById('tabbarMoreBtn');
   if (moreBtn) {
-    const isSecondary = btn.classList.contains('tab-btn-secondary');
+    const isSecondary = !!btn && btn.classList.contains('tab-btn-secondary');
     moreBtn.classList.toggle('has-active', isSecondary);
     moreBtn.textContent = isSecondary ? (btn.textContent.trim() + ' ▾') : 'More ▾';
   }
