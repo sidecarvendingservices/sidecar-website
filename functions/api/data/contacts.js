@@ -22,7 +22,7 @@ export async function onRequestGet({ request, env }) {
   try {
     let query = `SELECT c.id, c.property_id as propertyId, c.company, c.name, c.title, c.email, c.phone,
                         c.preferred_contact as preferredContact, c.is_primary as isPrimary, c.notes,
-                        c.created_at as createdAt, p.name as propertyName
+                        c.created_at as createdAt, p.name as propertyName, p.color as color
                  FROM contacts c LEFT JOIN properties p ON p.id = c.property_id WHERE 1=1`;
     const binds = [];
     if (propertyId) { binds.push(propertyId); query += ` AND c.property_id = ?${binds.length}`; }
