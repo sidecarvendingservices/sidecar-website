@@ -1,0 +1,38 @@
+# Deploys functions/api/haha-sync-worker.js as its OWN standalone Cloudflare
+# Worker (separate from the sidecarservices.com Pages project — Pages
+# Functions cannot run on a cron schedule, only real Workers can).
+#
+# One-time setup (see DEPLOY_HAHA_WORKER.md for full walkthrough):
+#   1. npx wrangler login
+#   2. Fill in database_id below (Cloudflare dashboard → Workers & Pages →
+#      D1 → sidecar-ops → copy the Database ID).
+#   3. npx wrangler deploy --config wrangler.haha-sync-worker.toml
+#   4. npx wrangler secret put HAHA_APP_KEY --config wrangler.haha-sync-worker.toml
+#      npx wrangler secret put HAHA_APP_SECRET --config wrangler.haha-sync-worker.toml
+#
+# After that, Cloudflare runs it automatically on the schedule below — no
+# further action needed. To change the schedule, edit crons below and
+# re-run step 3.
+
+name = "sidecar-haha-sync"
+main = "functions/api/haha-sync-worker.js"
+compatibility_date = "2024-09-01"
+
+# Runs at :00 and :30 past every hour. HAHA sync is idempotent (it replaces
+# rows by machine/date on every run), so overlapping runs are safe.
+[triggers]
+crons = ["0,30 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sidecar-ops"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[vars]
+# How many days back to re-sync on every run. 2 is the code default; set to
+# 3 here as a small safety buffer against a single missed run.
+SYNC_LOOKBACK_DAYS = "3"
+
+# HAHA_APP_KEY and HAHA_APP_SECRET are NOT set here — they're secrets, set
+# via `wrangler secret put` (see instructions above). Never commit API keys
+# to a wrangler.toml.

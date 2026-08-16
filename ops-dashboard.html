@@ -19,6 +19,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+  // cdnjs occasionally fails to load (network blocks, ad blockers, transient
+  // outages) which used to permanently disable all charts for the page load.
+  // Fall back through two more CDNs, synchronously via document.write, so
+  // Chart is defined by the time CHARTS_AVAILABLE is evaluated below.
+  if (typeof Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');
+  }
+</script>
+<script>
+  if (typeof Chart === 'undefined') {
+    document.write('<script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');
+  }
+</script>
 <style>
   :root {
     /* Pulled straight from sidecarservices.com's own stylesheet — same blues,
@@ -3361,8 +3375,15 @@ function renderOverview() {
 function sumGrossInRange(startStr, endStr) {
   return sales.filter(s => s.date >= startStr && s.date <= endStr).reduce((sum, s) => sum + s.gross, 0);
 }
-function arrowHtml(current, prior) {
-  if (!prior) return '<span class="arrow-flat">— no prior period data</span>';
+// Distinguishes "we have rows for this range and they legitimately sum to $0"
+// from "we have no synced data for this range at all" — the arrow indicator
+// needs to tell those two apart instead of treating both as falsy.
+function hasAnyDataInRange(startStr, endStr) {
+  return sales.some(s => s.date >= startStr && s.date <= endStr);
+}
+function arrowHtml(current, prior, hasPriorData) {
+  if (!hasPriorData) return '<span class="arrow-flat">— no prior period data</span>';
+  if (!prior) return `<span class="arrow-flat">vs $0 last period</span>`;
   const pct = ((current - prior) / prior) * 100;
   if (Math.abs(pct) < 0.5) return `<span class="arrow-flat">flat vs last period (${fmt(prior)})</span>`;
   const cls = pct > 0 ? 'arrow-up' : 'arrow-down';
@@ -3394,18 +3415,21 @@ function renderMomentum() {
   const thisMonthGross = sumGrossInRange(startThisMonth, todayS);
   const lastMonthGross = sumGrossInRange(startLastMonth, endLastMonthComparable);
 
+  const hasLastWeek = hasAnyDataInRange(startLastWeek, endLastWeekComparable);
+  const hasLastMonth = hasAnyDataInRange(startLastMonth, endLastMonthComparable);
+
   document.getElementById('momWeekValue').textContent = fmt(thisWeekGross);
-  document.getElementById('momWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross);
+  document.getElementById('momWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross, hasLastWeek);
   document.getElementById('momMonthValue').textContent = fmt(thisMonthGross);
-  document.getElementById('momMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross);
+  document.getElementById('momMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross, hasLastMonth);
 
   // Mirror onto the Today tab's headline KPIs, if present.
   const tw = document.getElementById('todayWeekValue');
   if (tw) {
     tw.textContent = fmt(thisWeekGross);
-    document.getElementById('todayWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross);
+    document.getElementById('todayWeekArrow').innerHTML = arrowHtml(thisWeekGross, lastWeekGross, hasLastWeek);
     document.getElementById('todayMonthValue').textContent = fmt(thisMonthGross);
-    document.getElementById('todayMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross);
+    document.getElementById('todayMonthArrow').innerHTML = arrowHtml(thisMonthGross, lastMonthGross, hasLastMonth);
   }
 }
 
