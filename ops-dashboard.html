@@ -79,6 +79,7 @@
     font-weight: 800; font-family: var(--font-head); text-decoration: none;
   }
   .skip-link:focus { left: 0; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
     outline: 3px solid var(--sky); outline-offset: 2px;
   }
@@ -176,6 +177,11 @@
     border: none; background: transparent; padding: 9px 16px; font-size: 13px; font-weight: 700;
     color: var(--graphite); cursor: pointer; border-radius: 999px; white-space: nowrap;
     font-family: var(--font-head);
+    /* v1.10.1 F10/F11 — nav tabs (including the "More ▾" button, which
+       shares this class) were the one interactive control that didn't get
+       a 44px touch target in the F10 pass; this is exactly the control an
+       iPad user taps most while standing at a machine. */
+    min-height: 44px; display: inline-flex; align-items: center;
   }
   .tab-btn:hover { color: var(--sky-deep); }
   .tab-btn.active { color: #fff; background: var(--sky-deep); box-shadow: 0 2px 6px rgba(5,116,163,.35); }
@@ -305,7 +311,20 @@
   .card {
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow-card); min-width: 0;
+    position: relative;
   }
+  /* v1.10.1 F7 follow-up — "View data table" pinned to a consistent bottom-left
+     corner on every chart card, instead of sitting inline after the chart
+     (which put it at a different height per card depending on description
+     length / chart size). Cards with a pinned link get extra bottom padding
+     so it never overlaps chart/legend content above it. */
+  .card-has-chart-table { padding-bottom: 40px; }
+  .chart-table-toggle {
+    position: absolute; left: 20px; bottom: 14px; background: none; border: none;
+    color: var(--sky-deep); font-weight: 700; font-size: 12.5px; cursor: pointer;
+    padding: 4px 2px; min-height: 0;
+  }
+  .chart-table-toggle:hover { text-decoration: underline; }
   .card-title { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--charcoal); margin: 0 0 4px; }
   .card-desc { font-size: 12.5px; color: var(--graphite); margin: 0 0 14px; }
   .grid-2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
@@ -456,6 +475,36 @@
     .modal-overlay { padding: 0; align-items: stretch; }
     .modal-box { border-radius: 0; max-width: none; min-height: 100%; padding: 18px 16px 40px; }
   }
+
+  /* ---------- drawer (v1.10.1 F8) — right-side variant of the same accessible dialog ---------- */
+  .modal-overlay.as-drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
+  .modal-box.drawer-box {
+    max-width: 440px; width: 100%; min-height: 100%; border-radius: 0;
+    box-shadow: -20px 0 60px rgba(22,40,60,.25); overflow-y: auto;
+  }
+  @media (max-width: 640px) { .modal-box.drawer-box { max-width: none; } }
+
+  /* ---------- Products page toolbar / bulk editor / pagination (v1.10.1 F8) ---------- */
+  .products-toolbar { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+  .products-bulk-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--sky-pale, #EAF3FB); border: 1px solid var(--sky-deep); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--charcoal);
+  }
+  .products-bulk-bar select { min-height: 38px; }
+  .products-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; font-size: 13px; color: var(--graphite); }
+  .products-pager button:disabled { opacity: .4; cursor: default; }
+  .th-sort-btn {
+    background: none; border: none; padding: 0; margin: 0; font: inherit; font-weight: 700; color: inherit;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 4px; min-height: 0;
+  }
+  .th-sort-btn:hover { text-decoration: underline; }
+  .th-sort-arrow { font-size: 10px; opacity: .7; }
+  .category-text { color: var(--charcoal); }
+  .category-text.is-uncategorized { color: var(--graphite); font-style: italic; }
+  tr.product-row { cursor: pointer; }
+  tr.product-row:hover { background: #F7FAFB; }
+  td.product-select-cell { width: 30px; }
 </style>
 </head>
 <body>
@@ -527,7 +576,7 @@
   <!-- ============ OVERVIEW ============ -->
   <div class="tab-panel active" id="panel-overview">
     <div class="card">
-      <div class="card-title">What Needs Attention</div>
+      <h2 class="card-title">What Needs Attention</h2>
       <div class="card-desc">Pulled live from Machine Health, the Restock Queue, Tasks, and Commission — nothing here is entered separately.</div>
       <div id="todayAttention"><div class="empty-state">Loading…</div></div>
     </div>
@@ -545,7 +594,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Due Today &amp; Overdue</div>
+        <h2 class="card-title" style="margin:0;">Due Today &amp; Overdue</h2>
         <button class="btn btn-secondary" onclick="switchToTab('tasks')">Open Tasks Tab</button>
       </div>
       <div id="todayTasksBody"><div class="empty-state">Nothing due — nice.</div></div>
@@ -585,7 +634,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Sales Momentum</div>
+      <h2 class="card-title">Sales Momentum</h2>
       <div class="card-desc">Gross sales this week/month vs. the equivalent period before it (calendar week Sun–Sat, calendar month) — not affected by the "Showing" filter above.</div>
       <div class="kpi-grid" style="margin-bottom:0;">
         <div class="kpi-card clickable-card" onclick="openMomentumDetail('today')" title="View vs. yesterday" role="button" tabindex="0" aria-label="View vs. yesterday" onkeydown="cardKeyHandler(event)">
@@ -612,9 +661,9 @@
     </div>
 
     <div class="grid-2">
-      <div class="card clickable-card" onclick="switchToTab('sales')" title="Open Sales" role="button" tabindex="0" aria-label="Open Sales" onkeydown="cardKeyHandler(event)">
+      <div class="card clickable-card card-has-chart-table" onclick="switchToTab('sales')" title="Open Sales" role="button" tabindex="0" aria-label="Open Sales" onkeydown="cardKeyHandler(event)">
         <div class="section-flex">
-          <div class="card-title" style="margin:0;">Sales &amp; Profit Trend</div>
+          <h2 class="card-title" style="margin:0;">Sales &amp; Profit Trend</h2>
           <div class="trend-gran-toggle" onclick="event.stopPropagation();">
             <button class="trend-gran-btn" data-gran="month" onclick="setTrendGranularity('month')">Month</button>
             <button class="trend-gran-btn" data-gran="week" onclick="setTrendGranularity('week')">Week</button>
@@ -623,23 +672,23 @@
         </div>
         <div class="card-desc">Gross sales, net sales, and profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
         <div class="chart-box"><canvas id="trendChart" role="img" aria-label="Sales and profit trend over time"></canvas></div>
-        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('trendChart')">View data table</button>
+        <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('trendChart')">View data table</button>
         <div class="table-wrap" id="trendChart_table" hidden style="margin-top:8px;"></div>
       </div>
-      <div class="card clickable-card" onclick="switchToTab('financials')" title="Open Financials" role="button" tabindex="0" aria-label="Open Financials" onkeydown="cardKeyHandler(event)">
-        <div class="card-title">Expense Breakdown</div>
+      <div class="card clickable-card card-has-chart-table" onclick="switchToTab('financials')" title="Open Financials" role="button" tabindex="0" aria-label="Open Financials" onkeydown="cardKeyHandler(event)">
+        <h2 class="card-title">Expense Breakdown</h2>
         <div class="card-desc">Where operating costs are going this period.</div>
         <div class="chart-box"><canvas id="expenseChart" role="img" aria-label="Expense breakdown by category"></canvas></div>
-        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('expenseChart')">View data table</button>
+        <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('expenseChart')">View data table</button>
         <div class="table-wrap" id="expenseChart_table" hidden style="margin-top:8px;"></div>
       </div>
     </div>
 
-    <div class="card clickable-card" onclick="switchToTab('machines')" title="Open Machines" role="button" tabindex="0" aria-label="Open Machines" onkeydown="cardKeyHandler(event)">
-      <div class="card-title">By Machine</div>
+    <div class="card clickable-card card-has-chart-table" onclick="switchToTab('machines')" title="Open Machines" role="button" tabindex="0" aria-label="Open Machines" onkeydown="cardKeyHandler(event)">
+      <h2 class="card-title">By Machine</h2>
       <div class="card-desc">Net sales per machine for the selected period.</div>
       <div class="chart-box small"><canvas id="machineChart" role="img" aria-label="Net sales per machine"></canvas></div>
-      <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="event.stopPropagation(); toggleChartTable('machineChart')">View data table</button>
+      <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('machineChart')">View data table</button>
       <div class="table-wrap" id="machineChart_table" hidden style="margin-top:8px;"></div>
     </div>
   </div>
@@ -651,14 +700,14 @@
       <button class="subnav-btn" data-tab="health" onclick="switchToTab('health')">Health</button>
     </div>
     <div class="card" id="duplicatesCard" style="display:none; border-color:#f0c896; background:#fff8ee;">
-      <div class="card-title">Possible Duplicate Machines</div>
+      <h2 class="card-title">Possible Duplicate Machines</h2>
       <div class="card-desc">These share the same HAHA Market ID or name — probably the same physical machine added twice. Merging moves all sales/expense/health history onto the kept machine, then removes the duplicate.</div>
       <div id="duplicatesList"></div>
     </div>
     <div class="grid-2">
       <div class="card">
         <div class="section-flex">
-          <div class="card-title" style="margin:0;">Machines</div>
+          <h2 class="card-title" style="margin:0;">Machines</h2>
           <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
         </div>
         <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
@@ -669,7 +718,7 @@
         <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
       </div>
       <div class="card">
-        <div class="card-title">Add a Machine</div>
+        <h2 class="card-title">Add a Machine</h2>
         <div class="card-desc">One row per machine — this feeds every other tab.</div>
         <div class="form-grid" id="machineForm">
           <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
@@ -750,7 +799,7 @@
 
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Current Status</div>
+        <h2 class="card-title" style="margin:0;">Current Status</h2>
         <button class="btn btn-secondary" onclick="checkHealthNow(this)">Check Now</button>
       </div>
       <div class="card-desc">Online status + temperature update automatically on the same schedule as the HAHA sales sync. "Check Now" polls immediately instead of waiting for the next run.</div>
@@ -764,14 +813,16 @@
     </div>
 
     <div class="card">
-      <div class="card-title">History</div>
+      <h2 class="card-title">History</h2>
       <div class="card-desc">Temperature readings and offline/online events over time for one machine.</div>
       <div class="form-grid" style="margin-bottom:12px;">
         <div><label>Machine</label><select id="healthDetailSelect" onchange="selectHealthDetail(this.value)"></select></div>
       </div>
-      <div class="chart-box small"><canvas id="healthTempChart"></canvas></div>
+      <div class="chart-box small"><canvas id="healthTempChart" role="img" aria-label="Temperature history for the selected machine"></canvas></div>
+      <button class="chart-table-toggle" style="position:static; display:inline-block; margin-top:4px;" onclick="toggleChartTable('healthTempChart')">View data table</button>
+      <div class="table-wrap" id="healthTempChart_table" hidden style="margin-top:8px;"></div>
       <div style="margin-top:16px;">
-        <div class="card-title" style="font-size:13px;">Status Change Log</div>
+        <h2 class="card-title" style="font-size:13px;">Status Change Log</h2>
         <div class="table-wrap"><table id="healthLogTable"></table></div>
         <div id="healthLogEmpty" class="empty-state" style="display:none; padding:16px 10px;">
           No status changes recorded yet for this machine.
@@ -784,7 +835,7 @@
   <div class="tab-panel" id="panel-sales">
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Pay Period</div>
+        <h2 class="card-title" style="margin:0;">Pay Period</h2>
         <select id="payPeriodMonth" onchange="loadPayPeriod()" style="max-width:180px;"></select>
       </div>
       <div class="kpi-grid" style="margin-bottom:0;">
@@ -806,7 +857,7 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Sync from HAHA</div>
+      <h2 class="card-title">Sync from HAHA</h2>
       <div class="card-desc">Pulls completed sales from HAHA's API and fills in both Gross Sales and Cost of Goods automatically, using each product's listed cost. Processing Fees still need your input — HAHA doesn't report those.</div>
       <div class="form-grid" id="hahaSyncForm">
         <div><label>Start Date</label><input id="hahaStart" type="date" /></div>
@@ -817,7 +868,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Products Missing a Cost</div>
+        <h2 class="card-title" style="margin:0;">Products Missing a Cost</h2>
         <button class="btn btn-secondary" onclick="checkMissingCosts()">Check Now</button>
       </div>
       <div class="card-desc">Any product below has no cost set in HAHA's catalogue — its sales sync in with $0 Cost of Goods, which quietly overstates profit until it's fixed. Set the cost on the product in HAHA's Merchant Portal, then re-run a sync to correct past entries.</div>
@@ -825,7 +876,7 @@
       <div id="missingCostStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
     <div class="card">
-      <div class="card-title">Log a Sales Entry Manually</div>
+      <h2 class="card-title">Log a Sales Entry Manually</h2>
       <div class="card-desc">One entry per machine per day (or per batch/report pull) — Net Sales is calculated automatically.</div>
       <div class="form-grid" id="salesForm">
         <div><label>Machine</label><select id="sMachine"></select></div>
@@ -839,7 +890,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Sales Pattern</div>
+        <h2 class="card-title" style="margin:0;">Sales Pattern</h2>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" id="patternHourBtn" onclick="setSalesPattern('hour')">By Hour</button>
           <button class="btn btn-ghost" id="patternDayBtn" onclick="setSalesPattern('day')">By Day</button>
@@ -847,7 +898,9 @@
       </div>
       <div class="card-desc" id="patternDesc">Gross sales by hour of day, summed across the selected range and all synced machines — helps time restocks and spot slow windows.</div>
       <div class="pill-note" style="margin:0 0 10px; display:inline-block;">Range below also applies to this chart.</div>
-      <div class="chart-box small"><canvas id="patternChart"></canvas></div>
+      <div class="chart-box small"><canvas id="patternChart" role="img" aria-label="Gross sales by time of day"></canvas></div>
+      <button class="chart-table-toggle" style="position:static; display:inline-block; margin-top:4px;" onclick="toggleChartTable('patternChart')">View data table</button>
+      <div class="table-wrap" id="patternChart_table" hidden style="margin-top:8px;"></div>
       <div id="patternEmpty" class="empty-state" style="display:none;">
         <strong>No hourly data yet</strong>
         This chart fills in once machines with a HAHA Market ID are synced — hour-level detail isn't available for manually logged entries.
@@ -855,7 +908,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Sales Log</div>
+        <h2 class="card-title" style="margin:0;">Sales Log</h2>
         <select id="rangeSalesSelect" style="max-width:180px;"></select>
       </div>
       <div class="table-wrap"><table id="salesTable"></table></div>
@@ -876,7 +929,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Restock Queue</div>
+        <h2 class="card-title" style="margin:0;">Restock Queue</h2>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="showPickList()">Route Pick List</button>
           <button class="btn btn-secondary" onclick="showFillMachinesList()">Fill Machines</button>
@@ -887,7 +940,7 @@
     </div>
     <div class="card">
       <div class="section-flex">
-        <div class="card-title" style="margin:0;">Low Stock, No Backstock</div>
+        <h2 class="card-title" style="margin:0;">Low Stock, No Backstock</h2>
       </div>
       <div class="card-desc">Products that are low or out in a machine <em>and</em> low or out in Backstock too — these need an actual purchase, not just a restock trip.</div>
       <div id="noBackstockBody"><div class="empty-state">Loading…</div></div>
@@ -903,13 +956,13 @@
       <button class="subnav-btn " data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
-      <div class="card-title">Backstock Value</div>
+      <h2 class="card-title">Backstock Value</h2>
       <div class="card-desc">What's currently held in reserve, not yet loaded into a machine, valued at FIFO cost.</div>
       <div id="backstockSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Backstock</div>
+        <h2 class="card-title">Backstock</h2>
         <div class="card-desc">One row per open purchase lot, oldest first — this is the order they'll be drawn from when you restock a machine or QMOS product out. Rows in red are negative (more has been moved out than was ever logged in).</div>
         <div class="table-wrap responsive-cards"><table id="backstockTable"></table></div>
         <div id="backstockEmpty" class="empty-state" style="display:none;">
@@ -918,7 +971,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Log a Purchase</div>
+        <h2 class="card-title">Log a Purchase</h2>
         <div class="card-desc">Group everything from one buying trip under a batch title (e.g. "Costco run 8/16") — each product still gets its own expense line for accurate category tracking, but they'll show together. Every item needs a cost — enter Unit Price directly, or Package Price + Qty per Package if that's easier than figuring out the per-unit cost yourself.</div>
         <div class="form-grid" style="margin-bottom:10px;">
           <div class="field-wide"><label>Batch Title</label><input id="pbLabel" placeholder="e.g. Costco inventory purchase" /></div>
@@ -953,17 +1006,31 @@
       <button class="subnav-btn " data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
-      <div class="card-title">Products</div>
-      <div class="card-desc">Every product currently stocked in a machine, pulled from HAHA's catalogue and each machine's live inventory. "In N Machines" counts active, non-retired machines. Click a product to log a new purchase cost or see its cost history.</div>
-      <div style="margin-bottom:10px;"><input id="productSearch" placeholder="Search products…" oninput="renderProducts()" style="max-width:320px;" /></div>
+      <h2 class="card-title">Products</h2>
+      <div class="card-desc">Every product currently stocked in a machine, pulled from HAHA's catalogue and each machine's live inventory. "In N Machines" counts active, non-retired machines. Click a row to edit its category or log a new purchase cost.</div>
+      <div class="products-toolbar">
+        <input id="productSearch" placeholder="Search products…" oninput="renderProducts()" style="max-width:280px;" />
+        <div>
+          <label for="productCategoryFilter" style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--graphite); margin-bottom:3px;">Category</label>
+          <select id="productCategoryFilter" onchange="renderProducts()" style="min-width:170px;"></select>
+        </div>
+      </div>
+      <div id="productsBulkBar" class="products-bulk-bar" style="display:none;" aria-live="polite">
+        <span id="productsBulkCount"></span>
+        <label for="productsBulkCategory" style="margin:0;">Set category to</label>
+        <select id="productsBulkCategory" style="min-width:170px;"></select>
+        <button class="btn btn-primary" onclick="applyBulkCategory()">Apply</button>
+        <button class="btn btn-secondary" onclick="clearProductSelection()">Clear selection</button>
+      </div>
       <div class="table-wrap responsive-cards"><table id="productsTable"></table></div>
       <div id="productsEmpty" class="empty-state" style="display:none;">
         <strong>No products found yet</strong>
         This fills in once machines are synced with HAHA Market IDs and have stocked inventory.
       </div>
+      <div id="productsPager" class="products-pager" style="display:none;"></div>
     </div>
     <div class="card">
-      <div class="card-title">Category Performance (Last 30 Days)</div>
+      <h2 class="card-title">Category Performance (Last 30 Days)</h2>
       <div class="card-desc">Revenue and units sold by category — tag products above to fill this in. "Uncategorized" covers anything not tagged yet.</div>
       <div class="table-wrap"><table id="categoryPerformanceTable"></table></div>
     </div>
@@ -978,14 +1045,14 @@
       <button class="subnav-btn active" data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
-      <div class="card-title">QMOS Totals</div>
+      <h2 class="card-title">QMOS Totals</h2>
       <div class="card-desc">Quantity Marked Out of System — quality issues, samples, and expired product, valued at FIFO cost. "QMOS" = write-offs; this is a real cost, logged as an expense automatically.</div>
       <div id="qmosSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="grid-2">
       <div class="card">
         <div class="section-flex">
-          <div class="card-title" style="margin:0;">QMOS Log</div>
+          <h2 class="card-title" style="margin:0;">QMOS Log</h2>
           <select id="qmosPeriodFilter" style="max-width:160px;" onchange="renderQmos()">
             <option value="all">All time</option>
             <option value="week">This week</option>
@@ -1000,7 +1067,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">QMOS an Item</div>
+        <h2 class="card-title">QMOS an Item</h2>
         <div class="card-desc">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.</div>
         <div class="form-grid" id="qmosForm">
           <div><label>Location</label><select id="qLocation"><option value="main">Backstock</option></select></div>
@@ -1034,7 +1101,7 @@
     <div class="grid-2">
       <div class="card">
         <div class="section-flex">
-          <div class="card-title" style="margin:0;">Expense Log</div>
+          <h2 class="card-title" style="margin:0;">Expense Log</h2>
           <select id="rangeExpensesSelect" style="max-width:180px;"></select>
         </div>
         <div class="table-wrap"><table id="expenseTable"></table></div>
@@ -1044,7 +1111,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Log an Expense</div>
+        <h2 class="card-title">Log an Expense</h2>
         <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
         <div class="form-grid" id="expenseForm">
           <div><label>Date</label><input id="eDate" type="date" /></div>
@@ -1137,12 +1204,12 @@
       <button class="subnav-btn" data-tab="receipts" onclick="switchToTab('receipts')">Receipts<span class="nav-badge" id="navBadgeReceipts" style="display:none;">0</span></button>
     </div>
     <div class="card">
-      <div class="card-title">Owner Reimbursement</div>
+      <h2 class="card-title">Owner Reimbursement</h2>
       <div class="card-desc">Reimbursable expenses paid personally, not yet reimbursed.</div>
       <div id="reimbursementSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="card">
-      <div class="card-title">Reimbursable Expenses</div>
+      <h2 class="card-title">Reimbursable Expenses</h2>
       <div class="card-desc">Every expense marked "Reimbursable," owed and already-paid-back alike.</div>
       <div class="table-wrap"><table id="reimbursementTable"></table></div>
       <div id="reimbursementEmpty" class="empty-state" style="display:none;">
@@ -1161,7 +1228,7 @@
       <button class="subnav-btn" data-tab="receipts" onclick="switchToTab('receipts')">Receipts<span class="nav-badge" id="navBadgeReceipts" style="display:none;">0</span></button>
     </div>
     <div class="card">
-      <div class="card-title">This Month's Tier</div>
+      <h2 class="card-title">This Month's Tier</h2>
       <div class="card-desc">Shows the highest tier reached by any single property this calendar month — each property's own combined gross (across every commission-tiered machine it has) sets its own tier below.</div>
       <div class="gauge-wrap">
         <div class="gauge-track" id="gaugeTrack"></div>
@@ -1169,7 +1236,7 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Monthly Commission by Property</div>
+      <h2 class="card-title">Monthly Commission by Property</h2>
       <div class="card-desc">Each property's own combined Gross Sales sets its tier for that month; the tier's rate applies to that property's combined Net Sales — matching the Commission Version placement agreement. "Mark Paid" records a payment against that period.</div>
       <div class="table-wrap"><table id="commissionTable"></table></div>
       <div id="commissionEmpty" class="empty-state" style="display:none;">
@@ -1178,7 +1245,7 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Tier Reference</div>
+      <h2 class="card-title">Tier Reference</h2>
       <table>
         <thead><tr><th>Gross Sales in a Month</th><th>Commission Rate on Net Sales</th></tr></thead>
         <tbody>
@@ -1201,7 +1268,7 @@
       <button class="subnav-btn active" data-tab="receipts" onclick="switchToTab('receipts')">Receipts</button>
     </div>
     <div class="card">
-      <div class="card-title">Untracked Receipts</div>
+      <h2 class="card-title">Untracked Receipts</h2>
       <div class="card-desc">Uploaded via Quick Add → Upload Receipt, before the expense itself was logged — so a receipt is never just lost track of. Each one auto-creates a task assigned to whoever uploaded it, which auto-completes once you log the expense here.</div>
       <div class="table-wrap responsive-cards"><table id="receiptsTable"></table></div>
       <div id="receiptsEmpty" class="empty-state" style="display:none;">
@@ -1216,7 +1283,7 @@
   <div class="tab-panel" id="panel-team">
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Team</div>
+        <h2 class="card-title">Team</h2>
         <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
         <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
         <div id="teamEmpty" class="empty-state" style="display:none;">
@@ -1225,7 +1292,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title" id="teamFormTitle">Add Team Member</div>
+        <h2 class="card-title" id="teamFormTitle">Add Team Member</h2>
         <div class="form-grid" id="teamForm">
           <input type="hidden" id="teamId" value="" />
           <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" /></div>
@@ -1233,10 +1300,11 @@
           <div>
             <label>Role</label>
             <select id="teamRole">
-              <option>Owner</option>
-              <option>Account Manager</option>
-              <option>Stocker</option>
               <option>Admin</option>
+              <option>Stocker</option>
+              <option>Receiver</option>
+              <option>Sales</option>
+              <option>Account Manager</option>
             </select>
           </div>
           <div><label>Phone</label><input id="teamPhone" placeholder="optional" /></div>
@@ -1259,7 +1327,7 @@
   <div class="tab-panel" id="panel-contacts">
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Contacts</div>
+        <h2 class="card-title">Contacts</h2>
         <div class="card-desc">Every property manager and prospect, in one place. Contacts without a Property yet are prospects — Tasks & Calls logged against them show up here and on the property once they're linked.</div>
         <div style="margin-bottom:10px;"><input id="contactSearch" placeholder="Search contacts…" oninput="renderContacts()" style="max-width:320px;" /></div>
         <div class="table-wrap responsive-cards"><table id="contactsTable"></table></div>
@@ -1269,7 +1337,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Add Contact</div>
+        <h2 class="card-title">Add Contact</h2>
         <div class="form-grid" id="contactForm">
           <div><label>Property (optional)</label><select id="ctProperty" onchange="onContactPropertyChange()"><option value="">— Prospect, no property yet —</option></select></div>
           <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" /></div>
@@ -1288,7 +1356,7 @@
     <div class="card" id="setupPropertiesCard" style="display:none;">
       <div class="section-flex">
         <div>
-          <div class="card-title" style="margin:0;">Set Up Properties</div>
+          <h2 class="card-title" style="margin:0;">Set Up Properties</h2>
           <div class="card-desc" style="margin:4px 0 0;">Some machines aren't linked to a Property yet. This groups them by host/contact automatically — different contacts at the same host become separate contact records, nothing is merged blindly.</div>
         </div>
         <button class="btn btn-primary" onclick="runMigrateProperties(this)">Set Up Properties</button>
@@ -1298,7 +1366,7 @@
 
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Properties</div>
+        <h2 class="card-title">Properties</h2>
         <div class="table-wrap"><table id="propertyTable"></table></div>
         <div id="propertiesEmpty" class="empty-state" style="display:none;">
           <strong>No properties yet</strong>
@@ -1306,7 +1374,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Add Property</div>
+        <h2 class="card-title">Add Property</h2>
         <div class="form-grid" id="propertyForm">
           <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
           <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
@@ -1334,7 +1402,7 @@
     <div class="grid-2">
       <div class="card">
         <div class="section-flex">
-          <div class="card-title" style="margin:0;">Task List</div>
+          <h2 class="card-title" style="margin:0;">Task List</h2>
           <div style="display:flex; gap:6px; flex-wrap:wrap;" id="taskViewBar">
             <button class="btn btn-secondary" data-view="tasks" onclick="setTaskViewMode('tasks', this)">Tasks</button>
             <button class="btn btn-ghost" data-view="calls" onclick="setTaskViewMode('calls', this)">Calls</button>
@@ -1359,7 +1427,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Add Task</div>
+        <h2 class="card-title">Add Task</h2>
         <div class="form-grid" id="taskForm">
           <div class="field-wide"><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
           <div>
@@ -1387,7 +1455,7 @@
       <button class="subnav-btn " data-tab="marketing-zoho" onclick="switchToTab('marketing-zoho')">Zoho</button>
     </div>
     <div id="adsNotConnected" class="card" style="display:none;">
-      <div class="card-title">Google Ads isn't connected yet</div>
+      <h2 class="card-title">Google Ads isn't connected yet</h2>
       <div class="card-desc">Once connected, this page shows campaign performance and total spend, pulled live from the Google Ads API.</div>
       <div id="adsMissingList" class="pill-note" style="display:inline-block;"></div>
       <div class="card-desc" style="margin-top:8px;">Setup steps are in <code>DEPLOY_MARKETING.md</code> in the repo — five Cloudflare secrets to add, then this connects automatically on next load.</div>
@@ -1400,11 +1468,13 @@
         <div class="kpi-card"><div class="kpi-label">Campaigns</div><div class="kpi-value" id="adsCampaignCount">0</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Spend by Campaign</div>
-        <div class="chart-box small"><canvas id="adsSpendChart"></canvas></div>
+        <h2 class="card-title">Spend by Campaign</h2>
+        <div class="chart-box small"><canvas id="adsSpendChart" role="img" aria-label="Google Ads spend by campaign"></canvas></div>
+        <button class="chart-table-toggle" style="position:static; display:inline-block; margin-top:4px;" onclick="toggleChartTable('adsSpendChart')">View data table</button>
+        <div class="table-wrap" id="adsSpendChart_table" hidden style="margin-top:8px;"></div>
       </div>
       <div class="card">
-        <div class="card-title">Campaigns</div>
+        <h2 class="card-title">Campaigns</h2>
         <div class="table-wrap responsive-cards"><table id="adsCampaignTable"></table></div>
       </div>
     </div>
@@ -1418,7 +1488,7 @@
       <button class="subnav-btn " data-tab="marketing-zoho" onclick="switchToTab('marketing-zoho')">Zoho</button>
     </div>
     <div id="gaNotConnected" class="card" style="display:none;">
-      <div class="card-title">Google Analytics isn't connected yet</div>
+      <h2 class="card-title">Google Analytics isn't connected yet</h2>
       <div class="card-desc">Once connected, this page shows sessions, users, and page views over time, plus your top pages, pulled live from the GA4 Data API.</div>
       <div id="gaMissingList" class="pill-note" style="display:inline-block;"></div>
       <div class="card-desc" style="margin-top:8px;">Setup steps are in <code>DEPLOY_MARKETING.md</code> in the repo.</div>
@@ -1430,11 +1500,13 @@
         <div class="kpi-card"><div class="kpi-label">Page Views</div><div class="kpi-value" id="gaTotalPageviews">0</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Traffic Over Time</div>
-        <div class="chart-box"><canvas id="gaTrafficChart"></canvas></div>
+        <h2 class="card-title">Traffic Over Time</h2>
+        <div class="chart-box"><canvas id="gaTrafficChart" role="img" aria-label="Website traffic over time"></canvas></div>
+        <button class="chart-table-toggle" style="position:static; display:inline-block; margin-top:4px;" onclick="toggleChartTable('gaTrafficChart')">View data table</button>
+        <div class="table-wrap" id="gaTrafficChart_table" hidden style="margin-top:8px;"></div>
       </div>
       <div class="card">
-        <div class="card-title">Top Pages</div>
+        <h2 class="card-title">Top Pages</h2>
         <div class="table-wrap responsive-cards"><table id="gaTopPagesTable"></table></div>
       </div>
     </div>
@@ -1448,7 +1520,7 @@
       <button class="subnav-btn active" data-tab="marketing-zoho" onclick="switchToTab('marketing-zoho')">Zoho</button>
     </div>
     <div class="card">
-      <div class="card-title">Zoho isn't connected yet</div>
+      <h2 class="card-title">Zoho isn't connected yet</h2>
       <div class="card-desc">The plan: Zoho connects to Chase (banking data) and to Command Center, so bank transactions, sales, and expenses all land in one general ledger instead of three disconnected places. This is a bigger integration than Google Ads/Analytics — see <code>ZOHO_INTEGRATION_SCOPE.md</code> in the repo for exactly what's needed from you before this can be built out (Zoho account/plan, Chase feed access, chart-of-accounts mapping).</div>
       <span class="tag tag-none">Coming soon</span>
     </div>
@@ -2397,6 +2469,10 @@ async function loadHealthDetail(machineId) {
 
   // temperature chart
   const tempRows = rows.filter(r => r.temperature !== null && r.temperature !== undefined);
+  const healthTempTableWrap = document.getElementById('healthTempChart_table');
+  if (healthTempTableWrap) {
+    healthTempTableWrap.innerHTML = chartTableHtml(['Checked', 'Temperature'], tempRows.map(r => [fmtWhen(r.checkedAt), fmtTemp(r.temperature, r.temperatureUnit)]));
+  }
   const ctx = document.getElementById('healthTempChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('healthTempChart'); }
   else if (charts.healthTemp) charts.healthTemp.destroy();
@@ -2455,6 +2531,16 @@ async function loadHealthDetail(machineId) {
 // Workspace's old detail modal, etc.) gets this for free.
 let modalTriggerElement = null;
 let modalKeydownHandler = null;
+
+// Right-side drawer variant of the dialog (v1.10.1 F8 — row-level editing
+// on Products moves out of always-on inline controls into a drawer). Reuses
+// openModal()'s full accessibility machinery (focus trap, inertness, focus
+// restoration) — only the CSS positioning differs.
+function openDrawer(html) {
+  openModal(html);
+  document.getElementById('modalOverlay').classList.add('as-drawer');
+  document.getElementById('modalBox').classList.add('drawer-box');
+}
 
 function openModal(html) {
   modalTriggerElement = document.activeElement;
@@ -2518,6 +2604,8 @@ function closeModal() {
   document.getElementById('modalOverlay').style.display = 'none';
   document.getElementById('modalBox').innerHTML = '';
   document.body.style.overflow = '';
+  document.getElementById('modalOverlay').classList.remove('as-drawer');
+  document.getElementById('modalBox').classList.remove('drawer-box');
 
   if ('inert' in HTMLElement.prototype) {
     const sidebar = document.getElementById('appSidebar');
@@ -3604,54 +3692,188 @@ function renderCategoryPerformance() {
   tbl.innerHTML = html;
 }
 
+// ---------------- Products table state (v1.10.1 F8) ----------------
+let productsSortKey = 'productName';
+let productsSortDir = 'asc';
+let productsPage = 1;
+const PRODUCTS_PAGE_SIZE = 25;
+let productsSelected = new Set();
+
+function categoryFilterOptionsHtml(includeAll) {
+  let html = includeAll ? '<option value="">All categories</option>' : '<option value="">— choose —</option>';
+  html += PRODUCT_CATEGORY_LIST.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+  if (includeAll) html += '<option value="__uncategorized">Uncategorized</option>';
+  return html;
+}
+
+function sortProductsBy(key) {
+  if (productsSortKey === key) {
+    productsSortDir = productsSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    productsSortKey = key;
+    productsSortDir = 'asc';
+  }
+  productsPage = 1;
+  renderProducts();
+}
+
+function productSortValue(r, key) {
+  if (key === 'category') return productCategories[r.productId] || '';
+  if (key === 'margin') return (r.currentCost !== null && r.price) ? (r.price - r.currentCost) / r.price : -Infinity;
+  const v = r[key];
+  return (typeof v === 'string') ? v.toLowerCase() : (v === null || v === undefined ? -Infinity : v);
+}
+
+function toggleProductSelect(productId, checked) {
+  if (checked) productsSelected.add(productId); else productsSelected.delete(productId);
+  renderProductsBulkBar();
+}
+
+function clearProductSelection() {
+  productsSelected.clear();
+  renderProducts();
+}
+
+function renderProductsBulkBar() {
+  const bar = document.getElementById('productsBulkBar');
+  const countEl = document.getElementById('productsBulkCount');
+  if (!bar) return;
+  if (productsSelected.size > 0) {
+    bar.style.display = 'flex';
+    countEl.textContent = `${productsSelected.size} selected`;
+    const sel = document.getElementById('productsBulkCategory');
+    if (sel && !sel.dataset.wired) { sel.innerHTML = categoryFilterOptionsHtml(false); sel.dataset.wired = '1'; }
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function applyBulkCategory() {
+  const category = document.getElementById('productsBulkCategory').value;
+  if (!category) { alert('Choose a category to apply.'); return; }
+  const ids = Array.from(productsSelected);
+  if (!ids.length) return;
+  try {
+    await Promise.all(ids.map(id => {
+      const p = productCatalogCache.find(x => x.productId === id);
+      return saveProductCategory(id, p ? p.productName : id, category);
+    }));
+  } catch (e) { alert('Some updates may not have saved: ' + e.message); }
+  productsSelected.clear();
+  renderProducts();
+}
+
 function renderProducts() {
   const tbl = document.getElementById('productsTable');
   const empty = document.getElementById('productsEmpty');
+  const pager = document.getElementById('productsPager');
   if (!tbl) return;
+
+  const catFilterEl = document.getElementById('productCategoryFilter');
+  if (catFilterEl && !catFilterEl.dataset.wired) {
+    catFilterEl.innerHTML = categoryFilterOptionsHtml(true);
+    catFilterEl.dataset.wired = '1';
+  }
+
   const q = (document.getElementById('productSearch')?.value || '').trim().toLowerCase();
+  const catFilter = catFilterEl ? catFilterEl.value : '';
   let rows = productCatalogCache;
   if (q) rows = rows.filter(r => (r.productName || '').toLowerCase().includes(q) || (r.productId || '').toLowerCase().includes(q));
+  if (catFilter === '__uncategorized') rows = rows.filter(r => !productCategories[r.productId]);
+  else if (catFilter) rows = rows.filter(r => productCategories[r.productId] === catFilter);
 
   if (!rows.length) {
     tbl.innerHTML = '';
     empty.style.display = 'block';
+    pager.style.display = 'none';
     empty.innerHTML = productCatalogCache.length
-      ? '<strong>No matches</strong>Try a different search.'
+      ? '<strong>No matches</strong>Try a different search or category filter.'
       : '<strong>No products found yet</strong>This fills in once machines are synced with HAHA Market IDs and have stocked inventory.';
+    renderProductsBulkBar();
     return;
   }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Product</th><th>Category</th><th class="num">In Machines</th><th class="num">Current Cost</th><th class="num">Price</th><th class="num">Margin</th><th></th></tr></thead><tbody>';
-  rows.forEach(r => {
+
+  rows = rows.slice().sort((a, b) => {
+    const av = productSortValue(a, productsSortKey), bv = productSortValue(b, productsSortKey);
+    let cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return productsSortDir === 'desc' ? -cmp : cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PRODUCTS_PAGE_SIZE));
+  if (productsPage > totalPages) productsPage = totalPages;
+  const pageRows = rows.slice((productsPage - 1) * PRODUCTS_PAGE_SIZE, productsPage * PRODUCTS_PAGE_SIZE);
+
+  const sortBtn = (key, label, numeric) => {
+    const active = productsSortKey === key;
+    const arrow = active ? (productsSortDir === 'asc' ? '▲' : '▼') : '';
+    return `<th${numeric ? ' class="num"' : ''} aria-sort="${active ? (productsSortDir === 'asc' ? 'ascending' : 'descending') : 'none'}">
+      <button type="button" class="th-sort-btn" onclick="sortProductsBy('${key}')">${label}${arrow ? ` <span class="th-sort-arrow">${arrow}</span>` : ''}</button>
+    </th>`;
+  };
+
+  let html = `<thead><tr>
+    <th class="product-select-cell"><span class="visually-hidden">Select</span></th>
+    ${sortBtn('productName', 'Product', false)}
+    ${sortBtn('category', 'Category', false)}
+    ${sortBtn('machineCount', 'In Machines', true)}
+    ${sortBtn('currentCost', 'Current Cost', true)}
+    ${sortBtn('price', 'Price', true)}
+    ${sortBtn('margin', 'Margin', true)}
+  </tr></thead><tbody>`;
+  pageRows.forEach(r => {
     const margin = (r.currentCost !== null && r.price) ? ((r.price - r.currentCost) / r.price) * 100 : null;
     const currentCat = productCategories[r.productId] || '';
-    const catOptions = '<option value="">—</option>' + PRODUCT_CATEGORY_LIST.map(c => `<option value="${escapeAttr(c)}" ${c === currentCat ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
-    html += `<tr>
+    const checked = productsSelected.has(r.productId) ? 'checked' : '';
+    html += `<tr class="product-row" tabindex="0" role="button" aria-label="Edit ${escapeAttr(r.productName)}" onclick="if(event.target.type!=='checkbox') openProductDetail('${escapeAttr(r.productId)}')" onkeydown="if((event.key==='Enter'||event.key===' ') && event.target.type!=='checkbox'){event.preventDefault(); openProductDetail('${escapeAttr(r.productId)}');}">
+      <td data-label="" class="product-select-cell" onclick="event.stopPropagation();"><input type="checkbox" ${checked} aria-label="Select ${escapeAttr(r.productName)}" onclick="event.stopPropagation();" onchange="toggleProductSelect('${escapeAttr(r.productId)}', this.checked)" /></td>
       <td data-label="Product">${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName)}</td>
-      <td data-label="Category"><select style="font-size:12px; padding:3px 4px;" onchange="saveProductCategory('${escapeAttr(r.productId)}','${escapeAttr((r.productName||'').replace(/'/g,"\'"))}', this.value)">${catOptions}</select></td>
+      <td data-label="Category"><span class="category-text ${currentCat ? '' : 'is-uncategorized'}">${currentCat ? escapeHtml(currentCat) : 'Uncategorized'}</span></td>
       <td data-label="In Machines" class="num">${r.machineCount}</td>
       <td data-label="Current Cost" class="num">${r.currentCost !== null ? fmt(r.currentCost) : '—'}${r.currentCostSource === 'haha' ? ' <span class="tag tag-none">from HAHA</span>' : ''}</td>
       <td data-label="Price" class="num">${r.price !== null ? fmt(r.price) : '—'}</td>
       <td data-label="Margin" class="num">${margin !== null ? margin.toFixed(0) + '%' : '—'}</td>
-      <td data-label=""><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openProductDetail('${escapeAttr(r.productId)}')">Log Cost</button></td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
+
+  if (totalPages > 1) {
+    pager.style.display = 'flex';
+    pager.innerHTML = `
+      <button class="btn btn-secondary" ${productsPage <= 1 ? 'disabled' : ''} onclick="productsPage--; renderProducts();">&larr; Prev</button>
+      <span>Page ${productsPage} of ${totalPages} · ${rows.length} product(s)</span>
+      <button class="btn btn-secondary" ${productsPage >= totalPages ? 'disabled' : ''} onclick="productsPage++; renderProducts();">Next &rarr;</button>
+    `;
+  } else {
+    pager.style.display = 'none';
+  }
+
+  renderProductsBulkBar();
 }
 
 function openProductDetail(productId) {
   const p = productCatalogCache.find(x => x.productId === productId);
   if (!p) return;
+  const currentCat = productCategories[productId] || '';
   const lotsHtml = !p.lots.length
     ? '<div class="empty-state" style="padding:10px;">No purchases logged yet — HAHA\'s own cost is used until one is.</div>'
     : `<div class="table-wrap"><table><thead><tr><th>Date</th><th class="num">Unit Cost</th><th class="num">Qty</th><th>Vendor</th></tr></thead><tbody>${p.lots.map(l => `<tr>
         <td>${l.purchasedDate}</td><td class="num">${fmt(l.unitCost)}</td><td class="num">${l.quantity}</td><td>${escapeHtml(l.vendor || '—')}</td>
       </tr>`).join('')}</tbody></table></div>`;
-  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+  openDrawer(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(p.productName)}</div>
     <div class="modal-sub">In ${p.machineCount} machine(s)${p.machineNames.length ? ': ' + escapeHtml(p.machineNames.join(', ')) : ''}</div>
-    <div class="card-title" style="margin-top:6px;">Log a Purchase</div>
+    <h2 class="card-title" style="margin-top:10px;">Category</h2>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field-wide">
+        <select id="pdCategory_${escapeAttr(productId)}" onchange="saveProductCategory('${escapeAttr(productId)}','${escapeAttr((p.productName||'').replace(/'/g,"\'"))}', this.value); renderProducts();">
+          <option value="">— Uncategorized —</option>
+          ${PRODUCT_CATEGORY_LIST.map(c => `<option value="${escapeAttr(c)}" ${c === currentCat ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <h2 class="card-title">Log a Purchase</h2>
     <div class="form-grid" style="margin-bottom:14px;">
       <div><label>Unit Cost ($)</label><input id="pcCost_${escapeAttr(productId)}" type="number" step="0.01" min="0" placeholder="0.00" /></div>
       <div><label>Quantity Purchased</label><input id="pcQty_${escapeAttr(productId)}" type="number" step="1" min="1" placeholder="0" /></div>
@@ -3659,7 +3881,7 @@ function openProductDetail(productId) {
       <div><label>Vendor</label><input id="pcVendor_${escapeAttr(productId)}" placeholder="optional" /></div>
       <div class="field-wide"><button class="btn btn-primary" onclick="addProductCostLot('${escapeAttr(productId)}')">Save Cost</button></div>
     </div>
-    <div class="card-title">Cost History</div>
+    <h2 class="card-title">Cost History</h2>
     ${lotsHtml}
   `);
 }
@@ -3707,6 +3929,46 @@ async function loadProperties() {
 // ---------------- team + Cloudflare Access identity ----------------
 let team = [];
 let whoami = { email: null, member: null };
+
+// ---------------- permissions (v1.10.1 F5) ----------------
+// Fixed role set (must match the Team tab's role <select> and the
+// team_members.role formalization in migrations/014_role_formalize.sql):
+//   Admin, Stocker, Receiver, Sales, Account Manager
+// Only Admin is a meaningfully-enforced role today — the rest are
+// assignable values with no restrictions yet (v1.10.2 §15 defines the
+// others once a real non-admin user exists). This helper is the shared
+// gating point everything else should call rather than checking
+// whoami.member.role directly, so that changes here (e.g. defining a new
+// role's access) don't require touching every call site.
+function currentUserRole() {
+  return (whoami && whoami.member) ? whoami.member.role : null;
+}
+
+function isAdmin() {
+  return currentUserRole() === 'Admin';
+}
+
+// Returns true/false; does NOT show any messaging itself — callers use
+// this to decide whether to hide/disable a control (client-side half of
+// the gate; the server-side half lives in functions/_lib/auth.js and is
+// the half that actually can't be bypassed).
+function hasRole(allowedRoles) {
+  const role = currentUserRole();
+  if (!role) return false;
+  return allowedRoles.includes(role);
+}
+
+// For gating an action at the point it's triggered (e.g. inside an
+// onclick before opening a confirm dialog for a device command). Shows a
+// plain-language explanation and returns false if blocked, so the caller
+// can just do: `if (!requireRole(['Admin'], 'restart a machine')) return;`
+function requireRole(allowedRoles, actionLabel) {
+  if (hasRole(allowedRoles)) return true;
+  const role = currentUserRole();
+  const who = role ? `your role (${role})` : (whoami && whoami.email ? "your account (not yet on the Team list)" : "you're not logged in as a recognized Team member");
+  alert(`Only ${allowedRoles.join('/')} can ${actionLabel || 'do this'} — ${who} isn't permitted.`);
+  return false;
+}
 
 async function loadTeam() {
   try {
@@ -3773,6 +4035,12 @@ function renderGoogleAdsView() {
     tbl.innerHTML = html;
   }
 
+  const adsSpendTableWrap = document.getElementById('adsSpendChart_table');
+  if (adsSpendTableWrap) {
+    const tRows = (d.campaigns || []).slice().sort((a, b) => b.spend - a.spend);
+    adsSpendTableWrap.innerHTML = chartTableHtml(['Campaign', 'Spend'], tRows.map(c => [c.name, fmt(c.spend)]));
+  }
+
   if (CHARTS_AVAILABLE) {
     const ctx = document.getElementById('adsSpendChart');
     if (charts.adsSpend) charts.adsSpend.destroy();
@@ -3829,6 +4097,11 @@ function renderGoogleAnalyticsView() {
     (d.topPages || []).forEach(p => { html += `<tr><td>${escapeHtml(p.path)}</td><td class="num">${p.pageviews}</td></tr>`; });
     html += '</tbody>';
     tbl.innerHTML = html;
+  }
+
+  const gaTrafficTableWrap = document.getElementById('gaTrafficChart_table');
+  if (gaTrafficTableWrap) {
+    gaTrafficTableWrap.innerHTML = chartTableHtml(['Date', 'Sessions', 'Users'], (d.byDay || []).map(r => [r.date, r.sessions, r.users]));
   }
 
   if (CHARTS_AVAILABLE) {
@@ -3950,7 +4223,7 @@ function editTeamMember(id) {
 function cancelTeamEdit() {
   document.getElementById('teamId').value = '';
   ['teamName', 'teamEmail', 'teamPhone', 'teamNotes'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('teamRole').value = 'Owner';
+  document.getElementById('teamRole').value = 'Admin';
   document.getElementById('teamStatus').value = 'active';
   document.getElementById('teamFormTitle').textContent = 'Add Team Member';
   document.getElementById('teamCancelBtn').style.display = 'none';
@@ -4186,7 +4459,7 @@ async function openPropertyDetail(propertyId) {
     <div class="modal-title">${escapeHtml(property.name)}</div>
     <div class="modal-sub">${escapeHtml(property.propertyType || 'Property')}${property.address ? ' — ' + escapeHtml(property.address) : ''} · <span class="tag ${property.status === 'active' ? 'tag-paid' : 'tag-none'}">${escapeHtml(property.status)}</span></div>
 
-    <div class="card-title" style="margin-top:14px;">Team Assignment</div>
+    <h2 class="card-title" style="margin-top:14px;">Team Assignment</h2>
     <div class="card-desc">Cascades to every machine at this property — no separate assignment needed per machine.</div>
     <div class="form-grid" style="margin-bottom:8px;">
       <div><label>Account Manager</label><select id="detailAccountManager_${propertyId}">${teamOptionsHtml(property.accountManagerId)}</select></div>
@@ -4194,7 +4467,7 @@ async function openPropertyDetail(propertyId) {
       <div><button class="btn btn-secondary" onclick="saveTeamAssignment('${propertyId}')">Save Assignment</button></div>
     </div>
 
-    <div class="card-title" style="margin-top:14px;">Contacts</div>
+    <h2 class="card-title" style="margin-top:14px;">Contacts</h2>
     ${contactsHtml}
     <div class="form-grid" style="margin-top:10px;">
       <div class="field-wide"><label>Name</label><input id="cName_${propertyId}" placeholder="e.g. Sarah Jones" /></div>
@@ -4205,10 +4478,10 @@ async function openPropertyDetail(propertyId) {
       <div><button class="btn btn-secondary" onclick="addContact('${propertyId}')">Add Contact</button></div>
     </div>
 
-    <div class="card-title" style="margin-top:16px;">Machines at This Property</div>
+    <h2 class="card-title" style="margin-top:16px;">Machines at This Property</h2>
     ${machinesHtml}
 
-    <div class="card-title" style="margin-top:16px;">Log Activity</div>
+    <h2 class="card-title" style="margin-top:16px;">Log Activity</h2>
     <div class="form-grid" style="margin-bottom:8px;">
       <div><label>Type</label><select id="aType_${propertyId}">
         <option value="call">Call</option><option value="email">Email</option><option value="text">Text</option>
@@ -4229,7 +4502,7 @@ async function openPropertyDetail(propertyId) {
       <div><button class="btn btn-primary" onclick="logActivity('${propertyId}')">Log It</button></div>
     </div>
 
-    <div class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</div>
+    <h2 class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</h2>
     ${combinedHistoryHtml(history)}
   `);
 }
@@ -4412,7 +4685,7 @@ async function openContactDetail(id) {
     <div class="modal-sub">${escapeHtml(c.title || 'Contact')}${c.propertyId ? ' — ' + escapeHtml(c.propertyName || '') : (c.company ? ' — ' + escapeHtml(c.company) : '')}${!c.propertyId ? ' · <span class="tag tag-none">prospect</span>' : ''}</div>
     <div class="card-desc" style="margin-top:6px;">${[c.phone, c.email].filter(Boolean).map(escapeHtml).join(' · ') || 'No phone/email on file'}</div>
 
-    <div class="card-title" style="margin-top:14px;">Log a Call</div>
+    <h2 class="card-title" style="margin-top:14px;">Log a Call</h2>
     <div class="form-grid" style="margin-bottom:8px;">
       <div><label>Outcome</label><select id="ccOutcome_${id}">
         <option value="">—</option><option>Connected</option><option>Left voicemail</option><option>Follow-up needed</option>
@@ -4424,7 +4697,7 @@ async function openContactDetail(id) {
       <div><button class="btn btn-primary" onclick="logContactCall('${id}')">Log It</button></div>
     </div>
 
-    <div class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</div>
+    <h2 class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</h2>
     ${combinedHistoryHtml(history)}
   `);
 }
@@ -6194,6 +6467,11 @@ function renderPatternChart() {
     });
     labels = dayNames;
     data = buckets;
+  }
+
+  const patternTableWrap = document.getElementById('patternChart_table');
+  if (patternTableWrap) {
+    patternTableWrap.innerHTML = chartTableHtml(['Time', 'Gross Sales'], labels.map((l, i) => [l, fmt(data[i])]));
   }
 
   charts.pattern = new Chart(ctx, {
