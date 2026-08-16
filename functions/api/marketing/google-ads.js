@@ -41,7 +41,7 @@ export async function onRequestGet({ request, env }) {
     `.trim();
 
     const res = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`,
+      `https://googleads.googleapis.com/v25/customers/${customerId}/googleAds:search`,
       {
         method: 'POST',
         headers: {
