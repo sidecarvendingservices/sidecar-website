@@ -87,11 +87,16 @@
   .app-shell { }
   @media (min-width: 901px) {
     .app-shell { display: flex; align-items: flex-start; }
+    /* .app is a flex child once the shell goes horizontal — without an
+       explicit grow, a block-level flex item can end up sized to its
+       content instead of filling the remaining width, which is why pages
+       were rendering at inconsistent, less-than-full widths. */
+    .app { flex: 1 1 auto; min-width: 0; width: 100%; }
   }
 
   /* ---------- sidebar ---------- */
   .app-sidebar {
-    background: var(--sky-deep);
+    background: var(--navy);
     border-bottom: 1px solid rgba(0,0,0,.15);
     padding: 16px 18px;
   }
@@ -136,6 +141,14 @@
   .subnav-btn:hover { border-color: var(--sky-deep); color: var(--sky-deep); }
   .subnav-btn.active { background: var(--sky-deep); border-color: var(--sky-deep); color: #fff; }
 
+  /* ---------- Sales & Profit Trend granularity toggle ---------- */
+  .trend-gran-toggle { display: flex; gap: 4px; background: #EDF1F3; border-radius: 999px; padding: 3px; }
+  .trend-gran-btn {
+    border: none; background: transparent; color: var(--graphite); font-family: var(--font-head);
+    font-weight: 700; font-size: 11.5px; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+  }
+  .trend-gran-btn.active { background: var(--sky-deep); color: #fff; }
+
   /* ---------- tabs / nav links ---------- */
   /* Mobile/tablet (<901px): horizontal, sticky-at-top pill strip, same as
      before. Desktop (>=901px): becomes a plain vertical list inside the
@@ -165,7 +178,16 @@
   }
   .tab-btn:hover { color: var(--sky-deep); }
   .tab-btn.active { color: #fff; background: var(--sky-deep); box-shadow: 0 2px 6px rgba(5,116,163,.35); }
+  .nav-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 5px; margin-left: 7px;
+    border-radius: 999px; background: var(--sky-deep); color: #fff;
+    font-size: 10.5px; font-weight: 800; line-height: 1; vertical-align: middle;
+  }
+  .tab-btn.active .nav-badge { background: rgba(255,255,255,.3); }
   @media (min-width: 901px) {
+    .nav-badge { background: rgba(255,255,255,.25); }
+    .tab-btn.active .nav-badge { background: var(--sky-deep); color: #fff; }
     .tab-btn { text-align: left; color: rgba(255,255,255,.85); border-radius: 10px; padding: 10px 12px; }
     .tab-btn:hover { color: #fff; background: rgba(255,255,255,.12); }
     .tab-btn.active { color: var(--sky-deep); background: #fff; box-shadow: none; }
@@ -406,7 +428,7 @@
 
   <nav class="app-sidebar" id="appSidebar">
     <div class="brand">
-      <img src="https://sidecarservices.com/images/email-signature-logo.png" alt="Sidecar Vending Services"
+      <img src="https://sidecarservices.com/images/sidecar_logo_white_cropped.png" alt="Sidecar Vending Services"
            onerror="this.style.display='none'; document.getElementById('brandFallback').style.display='block';" />
       <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
     </div>
@@ -421,14 +443,14 @@
 
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
-        <button class="tab-btn active" data-tab="today">Today</button>
         <button class="tab-btn" data-tab="overview">Overview</button>
-        <button class="tab-btn" data-tab="tasks">Tasks</button>
-        <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines</button>
+        <button class="tab-btn active" data-tab="today">Today</button>
+        <button class="tab-btn" data-tab="tasks">Tasks<span class="nav-badge" id="navBadgeTasks" style="display:none;">0</span></button>
+        <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties<span class="nav-badge" id="navBadgeProperties" style="display:none;">0</span></button>
+        <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines<span class="nav-badge" id="navBadgeMachines" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
         <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
-        <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties</button>
-        <button class="tab-btn tab-btn-secondary" data-tab="financials">Financials</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="financials">Expenses</button>
       </div>
       <div class="tabbar-more">
         <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
@@ -537,8 +559,15 @@
 
     <div class="grid-2">
       <div class="card clickable-card" onclick="switchToTab('sales')" title="Open Sales">
-        <div class="card-title">Sales &amp; Profit Trend</div>
-        <div class="card-desc">Gross sales, net sales, and profit by month.</div>
+        <div class="section-flex">
+          <div class="card-title" style="margin:0;">Sales &amp; Profit Trend</div>
+          <div class="trend-gran-toggle" onclick="event.stopPropagation();">
+            <button class="trend-gran-btn active" data-gran="month" onclick="setTrendGranularity('month')">Month</button>
+            <button class="trend-gran-btn" data-gran="week" onclick="setTrendGranularity('week')">Week</button>
+            <button class="trend-gran-btn" data-gran="day" onclick="setTrendGranularity('day')">Day</button>
+          </div>
+        </div>
+        <div class="card-desc">Gross sales, net sales, and profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
         <div class="chart-box"><canvas id="trendChart"></canvas></div>
       </div>
       <div class="card clickable-card" onclick="switchToTab('financials')" title="Open Financials">
@@ -561,45 +590,47 @@
       <button class="subnav-btn active" data-tab="machines" onclick="switchToTab('machines')">Fleet</button>
       <button class="subnav-btn" data-tab="health" onclick="switchToTab('health')">Health</button>
     </div>
-    <div class="card">
-      <div class="card-title">Add a Machine</div>
-      <div class="card-desc">One row per machine — this feeds every other tab.</div>
-      <div class="form-grid" id="machineForm">
-        <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
-        <div class="field-wide"><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
-        <div class="field-wide"><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
-        <div>
-          <label>Placement Type</label>
-          <select id="mPlan">
-            <option value="none">No-cost placement</option>
-            <option value="tiered">Commission (tiered)</option>
-          </select>
-        </div>
-        <div><label>Install Date</label><input id="mInstall" type="date" /></div>
-        <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
-        <div class="field-wide"><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
-        <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
-        <div class="field-wide"><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
-        <div class="field-wide"><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
-      </div>
-      <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
-    </div>
     <div class="card" id="duplicatesCard" style="display:none; border-color:#f0c896; background:#fff8ee;">
       <div class="card-title">Possible Duplicate Machines</div>
       <div class="card-desc">These share the same HAHA Market ID or name — probably the same physical machine added twice. Merging moves all sales/expense/health history onto the kept machine, then removes the duplicate.</div>
       <div id="duplicatesList"></div>
     </div>
-    <div class="card">
-      <div class="section-flex">
-        <div class="card-title" style="margin:0;">Machines</div>
-        <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-flex">
+          <div class="card-title" style="margin:0;">Machines</div>
+          <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
+        </div>
+        <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
+        <div id="machinesEmpty" class="empty-state" style="display:none;">
+          <strong>No machines yet</strong>
+          Add your first machine to the right, or use "Import from HAHA" to pull your registered devices in automatically.
+        </div>
+        <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
       </div>
-      <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
-      <div id="machinesEmpty" class="empty-state" style="display:none;">
-        <strong>No machines yet</strong>
-        Add your first machine above, or use "Import from HAHA" to pull your registered devices in automatically.
+      <div class="card">
+        <div class="card-title">Add a Machine</div>
+        <div class="card-desc">One row per machine — this feeds every other tab.</div>
+        <div class="form-grid" id="machineForm">
+          <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
+          <div class="field-wide"><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
+          <div class="field-wide"><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
+          <div>
+            <label>Placement Type</label>
+            <select id="mPlan">
+              <option value="none">No-cost placement</option>
+              <option value="tiered">Commission (tiered)</option>
+            </select>
+          </div>
+          <div><label>Install Date</label><input id="mInstall" type="date" /></div>
+          <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
+          <div class="field-wide"><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
+          <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
+          <div class="field-wide"><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
+        </div>
+        <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
       </div>
-      <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
   </div>
 
@@ -3601,26 +3632,68 @@ function openMomentumDetail(period) {
     ${bodyHtml}`);
 }
 
+let trendGranularity = 'month';
+function setTrendGranularity(g) {
+  trendGranularity = g;
+  document.querySelectorAll('.trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.gran === g));
+  renderTrendChart();
+}
+function weekKeyOf(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return addDays(dateStr, -d.getDay()); // Sunday of that week, YYYY-MM-DD
+}
+function weekLabelOf(weekStartStr) {
+  const d = new Date(weekStartStr + 'T12:00:00');
+  return 'Wk of ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function dayLabelOf(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function renderTrendChart() {
-  const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
-  const grossByMonth = months.map(m => sales.filter(s => monthKey(s.date) === m).reduce((a, s) => a + s.gross, 0));
-  const netByMonth = months.map(m => sales.filter(s => monthKey(s.date) === m).reduce((a, s) => a + (s.gross - s.cogs - s.fees), 0));
-  const expByMonth = months.map(m => expenses.filter(e => monthKey(e.date) === m).reduce((a, e) => a + e.amount, 0));
-  const commByMonth = months.map(m => commissionRows().filter(r => r.month === m).reduce((a, r) => a + tierFor(r.gross).rate * r.net, 0));
-  const profitByMonth = netByMonth.map((n, i) => n - expByMonth[i] - commByMonth[i]);
+  let keyFn, labelFn, srcSales = sales, srcExpenses = expenses;
+
+  if (trendGranularity === 'week') {
+    // Most recent ~26 weeks — a full history at week granularity would be
+    // unreadable, and commission (month-only) can't be allocated per week.
+    const cutoff = addDays(businessToday(), -7 * 26);
+    srcSales = sales.filter(s => s.date >= cutoff);
+    srcExpenses = expenses.filter(e => e.date >= cutoff);
+    keyFn = (dateStr) => weekKeyOf(dateStr);
+    labelFn = weekLabelOf;
+  } else if (trendGranularity === 'day') {
+    const cutoff = addDays(businessToday(), -60);
+    srcSales = sales.filter(s => s.date >= cutoff);
+    srcExpenses = expenses.filter(e => e.date >= cutoff);
+    keyFn = (dateStr) => dateStr;
+    labelFn = dayLabelOf;
+  } else {
+    keyFn = (dateStr) => monthKey(dateStr);
+    labelFn = monthLabel;
+  }
+
+  const keys = Array.from(new Set(srcSales.map(s => keyFn(s.date)))).sort();
+  const grossByKey = keys.map(k => srcSales.filter(s => keyFn(s.date) === k).reduce((a, s) => a + s.gross, 0));
+  const netByKey = keys.map(k => srcSales.filter(s => keyFn(s.date) === k).reduce((a, s) => a + (s.gross - s.cogs - s.fees), 0));
+  const expByKey = keys.map(k => srcExpenses.filter(e => keyFn(e.date) === k).reduce((a, e) => a + e.amount, 0));
+  const commByKey = keys.map(k => trendGranularity === 'month'
+    ? commissionRows().filter(r => r.month === k).reduce((a, r) => a + tierFor(r.gross).rate * r.net, 0)
+    : 0); // commission is only tracked per calendar month, not per week/day
+  const profitByKey = netByKey.map((n, i) => n - expByKey[i] - commByKey[i]);
 
   const ctx = document.getElementById('trendChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('trendChart'); return; }
   if (charts.trend) charts.trend.destroy();
-  if (!months.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
+  if (!keys.length) { ctx.getContext('2d').clearRect(0, 0, 999, 999); return; }
   charts.trend = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: months.map(monthLabel),
+      labels: keys.map(labelFn),
       datasets: [
-        { label: 'Gross Sales', data: grossByMonth, borderColor: '#29ABE2', backgroundColor: '#29ABE2', tension: .25 },
-        { label: 'Net Sales', data: netByMonth, borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25 },
-        { label: 'Profit', data: profitByMonth, borderColor: '#FF6B2B', backgroundColor: '#FF6B2B', tension: .25 },
+        { label: 'Gross Sales', data: grossByKey, borderColor: '#29ABE2', backgroundColor: '#29ABE2', tension: .25 },
+        { label: 'Net Sales', data: netByKey, borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25 },
+        { label: 'Profit', data: profitByKey, borderColor: '#FF6B2B', backgroundColor: '#FF6B2B', tension: .25 },
       ]
     },
     options: {
@@ -3764,6 +3837,18 @@ function warnMigrationNeeded(file) {
 function renderSection(name, fn) {
   try { fn(); } catch (err) { console.error(`renderAll: ${name} failed to render`, err); }
 }
+function updateNavBadges() {
+  const setBadge = (id, count) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = count;
+    el.style.display = count > 0 ? 'inline-flex' : 'none';
+  };
+  setBadge('navBadgeMachines', (machines || []).filter(m => m.status !== 'retired').length);
+  setBadge('navBadgeProperties', (properties || []).length);
+  setBadge('navBadgeTasks', (tasks || []).filter(t => t.status !== 'complete').length);
+}
+
 function renderAll() {
   renderSection('range options', buildRangeOptions);
   renderSection('machines', renderMachines);
@@ -3778,6 +3863,7 @@ function renderAll() {
   renderSection('relationships', renderRelationships);
   renderSection('tasks', renderTasks);
   renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
+  renderSection('nav badges', updateNavBadges);
 }
 
 async function init() {
