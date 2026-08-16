@@ -26,7 +26,7 @@ crons = ["0,30 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "sidecar-ops"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "f685efe9-fd1f-468d-84cc-0ff42bba0740"
 
 [vars]
 # How many days back to re-sync on every run. 2 is the code default; set to
