@@ -22,7 +22,6 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
 
 const ROOT = __dirname;
 const SRC_DIR = path.join(ROOT, 'src');
@@ -333,14 +332,17 @@ function build() {
   // live yet, vs. still sitting unpushed/undeployed. Computed fresh on every
   // build from the git commit + build time — nothing to remember to bump.
   function buildVersionStamp() {
-    let hash = 'unknown';
+    // Simple, manually-bumped version number (edit the VERSION file and
+    // commit whenever you want the dashboard to show a new number) rather
+    // than an auto-generated git hash/timestamp — easier to reference
+    // ("we're on 1.3") when reporting a bug or confirming a deploy went out.
+    let version = '?';
     try {
-      hash = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+      version = fs.readFileSync(path.join(ROOT, 'VERSION'), 'utf8').trim();
     } catch (e) {
-      console.warn('Could not read git commit for build version stamp:', e.message);
+      console.warn('Could not read VERSION file for build version stamp:', e.message);
     }
-    const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-    return `build ${hash} — deployed ${stamp}`;
+    return `Version ${version}`;
   }
 
   for (const file of PASSTHROUGH_PAGES) {

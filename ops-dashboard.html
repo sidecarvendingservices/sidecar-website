@@ -67,11 +67,9 @@
     color: var(--charcoal);
     -webkit-font-smoothing: antialiased;
   }
-  .app { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
-  /* Desktop: use the full page width instead of capping at 1180px. Mobile
-     (<=640px, see the .app override below) is unaffected. */
-  @media (min-width: 641px) {
-    .app { max-width: none; padding-left: 32px; padding-right: 32px; }
+  .app { max-width: none; margin: 0; padding: 0 20px 60px; }
+  @media (min-width: 641px) and (max-width: 900px) {
+    .app { padding-left: 32px; padding-right: 32px; }
   }
 
   /* ---------- accessibility ---------- */
@@ -85,57 +83,48 @@
     outline: 3px solid var(--sky); outline-offset: 2px;
   }
 
-  /* ---------- header ---------- */
-  .app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 20px;
-    background: var(--card);
-    margin: 0 -20px 20px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
+  /* ---------- app shell: left sidebar (nav) + main content column ---------- */
+  .app-shell { }
+  @media (min-width: 901px) {
+    .app-shell { display: flex; align-items: flex-start; }
   }
-  /* Desktop: keep the toolbar (logo, HAHA sync status/button, range filter)
-     pinned at the very top of the viewport while scrolling, same idea as
-     the tab bar below it. */
-  @media (min-width: 641px) {
-    .app-header { position: sticky; top: 0; z-index: 50; }
+
+  /* ---------- sidebar ---------- */
+  .app-sidebar {
+    background: var(--sky-deep);
+    border-bottom: 1px solid rgba(0,0,0,.15);
+    padding: 16px 18px;
+  }
+  @media (min-width: 901px) {
+    .app-sidebar {
+      width: 252px; flex-shrink: 0;
+      height: 100vh; position: sticky; top: 0;
+      display: flex; flex-direction: column;
+      border-bottom: none; border-right: 1px solid rgba(0,0,0,.15);
+      overflow-y: auto; padding: 22px 18px;
+    }
   }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { height: 54px; width: auto; display: block; }
-  @media (max-width: 640px) { .brand img { height: 46px; } }
+  .brand img { height: 46px; width: auto; display: block; }
   .brand-fallback {
-    font-family: var(--font-head); font-weight: 900; font-size: 22px; color: var(--charcoal); letter-spacing: -0.02em;
+    font-family: var(--font-head); font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -0.02em;
   }
-  .brand-sub { font-family: var(--font-head); font-size: 12px; color: var(--sky-deep); margin-top: 1px; font-weight: 800; letter-spacing: .01em; }
-  .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .dashboard-version { font-size: 10.5px; color: var(--graphite); opacity: 0.7; letter-spacing: 0.02em; margin-top: 2px; }
-  .month-filter { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--graphite); font-weight: 600; }
-  .month-filter select {
-    border: 1px solid var(--border-strong); border-radius: 999px; padding: 6px 14px; font-size: 13px;
+  .brand-sub { font-family: var(--font-head); font-size: 12px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
+  .sidebar-date { font-size: 12px; color: rgba(255,255,255,.8); font-weight: 700; margin-top: 3px; }
+  .dashboard-version { font-size: 10.5px; color: rgba(255,255,255,.65); letter-spacing: 0.02em; margin-top: 6px; }
+
+  .sidebar-filter.month-filter {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.85); font-weight: 700;
+    margin: 18px 0 14px;
+  }
+  @media (min-width: 901px) {
+    .sidebar-filter.month-filter { flex-direction: column; align-items: stretch; gap: 5px; }
+  }
+  .sidebar-filter.month-filter select {
+    border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 7px 14px; font-size: 13px;
     background: #fff; color: var(--charcoal); font-family: inherit;
   }
-  .haha-sync-status {
-    display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--graphite);
-    background: #F7F9FA; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px;
-  }
-  .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .sync-dot-fresh { background: var(--green); }
-  .sync-dot-stale { background: #E0A030; }
-  .sync-dot-none { background: #C7CDD1; }
-  .btn-header-sync {
-    background: var(--sky-deep); color: #fff; border: none;
-    border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
-  }
-  .btn-header-sync:hover { background: var(--sky-ink); }
-
-  @media (max-width: 640px) {
-    .app-header { justify-content: center; text-align: center; }
-    .header-actions { width: 100%; justify-content: center; }
-    .haha-sync-status { order: 3; width: 100%; justify-content: center; }
-  }
+  @media (min-width: 901px) { .sidebar-filter.month-filter select { width: 100%; } }
 
   /* ---------- sub-nav pills (Machines<->Health, Inventory<->Products) ---------- */
   .subnav { display: flex; gap: 6px; margin-bottom: 14px; }
@@ -147,19 +136,18 @@
   .subnav-btn:hover { border-color: var(--sky-deep); color: var(--sky-deep); }
   .subnav-btn.active { background: var(--sky-deep); border-color: var(--sky-deep); color: #fff; }
 
-  /* ---------- tabs ---------- */
-  /* Sticky so the nav is always reachable while scrolling a long tab (the
-     "menu should always remain visible" requirement) — pinned just under
-     the header with its own opaque backdrop so content doesn't show through. */
+  /* ---------- tabs / nav links ---------- */
+  /* Mobile/tablet (<901px): horizontal, sticky-at-top pill strip, same as
+     before. Desktop (>=901px): becomes a plain vertical list inside the
+     sidebar, which is already pinned via .app-sidebar's own sticky rule
+     above, so the tab strip itself doesn't need to be independently sticky. */
   .tabbar-wrap {
     position: sticky; top: 0; z-index: 45;
     display: flex; align-items: center; gap: 8px;
     background: var(--bg); margin: 0 -20px 20px; padding: 10px 20px;
   }
-  @media (min-width: 641px) {
-    /* ~83px matches the header's rendered height (54px logo + 14px*2
-       padding + 1px border) so the tab bar sits flush beneath it. */
-    .tabbar-wrap { top: 83px; }
+  @media (min-width: 901px) {
+    .tabbar-wrap { position: static; margin: 12px 0 0; padding: 0; background: transparent; flex: 1; }
   }
   .tabbar {
     display: flex; gap: 2px; flex: 1; min-width: 0;
@@ -167,6 +155,9 @@
     -webkit-overflow-scrolling: touch;
   }
   .tabbar::-webkit-scrollbar { display: none; }
+  @media (min-width: 901px) {
+    .tabbar { flex-direction: column; align-items: stretch; overflow: visible; background: transparent; padding: 0; gap: 3px; }
+  }
   .tab-btn {
     border: none; background: transparent; padding: 9px 16px; font-size: 13px; font-weight: 700;
     color: var(--graphite); cursor: pointer; border-radius: 999px; white-space: nowrap;
@@ -174,14 +165,17 @@
   }
   .tab-btn:hover { color: var(--sky-deep); }
   .tab-btn.active { color: #fff; background: var(--sky-deep); box-shadow: 0 2px 6px rgba(5,116,163,.35); }
+  @media (min-width: 901px) {
+    .tab-btn { text-align: left; color: rgba(255,255,255,.85); border-radius: 10px; padding: 10px 12px; }
+    .tab-btn:hover { color: #fff; background: rgba(255,255,255,.12); }
+    .tab-btn.active { color: var(--sky-deep); background: #fff; box-shadow: none; }
+  }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; animation: fadein .15s ease; }
   @keyframes fadein { from { opacity: 0; transform: translateY(2px);} to { opacity:1; transform:none; } }
 
-  /* "More" overflow menu — always present (for screen readers / narrow
-     windows) but only visually needed once the tab strip can't fit
-     everything, which CSS alone can't detect, so JS shows/hides it based on
-     viewport width via the .tabbar-compact class on the wrap. */
+  /* "More" overflow menu — mobile/tablet only, sidebar shows every nav item
+     directly so there's nothing to overflow on desktop. */
   .tabbar-more { position: relative; flex-shrink: 0; display: none; }
   .tabbar-wrap.tabbar-compact .tabbar .tab-btn-secondary { display: none; }
   .tabbar-wrap.tabbar-compact .tabbar-more { display: block; }
@@ -200,6 +194,33 @@
   }
   .tabbar-more-menu button:hover { background: #F1F4F5; }
   .tabbar-more-menu button.active { color: #fff; background: var(--sky-deep); }
+  @media (min-width: 901px) { .tabbar-more { display: none !important; } }
+
+  /* ---------- content header: HAHA sync status + button, above every page ---------- */
+  .content-header {
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;
+    padding: 12px 20px; background: var(--card); margin: 0 -20px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 40;
+  }
+  @media (min-width: 641px) and (max-width: 900px) { .content-header { margin: 0 -32px 20px; padding: 12px 32px; } }
+  .haha-sync-status {
+    display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--graphite);
+    background: #F7F9FA; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px;
+  }
+  .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sync-dot-fresh { background: var(--green); }
+  .sync-dot-stale { background: #E0A030; }
+  .sync-dot-none { background: #C7CDD1; }
+  .btn-header-sync {
+    background: var(--sky-deep); color: #fff; border: none;
+    border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
+  }
+  .btn-header-sync:hover { background: var(--sky-ink); }
+  @media (max-width: 640px) {
+    .content-header { justify-content: center; text-align: center; margin: 0 -12px 14px; padding: 10px 12px; }
+  }
+
 
   /* ---------- back to top ---------- */
   .back-to-top {
@@ -218,7 +239,7 @@
   @media (max-width: 480px) {
     .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .app { padding: 0 12px 50px; }
-    .app-header { margin: 0 -12px 14px; padding: 12px; }
+    .app-sidebar { padding: 12px; }
     .tabbar-wrap { margin: 0 -12px 16px; padding: 8px 12px; }
     .kpi-card { padding: 12px 14px; }
     .kpi-value { font-size: 20px; }
@@ -381,56 +402,59 @@
 </head>
 <body>
 <a href="#mainContent" class="skip-link">Skip to main content</a>
-<div class="app">
+<div class="app-shell">
 
-  <div class="app-header">
+  <nav class="app-sidebar" id="appSidebar">
     <div class="brand">
       <img src="https://sidecarservices.com/images/email-signature-logo.png" alt="Sidecar Vending Services"
            onerror="this.style.display='none'; document.getElementById('brandFallback').style.display='block';" />
       <div id="brandFallback" class="brand-fallback" style="display:none;">Sidecar Vending Services</div>
-      <div>
-        <div class="brand-sub">Sidecar Command Center</div>
-        <div class="dashboard-version" id="dashboardVersion" title="Build version — confirms which deploy is currently live">{{BUILD_VERSION}}</div>
+    </div>
+    <div class="brand-sub">Sidecar Command Center</div>
+    <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
+    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">{{BUILD_VERSION}}</div>
+
+    <div class="sidebar-filter month-filter">
+      <span>Showing:</span>
+      <select id="rangeSelect"></select>
+    </div>
+
+    <div class="tabbar-wrap" id="tabbarWrap">
+      <div class="tabbar" id="tabbar">
+        <button class="tab-btn active" data-tab="today">Today</button>
+        <button class="tab-btn" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="tasks">Tasks</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="financials">Financials</button>
+      </div>
+      <div class="tabbar-more">
+        <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
+        <div class="tabbar-more-menu" id="tabbarMoreMenu" role="menu"></div>
       </div>
     </div>
-    <div class="header-actions">
+  </nav>
+
+  <div class="app">
+
+    <div class="content-header" id="contentHeader">
       <div class="haha-sync-status" id="hahaSyncPill" title="Reflects the most recent HAHA health/sales sync, from any source">
         <span class="sync-dot sync-dot-none" id="hahaSyncDot" aria-hidden="true"></span>
         <span id="hahaSyncHeaderTime" aria-live="polite">Last HAHA refresh: —</span>
       </div>
       <button class="btn-header-sync" onclick="globalHahaSync(this)">Sync HAHA Now</button>
-      <div class="month-filter">
-        <span>Showing:</span>
-        <select id="rangeSelect"></select>
-      </div>
     </div>
-  </div>
 
-  <div class="tabbar-wrap" id="tabbarWrap">
-    <div class="tabbar" id="tabbar">
-      <button class="tab-btn active" data-tab="today">Today</button>
-      <button class="tab-btn" data-tab="overview">Overview</button>
-      <button class="tab-btn" data-tab="tasks">Tasks</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="machines">Machines</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="supply">Inventory</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties</button>
-      <button class="tab-btn tab-btn-secondary" data-tab="financials">Financials</button>
+    <button id="backToTopBtn" class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top" title="Back to top">↑</button>
+
+    <!-- shared modal, populated by JS for order drill-down / machine detail -->
+    <div class="modal-overlay" id="modalOverlay" style="display:none;" onclick="if(event.target===this) closeModal()">
+      <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" tabindex="-1"></div>
     </div>
-    <div class="tabbar-more">
-      <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
-      <div class="tabbar-more-menu" id="tabbarMoreMenu" role="menu"></div>
-    </div>
-  </div>
 
-  <button id="backToTopBtn" class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top" title="Back to top">↑</button>
-
-  <!-- shared modal, populated by JS for order drill-down / machine detail -->
-  <div class="modal-overlay" id="modalOverlay" style="display:none;" onclick="if(event.target===this) closeModal()">
-    <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" tabindex="-1"></div>
-  </div>
-
-  <main id="mainContent">
+    <main id="mainContent">
   <!-- ============ TODAY ============ -->
   <div class="tab-panel active" id="panel-today">
     <div class="card">
@@ -968,12 +992,13 @@
       </div>
     </div>
   </div>
-  </main>
+    </main>
 
-  <div class="footer-note">
-    Data is stored in Sidecar's own Cloudflare database, shared across every device you log into this dashboard from.
+    <div class="footer-note">
+      Data is stored in Sidecar's own Cloudflare database, shared across every device you log into this dashboard from.
+    </div>
+
   </div>
-
 </div>
 
 <script>
@@ -1049,6 +1074,13 @@ function businessDateStr(d) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 function businessToday() { return businessDateStr(new Date()); }
+function businessDateLong(d) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: BUSINESS_TZ, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(d);
+}
+function updateSidebarDate() {
+  const el = document.getElementById('sidebarDate');
+  if (el) el.textContent = businessDateLong(new Date());
+}
 
 // ---------------- chart availability (graceful degradation) ----------------
 // If the Chart.js CDN request fails or is blocked, `Chart` is undefined.
@@ -3749,6 +3781,7 @@ function renderAll() {
 }
 
 async function init() {
+  updateSidebarDate();
   document.getElementById('sDate').valueAsDate = new Date();
   document.getElementById('eDate').valueAsDate = new Date();
 
