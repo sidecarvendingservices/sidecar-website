@@ -3663,7 +3663,7 @@ function renderTasks() {
         <input type="checkbox" aria-label="Mark ${escapeAttr(t.title)} complete" ${isComplete ? 'checked' : ''}
                onclick="event.stopPropagation();" onchange="toggleTaskComplete('${t.id}', this.checked)" style="width:18px; height:18px;" />
       </td>
-      <td data-label="Title"><span style="${isComplete ? 'text-decoration:line-through; color:var(--graphite);' : ''}">${escapeHtml(t.title)}</span></td>
+      <td data-label="Title"><span style="${isComplete ? 'text-decoration:line-through; color:var(--graphite);' : ''}">${escapeHtml(t.title)}</span>${(t.category === 'auto-service' || t.category === 'auto-alert') ? ' <span class="tag tag-none" title="Created automatically by the HAHA sync worker">auto</span>' : ''}</td>
       <td data-label="Owner">${escapeHtml(t.owner || 'Unassigned')}</td>
       <td data-label="Due">
         <input type="date" aria-label="Due date" value="${t.dueDate || ''}" onclick="event.stopPropagation();"
