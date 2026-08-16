@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Sidecar Command Center</title>
+<title>Command Center</title>
 
 <!-- PWA / "Add to Home Screen" support -->
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -114,7 +114,7 @@
   .brand-fallback {
     font-family: var(--font-head); font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -0.02em;
   }
-  .brand-sub { font-family: var(--font-head); font-size: 12px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
+  .brand-sub { font-family: var(--font-head); font-size: 14.5px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
   .sidebar-date { font-size: 12px; color: rgba(255,255,255,.8); font-weight: 700; margin-top: 3px; }
   .dashboard-version { font-size: 10.5px; color: rgba(255,255,255,.65); letter-spacing: 0.02em; margin-top: 6px; }
 
@@ -220,7 +220,7 @@
 
   /* ---------- content header: HAHA sync status + button, above every page ---------- */
   .content-header {
-    display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
     padding: 12px 20px; background: var(--card); margin: 0 -20px 20px;
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 40;
@@ -239,6 +239,25 @@
     border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
   }
   .btn-header-sync:hover { background: var(--sky-ink); }
+
+  .quick-add-wrap { position: relative; }
+  .btn-quick-add {
+    background: #EDF1F3; color: var(--charcoal); border: 1px solid var(--border-strong);
+    border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: var(--font-head);
+  }
+  .btn-quick-add:hover { background: #E2E7EA; }
+  .quick-add-menu {
+    display: none; position: absolute; left: 0; top: calc(100% + 8px);
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-hover); padding: 6px; min-width: 180px; z-index: 60;
+  }
+  .quick-add-menu.open { display: block; }
+  .quick-add-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 10px 12px; border-radius: 10px; font-family: var(--font-head);
+    font-weight: 700; font-size: 13.5px; color: var(--charcoal); cursor: pointer;
+  }
+  .quick-add-menu button:hover { background: #F1F4F5; }
   @media (max-width: 640px) {
     .content-header { justify-content: center; text-align: center; margin: 0 -12px 14px; padding: 10px 12px; }
   }
@@ -462,6 +481,15 @@
   <div class="app">
 
     <div class="content-header" id="contentHeader">
+      <div class="quick-add-wrap">
+        <button class="btn-quick-add" onclick="toggleQuickAddMenu(event)" aria-haspopup="true" aria-expanded="false">+ Quick Add ▾</button>
+        <div class="quick-add-menu" id="quickAddMenu" role="menu">
+          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddTask();">New Task</button>
+          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddContact();">New Contact</button>
+          <button role="menuitem" onclick="closeQuickAddMenu(); quickScheduleCall();">Schedule Call</button>
+          <button role="menuitem" onclick="closeQuickAddMenu(); quickLogCall();">Log Call</button>
+        </div>
+      </div>
       <div class="haha-sync-status" id="hahaSyncPill" title="Reflects the most recent HAHA health/sales sync, from any source">
         <span class="sync-dot sync-dot-none" id="hahaSyncDot" aria-hidden="true"></span>
         <span id="hahaSyncHeaderTime" aria-live="polite">Last HAHA refresh: —</span>
@@ -957,69 +985,73 @@
       <div id="setupPropertiesStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Add Property</div>
-      <div class="form-grid" id="propertyForm">
-        <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
-        <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
-        <div class="field-wide"><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
-        <div class="field-wide"><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
-        <div>
-          <label>Status</label>
-          <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Properties</div>
+        <div class="table-wrap"><table id="propertyTable"></table></div>
+        <div id="propertiesEmpty" class="empty-state" style="display:none;">
+          <strong>No properties yet</strong>
+          Add one to the right, or use "Set Up Properties" above to create them from your existing machines.
         </div>
-        <div><label>Relationship Started</label><input id="pRelStart" type="date" /></div>
-        <div>
-          <label>Assigned Operator</label>
-          <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
-        </div>
-        <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Properties</div>
-      <div class="table-wrap"><table id="propertyTable"></table></div>
-      <div id="propertiesEmpty" class="empty-state" style="display:none;">
-        <strong>No properties yet</strong>
-        Add one above, or use "Set Up Properties" to create them from your existing machines.
+      <div class="card">
+        <div class="card-title">Add Property</div>
+        <div class="form-grid" id="propertyForm">
+          <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
+          <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
+          <div class="field-wide"><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
+          <div class="field-wide"><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
+          <div>
+            <label>Status</label>
+            <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
+          </div>
+          <div><label>Relationship Started</label><input id="pRelStart" type="date" /></div>
+          <div>
+            <label>Assigned Operator</label>
+            <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
+          </div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- ============ TASKS ============ -->
   <div class="tab-panel" id="panel-tasks">
-    <div class="card">
-      <div class="card-title">Add Task</div>
-      <div class="form-grid" id="taskForm">
-        <div class="field-wide"><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
-        <div>
-          <label>Owner</label>
-          <select id="tOwner"><option>Unassigned</option><option>Brian</option><option>Vala</option></select>
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-flex">
+          <div class="card-title" style="margin:0;">Task List</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="taskFilterBar">
+            <button class="btn btn-secondary" data-status="open" onclick="setTaskFilter('open', this)">Open</button>
+            <button class="btn btn-ghost" data-status="all" onclick="setTaskFilter('all', this)">All</button>
+            <button class="btn btn-ghost" data-status="complete" onclick="setTaskFilter('complete', this)">Complete</button>
+          </div>
         </div>
-        <div><label>Due Date</label><input id="tDue" type="date" /></div>
-        <div>
-          <label>Priority</label>
-          <select id="tPriority"><option value="normal">Normal</option><option value="critical">Critical</option><option value="high">High</option><option value="low">Low</option></select>
-        </div>
-        <div><label>Property</label><select id="tProperty"><option value="">—</option></select></div>
-        <div><label>Machine</label><select id="tMachine"><option value="">—</option></select></div>
-        <div class="field-wide"><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
-        <div class="field-wide"><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-flex">
-        <div class="card-title" style="margin:0;">Task List</div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;" id="taskFilterBar">
-          <button class="btn btn-secondary" data-status="open" onclick="setTaskFilter('open', this)">Open</button>
-          <button class="btn btn-ghost" data-status="all" onclick="setTaskFilter('all', this)">All</button>
-          <button class="btn btn-ghost" data-status="complete" onclick="setTaskFilter('complete', this)">Complete</button>
+        <div class="table-wrap responsive-cards"><table id="taskTable"></table></div>
+        <div id="tasksEmpty" class="empty-state" style="display:none;">
+          <strong>Nothing here</strong>
+          Add a task to the right, or these fill in automatically from follow-up dates logged on the Properties tab.
         </div>
       </div>
-      <div class="table-wrap responsive-cards"><table id="taskTable"></table></div>
-      <div id="tasksEmpty" class="empty-state" style="display:none;">
-        <strong>Nothing here</strong>
-        Add a task above, or these fill in automatically from follow-up dates logged on the Properties tab.
+      <div class="card">
+        <div class="card-title">Add Task</div>
+        <div class="form-grid" id="taskForm">
+          <div class="field-wide"><label>Title</label><input id="tTitle" placeholder="e.g. Replace card reader" /></div>
+          <div>
+            <label>Owner</label>
+            <select id="tOwner"><option>Unassigned</option><option>Brian</option><option>Vala</option></select>
+          </div>
+          <div><label>Due Date</label><input id="tDue" type="date" /></div>
+          <div>
+            <label>Priority</label>
+            <select id="tPriority"><option value="normal">Normal</option><option value="critical">Critical</option><option value="high">High</option><option value="low">Low</option></select>
+          </div>
+          <div><label>Property</label><select id="tProperty"><option value="">—</option></select></div>
+          <div><label>Machine</label><select id="tMachine"><option value="">—</option></select></div>
+          <div class="field-wide"><label>Notes</label><input id="tDescription" placeholder="optional" /></div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="addTask(this)">Add Task</button></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2979,6 +3011,13 @@ function renderTasks() {
 // Pulls exclusively from state that other tabs already computed (health,
 // restockQueueCache, tasks, commissionPayments) — nothing is entered here
 // directly, so this can never drift out of sync with the tabs it summarizes.
+// Sub-pills (Health, Products, ...) live inside a parent top-level nav item
+// (Machines, Inventory) rather than having their own sidebar entry. Without
+// this map, switching to e.g. "health" clears .active from every .tab-btn
+// including "Machines," leaving the sidebar with nothing highlighted even
+// though you're still conceptually inside the Machines section.
+const TAB_PARENT = { health: 'machines', products: 'supply' };
+
 function switchToTab(tab) {
   // Matches both top-level tabbar buttons and the in-panel sub-nav pills
   // (Machines<->Health, Inventory<->Products) — some tabs (health, products)
@@ -2989,6 +3028,8 @@ function switchToTab(tab) {
   document.querySelectorAll('.tab-btn, .subnav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b => b.classList.add('active'));
+  const parentTab = TAB_PARENT[tab];
+  if (parentTab) document.querySelectorAll(`.tab-btn[data-tab="${parentTab}"]`).forEach(b => b.classList.add('active'));
   panel.classList.add('active');
   // On the condensed mobile nav, surface which tab is active even when it's
   // tucked inside "More" so context isn't lost.
@@ -3039,6 +3080,170 @@ document.addEventListener('click', (e) => {
   if (wrap && !wrap.contains(e.target)) closeMoreMenu();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMoreMenu(); });
+
+// ---------------- quick add (content-header dropdown) ----------------
+function toggleQuickAddMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('quickAddMenu');
+  const btn = document.querySelector('.btn-quick-add');
+  if (!menu) return;
+  const willOpen = !menu.classList.contains('open');
+  menu.classList.toggle('open', willOpen);
+  if (btn) btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+}
+function closeQuickAddMenu() {
+  const menu = document.getElementById('quickAddMenu');
+  const btn = document.querySelector('.btn-quick-add');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.quick-add-wrap');
+  if (wrap && !wrap.contains(e.target)) closeQuickAddMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeQuickAddMenu(); });
+
+function quickAddTask() {
+  switchToTab('tasks');
+  const el = document.getElementById('tTitle');
+  if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+
+function quickPropertyOptions() {
+  return (properties || []).slice().sort((a, b) => a.name.localeCompare(b.name))
+    .map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+}
+
+async function quickLoadContactOptions(selectId, propertyId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">—</option>';
+  if (!propertyId) return;
+  try {
+    const { contacts } = await apiGet('/api/data/contacts?propertyId=' + encodeURIComponent(propertyId));
+    sel.innerHTML = '<option value="">—</option>' + (contacts || [])
+      .map(c => `<option value="${c.id}">${escapeHtml(c.name)}${c.isPrimary ? ' (primary)' : ''}</option>`).join('');
+  } catch (e) { /* leave it at — if this fails, contact is optional anyway */ }
+}
+
+function quickAddContact() {
+  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before adding a contact.'); return; }
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">New Contact</div>
+    <div class="form-grid" style="margin-top:10px;">
+      <div class="field-wide"><label>Property</label><select id="qcProperty">${quickPropertyOptions()}</select></div>
+      <div class="field-wide"><label>Name</label><input id="qcName" placeholder="e.g. Sarah Jones" /></div>
+      <div><label>Title</label><input id="qcTitle" placeholder="e.g. Property Manager" /></div>
+      <div><label>Phone</label><input id="qcPhone" /></div>
+      <div class="field-wide"><label>Email</label><input id="qcEmail" type="email" /></div>
+      <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="qcPrimary" style="width:auto;" /> Primary contact</label></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitQuickContact(this)">Add Contact</button></div>
+    </div>`);
+}
+async function submitQuickContact(btn) {
+  return withButtonBusy(btn, async () => {
+    const propertyId = document.getElementById('qcProperty').value;
+    const name = document.getElementById('qcName').value.trim();
+    if (!propertyId || !name) { alert('Property and name are required.'); return; }
+    try {
+      await apiPost('/api/data/contacts', {
+        propertyId, name,
+        title: document.getElementById('qcTitle').value.trim(),
+        phone: document.getElementById('qcPhone').value.trim(),
+        email: document.getElementById('qcEmail').value.trim(),
+        isPrimary: document.getElementById('qcPrimary').checked,
+      });
+    } catch (e) { alert('Could not save contact: ' + e.message); return; }
+    closeModal();
+    if (typeof renderRelationships === 'function') renderRelationships();
+  });
+}
+
+// "Schedule" a call = a Task with a due date (shows up on Today/Tasks like
+// any other to-do). "Log" a call = an Activity entry (something that
+// already happened) — see quickLogCall() below. Same underlying tables the
+// Properties detail modal already uses, just reachable from anywhere.
+function quickScheduleCall() {
+  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before scheduling a call.'); return; }
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Schedule a Call</div>
+    <div class="form-grid" style="margin-top:10px;">
+      <div class="field-wide"><label>Property</label><select id="qscProperty" onchange="quickLoadContactOptions('qscContact', this.value)">${quickPropertyOptions()}</select></div>
+      <div><label>Contact</label><select id="qscContact"><option value="">—</option></select></div>
+      <div><label>Call Date</label><input id="qscDate" type="date" /></div>
+      <div><label>Owner</label><select id="qscOwner"><option value="">—</option><option>Brian</option><option>Vala</option></select></div>
+      <div class="field-wide"><label>What's this call about?</label><input id="qscNotes" placeholder="e.g. Follow up on 2nd machine placement" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitQuickScheduleCall(this)">Schedule Call</button></div>
+    </div>`);
+  quickLoadContactOptions('qscContact', document.getElementById('qscProperty').value);
+}
+async function submitQuickScheduleCall(btn) {
+  return withButtonBusy(btn, async () => {
+    const propertyId = document.getElementById('qscProperty').value;
+    if (!propertyId) { alert('Pick a property.'); return; }
+    const contactId = document.getElementById('qscContact').value || null;
+    const notes = document.getElementById('qscNotes').value.trim();
+    const propName = (properties.find(p => p.id === propertyId) || {}).name || '';
+    const contactName = contactId ? (document.getElementById('qscContact').selectedOptions[0]?.textContent || '') : '';
+    try {
+      await apiPost('/api/data/tasks', {
+        title: 'Call' + (contactName ? ' ' + contactName : '') + (propName ? ' — ' + propName : ''),
+        owner: document.getElementById('qscOwner').value,
+        dueDate: document.getElementById('qscDate').value || null,
+        priority: 'normal',
+        category: 'call',
+        propertyId,
+        contactId,
+        description: notes,
+      });
+    } catch (e) { alert('Could not schedule call: ' + e.message); return; }
+    closeModal();
+    await loadTasks();
+    if (typeof renderTasks === 'function') renderTasks();
+    if (typeof renderToday === 'function') renderToday();
+  });
+}
+
+function quickLogCall() {
+  if (!(properties || []).length) { alert('Add a Property first (Properties tab) before logging a call.'); return; }
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Log a Call</div>
+    <div class="form-grid" style="margin-top:10px;">
+      <div class="field-wide"><label>Property</label><select id="qlcProperty" onchange="quickLoadContactOptions('qlcContact', this.value)">${quickPropertyOptions()}</select></div>
+      <div><label>Contact</label><select id="qlcContact"><option value="">—</option></select></div>
+      <div><label>Outcome</label><select id="qlcOutcome">
+        <option value="">—</option><option>Connected</option><option>Left voicemail</option><option>Follow-up needed</option>
+        <option>Meeting scheduled</option><option>Service request</option><option>Placement discussion</option>
+        <option>Issue resolved</option><option>Not interested</option><option>Other</option>
+      </select></div>
+      <div><label>Owner</label><select id="qlcOwner"><option value="">—</option><option>Brian</option><option>Vala</option></select></div>
+      <div><label>Follow-up Date (optional)</label><input id="qlcFollowUp" type="date" /></div>
+      <div class="field-wide"><label>Summary</label><input id="qlcSummary" placeholder="e.g. Discussed adding healthier products" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitQuickLogCall(this)">Log Call</button></div>
+    </div>`);
+  quickLoadContactOptions('qlcContact', document.getElementById('qlcProperty').value);
+}
+async function submitQuickLogCall(btn) {
+  return withButtonBusy(btn, async () => {
+    const propertyId = document.getElementById('qlcProperty').value;
+    const summary = document.getElementById('qlcSummary').value.trim();
+    if (!propertyId || !summary) { alert('Property and summary are required.'); return; }
+    try {
+      await apiPost('/api/data/activity', {
+        propertyId,
+        type: 'call',
+        outcome: document.getElementById('qlcOutcome').value || null,
+        owner: document.getElementById('qlcOwner').value,
+        contactId: document.getElementById('qlcContact').value || null,
+        followUpDate: document.getElementById('qlcFollowUp').value || null,
+        summary,
+      });
+    } catch (e) { alert('Could not log call: ' + e.message); return; }
+    closeModal();
+    await loadTasks();
+    if (typeof renderTasks === 'function') renderTasks();
+  });
+}
 
 function buildAttentionItems() {
   const critical = [], high = [], followUp = [], info = [];
