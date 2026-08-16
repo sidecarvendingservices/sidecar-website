@@ -817,8 +817,10 @@
   <!-- ============ SUPPLY INVENTORY (non-machine buffer stock) ============ -->
   <div class="tab-panel" id="panel-supply">
     <div class="subnav">
-      <button class="subnav-btn active" data-tab="supply" onclick="switchToTab('supply')">Inventory</button>
-      <button class="subnav-btn" data-tab="products" onclick="switchToTab('products')">Products</button>
+      <button class="subnav-btn active" data-tab="supply" onclick="switchToTab('supply')">Machine Inventory</button>
+      <button class="subnav-btn " data-tab="backstock" onclick="switchToTab('backstock')">Backstock</button>
+      <button class="subnav-btn " data-tab="products" onclick="switchToTab('products')">Products</button>
+      <button class="subnav-btn " data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
       <div class="section-flex">
@@ -828,38 +830,64 @@
           <button class="btn btn-secondary" onclick="showFillMachinesList()">Fill Machines</button>
         </div>
       </div>
-      <div class="card-desc">Every HAHA-linked machine, soonest service date first. "Route Pick List" targets a 14-day supply based on recent sell-through. "Fill Machines" instead replaces every unit sold and tops off to a set Capacity where you've entered one (set Capacity per product from a machine's detail view) — a starting point either way, not exact case counts.</div>
+      <div class="card-desc">Every HAHA-linked machine, soonest service date first. "Route Pick List" targets a 14-day supply based on recent sell-through. "Fill Machines" instead replaces every unit sold and tops off to a set Capacity where you've entered one (set Capacity per product from a machine's detail view) — a starting point either way, not exact case counts. Open a machine's "Restock List" to log the actual restock against Backstock once it's done.</div>
       <div id="restockQueueBody"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Low Stock, No Backstock</div>
       </div>
-      <div class="card-desc">Products that are low or out in a machine <em>and</em> low or out in warehouse buffer stock too — these need an actual purchase, not just a restock trip. Matched by HAHA Product ID, so set that field on buffer items to link them.</div>
+      <div class="card-desc">Products that are low or out in a machine <em>and</em> low or out in Backstock too — these need an actual purchase, not just a restock trip.</div>
       <div id="noBackstockBody"><div class="empty-state">Loading…</div></div>
     </div>
-    <div class="card">
-      <div class="card-title">Add Buffer Stock Item</div>
-      <div class="card-desc">Supplies sitting in storage, not loaded into a machine yet — set a reorder threshold so this flags when it's time to buy more.</div>
-      <div class="form-grid" id="supplyForm">
-        <div class="field-wide"><label>Item Name</label><input id="bName" placeholder="e.g. Coca-Cola 500ml" /></div>
-        <div><label>SKU / Barcode</label><input id="bSku" placeholder="optional" /></div>
-        <div class="field-wide"><label>HAHA Product ID</label><input id="bProductId" placeholder="optional — links cost/price/image" /></div>
-        <div><label>Quantity on Hand</label><input id="bQuantity" type="number" step="1" min="0" placeholder="0" /></div>
-        <div><label>Buffer / Par Level</label><input id="bBuffer" type="number" step="1" min="0" placeholder="target stock level" /></div>
-        <div><label>Reorder Threshold</label><input id="bReorder" type="number" step="1" min="0" placeholder="reorder when at/below this" /></div>
-        <div><label>Unit Cost ($)</label><input id="bCost" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div class="field-wide"><label>Location</label><input id="bLocation" placeholder="e.g. garage, storage unit" /></div>
-        <div class="field-wide"><button class="btn btn-primary" onclick="addBufferItem(this)">Add Item</button></div>
-      </div>
+  </div>
+
+  <!-- ============ BACKSTOCK (FIFO purchase lots held in reserve) ============ -->
+  <div class="tab-panel" id="panel-backstock">
+    <div class="subnav">
+      <button class="subnav-btn " data-tab="supply" onclick="switchToTab('supply')">Machine Inventory</button>
+      <button class="subnav-btn active" data-tab="backstock" onclick="switchToTab('backstock')">Backstock</button>
+      <button class="subnav-btn " data-tab="products" onclick="switchToTab('products')">Products</button>
+      <button class="subnav-btn " data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
-      <div class="card-title">Buffer Stock</div>
-      <div class="card-desc">Rows highlighted in orange are at or below their reorder threshold.</div>
-      <div class="table-wrap"><table id="supplyTable"></table></div>
-      <div id="supplyEmpty" class="empty-state" style="display:none;">
-        <strong>No buffer stock tracked yet</strong>
-        Add items above to track what's on hand outside your machines.
+      <div class="card-title">Backstock Value</div>
+      <div class="card-desc">What's currently held in reserve, not yet loaded into a machine, valued at FIFO cost.</div>
+      <div id="backstockSummary" class="kpi-grid" style="margin-bottom:0;"></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Backstock</div>
+        <div class="card-desc">One row per open purchase lot, oldest first — this is the order they'll be drawn from when you restock a machine or QMOS product out. Rows in red are negative (more has been moved out than was ever logged in).</div>
+        <div class="table-wrap responsive-cards"><table id="backstockTable"></table></div>
+        <div id="backstockEmpty" class="empty-state" style="display:none;">
+          <strong>Nothing in Backstock yet</strong>
+          Log a purchase to the right to get started.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Log a Purchase</div>
+        <div class="card-desc">Group everything from one buying trip under a batch title (e.g. "Costco run 8/16") — each product still gets its own expense line for accurate category tracking, but they'll show together. Leave Unit Price blank to reuse the last price on file for that product; use Package Price + Qty per Package instead if that's easier than figuring out the per-unit cost yourself.</div>
+        <div class="form-grid" style="margin-bottom:10px;">
+          <div class="field-wide"><label>Batch Title</label><input id="pbLabel" placeholder="e.g. Costco inventory purchase" /></div>
+          <div><label>Purchase Date</label><input id="pbDate" type="date" /></div>
+          <div><label>Vendor</label><input id="pbVendor" placeholder="optional" /></div>
+          <div>
+            <label>Paid By</label>
+            <select id="pbPaidBy">
+              <option value="">—</option>
+              <option>Additional Equity Investment - BDM</option>
+              <option>Additional Equity - Renfroe Ventures LLC</option>
+              <option>Chase Business Credit BDM</option>
+              <option>Chase Business Credit VAR</option>
+              <option>Chase Business Checking</option>
+            </select>
+          </div>
+        </div>
+        <div id="purchaseItemRows"></div>
+        <div style="margin:8px 0;"><button class="btn btn-secondary" onclick="addPurchaseItemRow()">+ Add Product</button></div>
+        <button class="btn btn-primary" onclick="submitPurchaseBatch(this)">Save Purchase</button>
+        <div id="purchaseBatchStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
       </div>
     </div>
   </div>
@@ -867,8 +895,10 @@
   <!-- ============ PRODUCTS (catalog + cost lots) ============ -->
   <div class="tab-panel" id="panel-products">
     <div class="subnav">
-      <button class="subnav-btn" data-tab="supply" onclick="switchToTab('supply')">Inventory</button>
+      <button class="subnav-btn " data-tab="supply" onclick="switchToTab('supply')">Machine Inventory</button>
+      <button class="subnav-btn " data-tab="backstock" onclick="switchToTab('backstock')">Backstock</button>
       <button class="subnav-btn active" data-tab="products" onclick="switchToTab('products')">Products</button>
+      <button class="subnav-btn " data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
     </div>
     <div class="card">
       <div class="card-title">Products</div>
@@ -878,6 +908,60 @@
       <div id="productsEmpty" class="empty-state" style="display:none;">
         <strong>No products found yet</strong>
         This fills in once machines are synced with HAHA Market IDs and have stocked inventory.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QMOS (quality / sample / expired write-offs) ============ -->
+  <div class="tab-panel" id="panel-qmos">
+    <div class="subnav">
+      <button class="subnav-btn " data-tab="supply" onclick="switchToTab('supply')">Machine Inventory</button>
+      <button class="subnav-btn " data-tab="backstock" onclick="switchToTab('backstock')">Backstock</button>
+      <button class="subnav-btn " data-tab="products" onclick="switchToTab('products')">Products</button>
+      <button class="subnav-btn active" data-tab="qmos" onclick="switchToTab('qmos')">QMOS</button>
+    </div>
+    <div class="card">
+      <div class="card-title">QMOS Totals</div>
+      <div class="card-desc">Quantity Marked Out of System — quality issues, samples, and expired product, valued at FIFO cost. "QMOS" = write-offs; this is a real cost, logged as an expense automatically.</div>
+      <div id="qmosSummary" class="kpi-grid" style="margin-bottom:0;"></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-flex">
+          <div class="card-title" style="margin:0;">QMOS Log</div>
+          <select id="qmosPeriodFilter" style="max-width:160px;" onchange="renderQmos()">
+            <option value="all">All time</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+            <option value="quarter">This quarter</option>
+          </select>
+        </div>
+        <div class="table-wrap responsive-cards"><table id="qmosTable"></table></div>
+        <div id="qmosEmpty" class="empty-state" style="display:none;">
+          <strong>Nothing logged yet</strong>
+          QMOS an item to the right when something's crushed, wet, expired, or given away as a sample.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">QMOS an Item</div>
+        <div class="card-desc">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.</div>
+        <div class="form-grid" id="qmosForm">
+          <div><label>Location</label><select id="qLocation"><option value="main">Backstock</option></select></div>
+          <div><label>Product</label><select id="qProduct"></select></div>
+          <div><label>Quantity</label><input id="qQuantity" type="number" step="1" min="1" placeholder="0" /></div>
+          <div>
+            <label>Reason</label>
+            <select id="qReason">
+              <option value="quality">Quality (damaged, spoiled, etc.)</option>
+              <option value="sample">Sample</option>
+              <option value="expired">Expired</option>
+            </select>
+          </div>
+          <div><label>Date</label><input id="qDate" type="date" /></div>
+          <div class="field-wide"><label>Notes</label><input id="qNotes" placeholder="optional — e.g. crushed bag of chips" /></div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="submitQmos(this)">Log QMOS</button></div>
+        </div>
+        <div id="qmosFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
       </div>
     </div>
   </div>
@@ -912,6 +996,7 @@
             <option>Inventory - Product Purchases</option>
             <option>Inventory - Shipping &amp; Delivery</option>
             <option>Inventory - Storage &amp; Handling</option>
+            <option>Inventory - Shrinkage &amp; Waste (QMOS)</option>
             <option>Machine Operations - Repairs &amp; Maintenance</option>
             <option>Machine Operations - Parts &amp; Supplies</option>
             <option>Machine Operations - Cleaning</option>
@@ -2441,11 +2526,31 @@ function showRestockList(machineId) {
     <div class="modal-title">Restock ${escapeHtml(r.machine.name)}</div>
     <div class="modal-sub">Service by ${r.nextServiceBy}</div>
     ${!needed.length ? '<div class="empty-state">Nothing needs restocking right now.</div>' :
-      `<table><thead><tr><th>Product</th><th class="num">Bring</th></tr></thead><tbody>${needed.map(n => `<tr>
+      `<div class="pill-note" style="display:inline-block; margin-bottom:8px;">"Log Restock" draws these units from Backstock (oldest cost first) and credits the machine — do this once you've actually loaded the machine, not before.</div>
+      <table><thead><tr><th>Product</th><th class="num">Bring</th><th class="num" style="width:90px;">Actual Qty</th><th></th></tr></thead><tbody>${needed.map((n, i) => `<tr id="restockRow_${machineId}_${i}">
         <td>${n.productImage ? `<img class="thumb" src="${escapeAttr(n.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(n.productName || n.productId)}</td>
         <td class="num"><strong>${n.bring}</strong></td>
+        <td class="num"><input id="restockQty_${machineId}_${i}" type="number" min="0" step="1" value="${n.bring}" style="width:70px; text-align:right;" /></td>
+        <td><button class="btn-danger-text" style="color:var(--sky-deep);" onclick="logRestockRow('${machineId}','${escapeAttr(n.productId)}','${escapeAttr((n.productName||n.productId).replace(/'/g,"\\'"))}',${i})">Log Restock</button></td>
       </tr>`).join('')}</tbody></table>`}
   `);
+}
+
+async function logRestockRow(machineId, productId, productName, i) {
+  const qtyEl = document.getElementById(`restockQty_${machineId}_${i}`);
+  const quantity = parseInt(qtyEl.value, 10);
+  if (!quantity || quantity < 1) { alert('Enter a quantity greater than 0.'); return; }
+  try {
+    const res = await apiPost('/api/data/inventory-restock', { machineId, productId, productName, quantity, date: todayStr() });
+    const row = document.getElementById(`restockRow_${machineId}_${i}`);
+    if (row) {
+      const note = res.shortfall > 0
+        ? ` <span class="tag tag-due">backstock short by ${res.shortfall}</span>`
+        : ' <span class="tag tag-paid">logged</span>';
+      row.querySelector('td:last-child').innerHTML = note;
+    }
+  } catch (e) { alert('Could not log restock: ' + e.message); return; }
+  loadBackstockLots();
 }
 
 function showPickList() {
@@ -2501,89 +2606,158 @@ function showFillMachinesList() {
   `);
 }
 
-// ---------------- supply inventory (non-machine buffer stock) ----------------
-let supplyItems = [];
+// ---------------- backstock (FIFO purchase lots held in reserve) ----------------
+let backstockLots = [];
 
-async function addBufferItem(btn) {
-  return withButtonBusy(btn, () => addBufferItemImpl());
-}
-async function addBufferItemImpl() {
-  const name = document.getElementById('bName').value.trim();
-  if (!name) { alert('Give the item a name.'); return; }
-  const body = {
-    name,
-    sku: document.getElementById('bSku').value.trim(),
-    productId: document.getElementById('bProductId').value.trim(),
-    quantity: parseInt(document.getElementById('bQuantity').value, 10) || 0,
-    bufferThreshold: document.getElementById('bBuffer').value ? parseInt(document.getElementById('bBuffer').value, 10) : null,
-    reorderThreshold: document.getElementById('bReorder').value ? parseInt(document.getElementById('bReorder').value, 10) : null,
-    unitCost: document.getElementById('bCost').value ? parseFloat(document.getElementById('bCost').value) : null,
-    location: document.getElementById('bLocation').value.trim(),
-  };
+async function loadBackstockLots() {
   try {
-    await apiPost('/api/data/inventory-buffer', body);
-  } catch (e) { alert('Could not save item: ' + e.message); return; }
-  ['bName', 'bSku', 'bProductId', 'bQuantity', 'bBuffer', 'bReorder', 'bCost', 'bLocation'].forEach(id => { document.getElementById(id).value = ''; });
-  await loadSupplyItems();
-  renderSupply();
+    const data = await apiGet('/api/data/inventory-lots?location=main');
+    backstockLots = data.lots || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { backstockLots = []; }
+  renderBackstock();
+  renderNoBackstockList();
 }
 
-async function deleteBufferItem(id) {
-  if (!confirm('Remove this buffer stock item?')) return;
-  await apiDelete('/api/data/inventory-buffer?id=' + encodeURIComponent(id));
-  await loadSupplyItems();
-  renderSupply();
+function productOptionsHtml(selectedId) {
+  const list = (productCatalogCache || []).slice().sort((a, b) => a.productName.localeCompare(b.productName));
+  if (!list.length) return '<option value="">No products found yet — sync HAHA first</option>';
+  return list.map(p => `<option value="${escapeAttr(p.productId)}" data-name="${escapeAttr(p.productName)}" ${p.productId === selectedId ? 'selected' : ''}>${escapeHtml(p.productName)}</option>`).join('');
 }
 
-async function loadSupplyItems() {
-  try { supplyItems = (await apiGet('/api/data/inventory-buffer')).items || []; } catch (e) { supplyItems = []; }
+let purchaseRowSeq = 0;
+function addPurchaseItemRow() {
+  const wrap = document.getElementById('purchaseItemRows');
+  if (!wrap) return;
+  const i = purchaseRowSeq++;
+  const row = document.createElement('div');
+  row.className = 'form-grid';
+  row.id = 'purchaseRow_' + i;
+  row.style.cssText = 'border-top:1px solid var(--border); padding-top:10px; margin-top:10px;';
+  row.innerHTML = `
+    <div class="field-wide"><label>Product</label><select id="piProduct_${i}">${productOptionsHtml()}</select></div>
+    <div><label>Quantity</label><input id="piQty_${i}" type="number" step="1" min="1" placeholder="0" /></div>
+    <div><label>Unit Price ($, optional)</label><input id="piUnitCost_${i}" type="number" step="0.01" min="0" placeholder="uses last price if blank" /></div>
+    <div><label>— or Package Price ($)</label><input id="piPkgPrice_${i}" type="number" step="0.01" min="0" placeholder="optional" /></div>
+    <div><label>Qty per Package</label><input id="piPkgQty_${i}" type="number" step="1" min="1" placeholder="optional" /></div>
+    <div style="display:flex; align-items:end;"><button class="btn-danger-text" onclick="document.getElementById('purchaseRow_${i}').remove()">Remove</button></div>
+  `;
+  wrap.appendChild(row);
+  wireLabelAssociations(row);
 }
 
-function renderSupply() {
-  const tbl = document.getElementById('supplyTable');
-  const empty = document.getElementById('supplyEmpty');
-  if (!supplyItems.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  let html = '<thead><tr><th>Item</th><th>Location</th><th class="num">On Hand</th><th class="num">Par</th><th class="num">Reorder At</th><th class="num">Unit Cost</th><th></th></tr></thead><tbody>';
-  supplyItems.forEach(it => {
-    const low = it.reorderThreshold !== null && it.reorderThreshold !== undefined && it.quantity <= it.reorderThreshold;
-    html += `<tr class="${low ? 'row-low-stock' : ''}">
-      <td>${escapeHtml(it.name)}${it.sku ? `<div style="font-size:11px; color:var(--graphite);">${escapeHtml(it.sku)}</div>` : ''}</td>
-      <td>${escapeHtml(it.location || '—')}</td>
-      <td class="num">${it.quantity}${low ? ' <span class="tag tag-due">reorder</span>' : ''}</td>
-      <td class="num">${it.bufferThreshold ?? '—'}</td>
-      <td class="num">${it.reorderThreshold ?? '—'}</td>
-      <td class="num">${it.unitCost !== null && it.unitCost !== undefined ? fmt(it.unitCost) : '—'}</td>
-      <td><button class="btn-danger-text" onclick="deleteBufferItem('${it.id}')">Remove</button></td>
+async function submitPurchaseBatch(btn) {
+  return withButtonBusy(btn, async () => {
+    const status = document.getElementById('purchaseBatchStatus');
+    const batchLabel = document.getElementById('pbLabel').value.trim();
+    const purchasedDate = document.getElementById('pbDate').value;
+    const vendor = document.getElementById('pbVendor').value.trim();
+    const paidBy = document.getElementById('pbPaidBy').value;
+    if (!purchasedDate) { alert('Pick a purchase date.'); return; }
+
+    const rows = Array.from(document.querySelectorAll('#purchaseItemRows [id^="purchaseRow_"]'));
+    if (!rows.length) { alert('Add at least one product.'); return; }
+
+    const items = [];
+    for (const row of rows) {
+      const i = row.id.replace('purchaseRow_', '');
+      const sel = document.getElementById('piProduct_' + i);
+      const productId = sel.value;
+      const productName = sel.selectedOptions[0] ? sel.selectedOptions[0].dataset.name : '';
+      const quantity = parseInt(document.getElementById('piQty_' + i).value, 10);
+      const unitCostRaw = document.getElementById('piUnitCost_' + i).value;
+      const pkgPrice = document.getElementById('piPkgPrice_' + i).value;
+      const pkgQty = document.getElementById('piPkgQty_' + i).value;
+      if (!productId || !quantity) continue;
+      items.push({
+        productId, productName, quantity,
+        unitCost: unitCostRaw ? parseFloat(unitCostRaw) : undefined,
+        packagePrice: pkgPrice ? parseFloat(pkgPrice) : undefined,
+        packageQty: pkgQty ? parseInt(pkgQty, 10) : undefined,
+      });
+    }
+    if (!items.length) { alert('Add at least one product with a quantity.'); return; }
+
+    if (status) { status.style.display = 'block'; status.textContent = 'Saving…'; }
+    try {
+      await apiPost('/api/data/inventory-lots', { batchLabel, purchasedDate, vendor, paidBy, items });
+    } catch (e) { if (status) status.textContent = 'Could not save: ' + e.message; else alert('Could not save: ' + e.message); return; }
+
+    document.getElementById('pbLabel').value = '';
+    document.getElementById('pbVendor').value = '';
+    document.getElementById('purchaseItemRows').innerHTML = '';
+    if (status) { status.textContent = `Saved — ${items.length} product(s) added to Backstock and logged on the Expense Log.`; }
+    await loadBackstockLots();
+    expenses = (await apiGet('/api/data/expenses')).expenses;
+    renderAll();
+  });
+}
+
+function backstockAggregated() {
+  const byProduct = {};
+  backstockLots.forEach(l => {
+    const key = l.productId;
+    if (!byProduct[key]) byProduct[key] = { productId: l.productId, productName: l.productName, quantity: 0, value: 0, oldestDate: l.purchasedDate, lots: [] };
+    byProduct[key].quantity += l.quantityRemaining;
+    byProduct[key].value += l.quantityRemaining * l.unitCost;
+    if (l.purchasedDate < byProduct[key].oldestDate) byProduct[key].oldestDate = l.purchasedDate;
+    byProduct[key].lots.push(l);
+  });
+  return Object.values(byProduct).sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+}
+
+function renderBackstock() {
+  const summaryEl = document.getElementById('backstockSummary');
+  const agg = backstockAggregated();
+  if (summaryEl) {
+    const totalValue = agg.reduce((s, a) => s + a.value, 0);
+    const totalUnits = agg.reduce((s, a) => s + a.quantity, 0);
+    const negativeCount = agg.filter(a => a.quantity < 0).length;
+    summaryEl.innerHTML = `
+      <div class="kpi-card"><div class="kpi-label">Backstock Value</div><div class="kpi-value accent">${fmt(totalValue)}</div><div class="kpi-sub">at FIFO cost</div></div>
+      <div class="kpi-card"><div class="kpi-label">Units on Hand</div><div class="kpi-value">${totalUnits}</div><div class="kpi-sub">${agg.length} product(s)</div></div>
+      <div class="kpi-card"><div class="kpi-label">Negative Lines</div><div class="kpi-value ${negativeCount ? 'accent' : ''}">${negativeCount}</div><div class="kpi-sub">need reconciling</div></div>
+    `;
+  }
+
+  const tbl = document.getElementById('backstockTable');
+  const empty = document.getElementById('backstockEmpty');
+  if (!tbl) return;
+  if (!agg.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  let html = '<thead><tr><th>Product</th><th class="num">Qty</th><th>Oldest Lot</th><th class="num">Value</th></tr></thead><tbody>';
+  agg.forEach(a => {
+    html += `<tr class="${a.quantity < 0 ? 'row-alert' : ''}">
+      <td>${escapeHtml(a.productName || a.productId)}</td>
+      <td class="num">${a.quantity}</td>
+      <td>${a.oldestDate}</td>
+      <td class="num">${fmt(a.value)}</td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
-
-  renderNoBackstockList();
 }
 
-// Cross-references live machine stock against warehouse buffer stock (linked
-// by HAHA Product ID) to flag products that can't be fixed with a restock
-// trip alone — actually need a purchase. Runs whenever either side refreshes.
+// Cross-references live machine stock (from HAHA) against Backstock lots to
+// flag products that can't be fixed with a restock trip alone — actually
+// need a purchase.
 function renderNoBackstockList() {
   const body = document.getElementById('noBackstockBody');
   if (!body) return;
-  const bufferByProduct = {};
-  (supplyItems || []).forEach(it => { if (it.productId) bufferByProduct[it.productId] = it; });
+  const backstockByProduct = {};
+  backstockAggregated().forEach(a => { backstockByProduct[a.productId] = a; });
 
   const rows = [];
   (restockQueueCache || []).forEach(r => {
     r.rows.forEach(row => {
       const lowInMachine = row.stock <= 0 || (row.daysRemaining !== null && row.daysRemaining <= 2);
       if (!lowInMachine) return;
-      const buf = bufferByProduct[row.productId];
+      const buf = backstockByProduct[row.productId];
       const bufQty = buf ? buf.quantity : 0;
-      const bufLow = !buf || bufQty <= 0 || (buf.reorderThreshold !== null && buf.reorderThreshold !== undefined && bufQty <= buf.reorderThreshold);
-      if (!bufLow) return; // enough backstock — a restock trip alone covers it
+      if (bufQty > 0) return; // enough backstock — a restock trip alone covers it
       rows.push({
         machineName: r.machine.name, productId: row.productId, productName: row.productName, productImage: row.productImage,
-        machineStock: row.stock, bufferQty: bufQty, hasBufferLink: !!buf,
+        machineStock: row.stock, bufferQty: bufQty,
       });
     });
   });
@@ -2593,21 +2767,128 @@ function renderNoBackstockList() {
     return;
   }
   if (!rows.length) {
-    body.innerHTML = '<div class="empty-state">Nothing low in both a machine and backstock right now.</div>';
+    body.innerHTML = '<div class="empty-state">Nothing low in both a machine and Backstock right now.</div>';
     return;
   }
-  let html = '<div class="table-wrap responsive-cards"><table><thead><tr><th>Product</th><th>Machine</th><th class="num">In Machine</th><th class="num">In Backstock</th><th></th></tr></thead><tbody>';
+  let html = '<div class="table-wrap responsive-cards"><table><thead><tr><th>Product</th><th>Machine</th><th class="num">In Machine</th><th class="num">In Backstock</th></tr></thead><tbody>';
   rows.forEach(x => {
     html += `<tr class="row-alert">
       <td data-label="Product">${x.productImage ? `<img class="thumb" src="${escapeAttr(x.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(x.productName || x.productId || 'Unknown product')}</td>
       <td data-label="Machine">${escapeHtml(x.machineName)}</td>
       <td data-label="In Machine" class="num">${x.machineStock}</td>
       <td data-label="In Backstock" class="num">${x.bufferQty}</td>
-      <td data-label="">${x.hasBufferLink ? '' : '<span class="tag tag-none">no buffer item linked</span>'}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
   body.innerHTML = html;
+}
+
+// ---------------- QMOS (quality / sample / expired write-offs) ----------------
+let qmosLog = [];
+
+function populateQmosPickers() {
+  const locSel = document.getElementById('qLocation');
+  const prodSel = document.getElementById('qProduct');
+  if (locSel && locSel.dataset.wired !== '1') {
+    locSel.dataset.wired = '1';
+    locSel.innerHTML = '<option value="main">Backstock</option>' +
+      machines.filter(m => m.status !== 'retired').map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  }
+  if (prodSel) prodSel.innerHTML = productOptionsHtml();
+}
+
+async function submitQmos(btn) {
+  return withButtonBusy(btn, async () => {
+    const status = document.getElementById('qmosFormStatus');
+    const location = document.getElementById('qLocation').value;
+    const prodSel = document.getElementById('qProduct');
+    const productId = prodSel.value;
+    const productName = prodSel.selectedOptions[0] ? prodSel.selectedOptions[0].dataset.name : '';
+    const quantity = parseInt(document.getElementById('qQuantity').value, 10);
+    const reason = document.getElementById('qReason').value;
+    const date = document.getElementById('qDate').value;
+    const notes = document.getElementById('qNotes').value.trim();
+    if (!productId || !quantity || !date) { alert('Pick a product, quantity, and date.'); return; }
+
+    if (status) { status.style.display = 'block'; status.textContent = 'Saving…'; }
+    try {
+      const res = await apiPost('/api/data/inventory-qmos', { location, productId, productName, quantity, reason, date, notes });
+      if (status) status.textContent = res.shortfall > 0
+        ? `Logged — heads up, backstock/machine only had ${quantity - res.shortfall} on record, so it's now short by ${res.shortfall}.`
+        : 'Logged.';
+    } catch (e) { if (status) status.textContent = 'Could not save: ' + e.message; else alert('Could not save: ' + e.message); return; }
+
+    document.getElementById('qQuantity').value = '';
+    document.getElementById('qNotes').value = '';
+    await loadQmosLog();
+    await loadBackstockLots();
+    expenses = (await apiGet('/api/data/expenses')).expenses;
+    renderAll();
+  });
+}
+
+async function loadQmosLog() {
+  try {
+    const data = await apiGet('/api/data/inventory-qmos');
+    qmosLog = data.log || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { qmosLog = []; }
+  renderQmos();
+}
+
+function qmosWindowStart(period) {
+  const todayS = businessToday();
+  if (period === 'week') { const dow = new Date(todayS + 'T12:00:00').getDay(); return addDays(todayS, -dow); }
+  if (period === 'month') return todayS.slice(0, 8) + '01';
+  if (period === 'quarter') {
+    const d = new Date(todayS + 'T12:00:00');
+    const qStartMonth = Math.floor(d.getMonth() / 3) * 3;
+    return businessDateStr(new Date(d.getFullYear(), qStartMonth, 1, 12));
+  }
+  return null; // all time
+}
+
+function renderQmos() {
+  populateQmosPickers();
+  const period = document.getElementById('qmosPeriodFilter') ? document.getElementById('qmosPeriodFilter').value : 'all';
+  const start = qmosWindowStart(period);
+  const rows = start ? qmosLog.filter(l => l.date >= start) : qmosLog;
+
+  const summaryEl = document.getElementById('qmosSummary');
+  if (summaryEl) {
+    const totalFor = (p) => {
+      const s = qmosWindowStart(p);
+      return qmosLog.filter(l => !s || l.date >= s).reduce((sum, l) => sum + l.quantity * l.unitCost, 0);
+    };
+    summaryEl.innerHTML = `
+      <div class="kpi-card"><div class="kpi-label">This Week</div><div class="kpi-value accent">${fmt(totalFor('week'))}</div></div>
+      <div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value accent">${fmt(totalFor('month'))}</div></div>
+      <div class="kpi-card"><div class="kpi-label">This Quarter</div><div class="kpi-value accent">${fmt(totalFor('quarter'))}</div></div>
+      <div class="kpi-card"><div class="kpi-label">All Time</div><div class="kpi-value accent">${fmt(totalFor('all'))}</div></div>
+    `;
+  }
+
+  const tbl = document.getElementById('qmosTable');
+  const empty = document.getElementById('qmosEmpty');
+  if (!tbl) return;
+  if (!rows.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  const reasonLabel = { quality: 'Quality', sample: 'Sample', expired: 'Expired' };
+  let html = '<thead><tr><th>Date</th><th>Product</th><th>Where</th><th>Reason</th><th class="num">Qty</th><th class="num">Cost</th><th>Notes</th></tr></thead><tbody>';
+  rows.forEach(l => {
+    const where = !l.fromLocation || l.fromLocation === 'main' ? 'Backstock' : machineName(l.fromLocation);
+    html += `<tr>
+      <td>${l.date}</td>
+      <td>${escapeHtml(l.productName || l.productId)}</td>
+      <td>${escapeHtml(where)}</td>
+      <td>${reasonLabel[l.reason] || l.reason}</td>
+      <td class="num">${l.quantity}</td>
+      <td class="num">${fmt(l.quantity * l.unitCost)}</td>
+      <td>${escapeHtml(l.notes || '—')}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
 }
 
 // ---------------- products (catalog + cost-lot ledger) ----------------
@@ -2752,11 +3033,20 @@ async function addProductCostLot(productId) {
   if (!quantity || quantity < 1) { alert('Enter how many were purchased at that cost.'); return; }
   if (!purchasedDate) { alert('Pick a purchase date.'); return; }
   try {
-    await apiPost('/api/data/product-costs', {
-      productId, productName: p ? p.productName : productId, unitCost, quantity, purchasedDate, vendor,
+    // Routes through the same FIFO purchase-batch endpoint Backstock uses,
+    // so this lot correctly sets quantity_remaining (and lands in Backstock
+    // at location='main'), instead of the old product-costs insert which
+    // left quantity_remaining at 0 and made the lot invisible to FIFO.
+    await apiPost('/api/data/inventory-lots', {
+      batchLabel: 'Logged from Products',
+      purchasedDate,
+      vendor,
+      items: [{ productId, productName: p ? p.productName : productId, quantity, unitCost }],
     });
   } catch (e) { alert('Could not save cost: ' + e.message); return; }
   await loadProductCostLots();
+  await loadBackstockLots();
+  expenses = (await apiGet('/api/data/expenses')).expenses;
   productCatalogCache = await computeProductCatalog();
   renderProducts();
   openProductDetail(productId); // re-open showing the new lot
@@ -3165,7 +3455,7 @@ function renderTasks() {
 // this map, switching to e.g. "health" clears .active from every .tab-btn
 // including "Machines," leaving the sidebar with nothing highlighted even
 // though you're still conceptually inside the Machines section.
-const TAB_PARENT = { health: 'machines', products: 'supply', reimbursements: 'financials', commissions: 'financials' };
+const TAB_PARENT = { health: 'machines', products: 'supply', backstock: 'supply', qmos: 'supply', reimbursements: 'financials', commissions: 'financials' };
 
 function switchToTab(tab) {
   // Matches both top-level tabbar buttons and the in-panel sub-nav pills
@@ -3426,10 +3716,9 @@ function buildAttentionItems() {
     else if (pr.label === 'Medium') followUp.push(item);
   });
 
-  // Buffer / warehouse stock
-  (supplyItems || []).forEach(it => {
-    const low = it.reorderThreshold !== null && it.reorderThreshold !== undefined && it.quantity <= it.reorderThreshold;
-    if (low) followUp.push({ label: `${it.name} is low in storage`, detail: `${it.quantity} on hand, reorder at ${it.reorderThreshold}`, action: () => switchToTab('supply') });
+  // Backstock — negative/short lots need reconciling
+  backstockAggregated().forEach(a => {
+    if (a.quantity < 0) followUp.push({ label: `${a.productName || a.productId} is short in Backstock`, detail: `${a.quantity} on hand`, action: () => switchToTab('backstock') });
   });
 
   // Tasks
@@ -4264,7 +4553,9 @@ function renderAll() {
   renderSection('commission', renderCommission);
   renderSection('overview', renderOverview);
   renderSection('health', renderHealth);
-  renderSection('supply inventory', renderSupply);
+  renderSection('restock queue', renderRestockQueue);
+  renderSection('backstock', renderBackstock);
+  renderSection('qmos', renderQmos);
   renderSection('products', () => { if (typeof renderProducts === 'function') renderProducts(); });
   renderSection('relationships', renderRelationships);
   renderSection('tasks', renderTasks);
@@ -4277,6 +4568,9 @@ async function init() {
   document.querySelectorAll('#panel-overview .trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.range === overviewRange));
   document.getElementById('sDate').valueAsDate = new Date();
   document.getElementById('eDate').valueAsDate = new Date();
+  if (document.getElementById('pbDate')) document.getElementById('pbDate').valueAsDate = new Date();
+  if (document.getElementById('qDate')) document.getElementById('qDate').valueAsDate = new Date();
+  addPurchaseItemRow();
 
   // default HAHA sync range: last 30 days
   const today = new Date();
@@ -4319,7 +4613,8 @@ async function init() {
   if (seedChecked) lastHahaSyncAt = seedChecked;
   updateHahaSyncDisplay();
 
-  await loadSupplyItems();
+  await loadBackstockLots();
+  await loadQmosLog();
   await loadCommissionPayments();
   await loadProperties();
   await loadTasks();
