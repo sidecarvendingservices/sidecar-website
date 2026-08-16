@@ -455,11 +455,6 @@
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
     <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">{{BUILD_VERSION}}</div>
 
-    <div class="sidebar-filter month-filter">
-      <span>Showing:</span>
-      <select id="rangeSelect"></select>
-    </div>
-
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
         <button class="tab-btn" data-tab="overview">Overview</button>
@@ -545,6 +540,16 @@
 
   <!-- ============ OVERVIEW ============ -->
   <div class="tab-panel" id="panel-overview">
+    <div class="section-flex" style="margin-bottom:14px;">
+      <div class="card-desc" style="margin:0;" id="overviewRangeNote">Last 30 days. Commission is tracked by calendar month, so quarter/month views include the full month's commission even if the window only covers part of it.</div>
+      <div class="trend-gran-toggle">
+        <button class="trend-gran-btn active" data-range="last30" onclick="setOverviewRange('last30')">30 Days</button>
+        <button class="trend-gran-btn" data-range="week" onclick="setOverviewRange('week')">Week</button>
+        <button class="trend-gran-btn" data-range="month" onclick="setOverviewRange('month')">Month</button>
+        <button class="trend-gran-btn" data-range="quarter" onclick="setOverviewRange('quarter')">Quarter</button>
+        <button class="trend-gran-btn" data-range="all" onclick="setOverviewRange('all')">All Time</button>
+      </div>
+    </div>
     <div class="kpi-grid">
       <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('gross')" title="View breakdown by machine">
         <div class="kpi-label">Gross Sales</div>
@@ -590,9 +595,9 @@
         <div class="section-flex">
           <div class="card-title" style="margin:0;">Sales &amp; Profit Trend</div>
           <div class="trend-gran-toggle" onclick="event.stopPropagation();">
-            <button class="trend-gran-btn active" data-gran="month" onclick="setTrendGranularity('month')">Month</button>
+            <button class="trend-gran-btn" data-gran="month" onclick="setTrendGranularity('month')">Month</button>
             <button class="trend-gran-btn" data-gran="week" onclick="setTrendGranularity('week')">Week</button>
-            <button class="trend-gran-btn" data-gran="day" onclick="setTrendGranularity('day')">Day</button>
+            <button class="trend-gran-btn active" data-gran="day" onclick="setTrendGranularity('day')">Day</button>
           </div>
         </div>
         <div class="card-desc">Gross sales, net sales, and profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
@@ -789,6 +794,7 @@
         </div>
       </div>
       <div class="card-desc" id="patternDesc">Gross sales by hour of day, summed across the selected range and all synced machines — helps time restocks and spot slow windows.</div>
+      <div class="pill-note" style="margin:0 0 10px; display:inline-block;">Range below also applies to this chart.</div>
       <div class="chart-box small"><canvas id="patternChart"></canvas></div>
       <div id="patternEmpty" class="empty-state" style="display:none;">
         <strong>No hourly data yet</strong>
@@ -798,6 +804,7 @@
     <div class="card">
       <div class="section-flex">
         <div class="card-title" style="margin:0;">Sales Log</div>
+        <select id="rangeSalesSelect" style="max-width:180px;"></select>
       </div>
       <div class="table-wrap"><table id="salesTable"></table></div>
       <div id="salesEmpty" class="empty-state" style="display:none;">
@@ -933,7 +940,10 @@
       <div id="reimbursementSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="card">
-      <div class="card-title">Expense Log</div>
+      <div class="section-flex">
+        <div class="card-title" style="margin:0;">Expense Log</div>
+        <select id="rangeExpensesSelect" style="max-width:180px;"></select>
+      </div>
       <div class="table-wrap"><table id="expenseTable"></table></div>
       <div id="expensesEmpty" class="empty-state" style="display:none;">
         <strong>No expenses logged yet</strong>
@@ -1183,37 +1193,111 @@ document.getElementById('tabbar').addEventListener('click', (e) => {
   stickySet('activeTab', btn.dataset.tab);
 });
 
-// ---------------- range filter ----------------
+// ---------------- range filters ----------------
+// Each page that used to share one global "Showing" dropdown now has its
+// own independent filter, living on that page instead of in the sidebar:
+//   - Sales tab (+ Sales Pattern chart, same page): #rangeSalesSelect, a
+//     calendar-month picker, same behavior as before.
+//   - Expenses tab: #rangeExpensesSelect, same idea, independent selection.
+//   - Overview: a 30-day/week/month/quarter/all-time pill toggle
+//     (overviewRange), since "last 30 days" doesn't map to a calendar month.
+const MONTH_RANGE_SELECTS = [
+  { id: 'rangeSalesSelect', stickyKey: 'rangeSales' },
+  { id: 'rangeExpensesSelect', stickyKey: 'rangeExpenses' },
+];
 function buildRangeOptions() {
-  const sel = document.getElementById('rangeSelect');
-  const stickyValue = stickyGet('range');
-  const prevValue = sel.value || stickyValue || 'all';
   const months = Array.from(new Set(sales.map(s => monthKey(s.date)))).sort();
-  sel.innerHTML = '';
-  const allOpt = document.createElement('option');
-  allOpt.value = 'all'; allOpt.textContent = 'All time';
-  sel.appendChild(allOpt);
-  months.slice().reverse().forEach(m => {
-    const o = document.createElement('option');
-    o.value = m; o.textContent = monthLabel(m);
-    sel.appendChild(o);
+  MONTH_RANGE_SELECTS.forEach(({ id, stickyKey }) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const stickyValue = stickyGet(stickyKey);
+    const prevValue = sel.value || stickyValue || 'all';
+    sel.innerHTML = '';
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all'; allOpt.textContent = 'All time';
+    sel.appendChild(allOpt);
+    months.slice().reverse().forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = monthLabel(m);
+      sel.appendChild(o);
+    });
+    sel.value = months.includes(prevValue) || prevValue === 'all' ? prevValue : 'all';
   });
-  sel.value = months.includes(prevValue) || prevValue === 'all' ? prevValue : 'all';
 }
-document.getElementById('rangeSelect').addEventListener('change', () => {
-  stickySet('range', document.getElementById('rangeSelect').value);
-  renderAll();
+MONTH_RANGE_SELECTS.forEach(({ id, stickyKey }) => {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.addEventListener('change', () => {
+    stickySet(stickyKey, sel.value);
+    renderAll();
+  });
 });
 
-function filteredSales() {
-  const range = document.getElementById('rangeSelect').value;
+function salesForMonthSelect(selectId) {
+  const el = document.getElementById(selectId);
+  const range = el ? el.value : 'all';
   if (!range || range === 'all') return sales;
   return sales.filter(s => monthKey(s.date) === range);
 }
-function filteredExpenses() {
-  const range = document.getElementById('rangeSelect').value;
+function expensesForMonthSelect(selectId) {
+  const el = document.getElementById(selectId);
+  const range = el ? el.value : 'all';
   if (!range || range === 'all') return expenses;
   return expenses.filter(e => monthKey(e.date) === range);
+}
+
+// ---------------- Overview range (30 days / week / month / quarter / all) ----------------
+let overviewRange = stickyGet('overviewRange') || 'last30';
+function setOverviewRange(val) {
+  overviewRange = val;
+  stickySet('overviewRange', val);
+  document.querySelectorAll('#panel-overview .trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.range === val));
+  const note = document.getElementById('overviewRangeNote');
+  if (note) {
+    const labels = { last30: 'Last 30 days.', week: 'This week.', month: 'This month.', quarter: 'This quarter.', all: 'All time.' };
+    const commissionNote = val === 'all' || val === 'month' ? '' : ' Commission is tracked by calendar month, so this includes the full month\'s commission even if the window only covers part of it.';
+    note.textContent = (labels[val] || '') + commissionNote;
+  }
+  renderOverview();
+}
+function overviewDateWindow() {
+  const todayS = businessToday();
+  if (overviewRange === 'all') return { start: '0000-01-01', end: '9999-12-31' };
+  if (overviewRange === 'last30') return { start: addDays(todayS, -29), end: todayS };
+  if (overviewRange === 'week') {
+    const dow = new Date(todayS + 'T12:00:00').getDay();
+    return { start: addDays(todayS, -dow), end: todayS };
+  }
+  if (overviewRange === 'quarter') {
+    const d = new Date(todayS + 'T12:00:00');
+    const qStartMonth = Math.floor(d.getMonth() / 3) * 3;
+    const qStart = new Date(d.getFullYear(), qStartMonth, 1, 12);
+    return { start: businessDateStr(qStart), end: todayS };
+  }
+  // month
+  return { start: todayS.slice(0, 8) + '01', end: todayS };
+}
+function overviewMonthKeysInWindow() {
+  const { start, end } = overviewDateWindow();
+  const keys = new Set();
+  let cursor = start.slice(0, 8) + '01';
+  const endKey = monthKey(end);
+  while (monthKey(cursor) <= endKey && keys.size < 240) { // safety cap, ~20 years
+    keys.add(monthKey(cursor));
+    const d = new Date(cursor + 'T12:00:00');
+    cursor = businessDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 1, 12));
+  }
+  return keys;
+}
+function filteredSalesForOverview() {
+  if (overviewRange === 'all') return sales;
+  const { start, end } = overviewDateWindow();
+  return sales.filter(s => s.date >= start && s.date <= end);
+}
+function filteredExpensesForOverview() {
+  if (overviewRange === 'all') return expenses;
+  const { start, end } = overviewDateWindow();
+  return expenses.filter(e => e.date >= start && e.date <= end);
 }
 
 // ---------------- machines ----------------
@@ -3401,7 +3485,7 @@ async function deleteSale(id) {
 function renderSales() {
   const tbl = document.getElementById('salesTable');
   const empty = document.getElementById('salesEmpty');
-  const rows = filteredSales().slice().sort((a, b) => b.date.localeCompare(a.date));
+  const rows = salesForMonthSelect('rangeSalesSelect').slice().sort((a, b) => b.date.localeCompare(a.date));
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   let html = '<thead><tr><th>Date</th><th>Machine</th><th>Source</th><th class="num">Gross</th><th class="num">COGS</th><th class="num">Fees</th><th class="num">Net</th><th></th></tr></thead><tbody>';
@@ -3460,7 +3544,7 @@ async function deleteExpense(id) {
 function renderExpenses() {
   const tbl = document.getElementById('expenseTable');
   const empty = document.getElementById('expensesEmpty');
-  const rows = filteredExpenses().slice().sort((a, b) => b.date.localeCompare(a.date));
+  const rows = expensesForMonthSelect('rangeExpensesSelect').slice().sort((a, b) => b.date.localeCompare(a.date));
   renderReimbursementSummary();
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
@@ -3663,12 +3747,10 @@ function renderGauge(gross) {
 
 // ---------------- overview / charts ----------------
 function renderOverview() {
-  const sRows = filteredSales();
-  const eRows = filteredExpenses();
-  const cRows = commissionRows().filter(r => {
-    const range = document.getElementById('rangeSelect').value;
-    return range === 'all' || range === r.month;
-  });
+  const sRows = filteredSalesForOverview();
+  const eRows = filteredExpensesForOverview();
+  const inWindowMonths = overviewMonthKeysInWindow();
+  const cRows = commissionRows().filter(r => overviewRange === 'all' || inWindowMonths.has(r.month));
 
   const gross = sRows.reduce((s, r) => s + r.gross, 0);
   const net = sRows.reduce((s, r) => s + (r.gross - r.cogs - r.fees), 0);
@@ -3767,10 +3849,10 @@ function machineBreakdownRows(sRows) {
 }
 
 function openOverviewKpiDetail(kind) {
-  const sRows = filteredSales();
-  const eRows = filteredExpenses();
-  const range = document.getElementById('rangeSelect').value;
-  const rangeLabel = (!range || range === 'all') ? 'All time' : monthLabel(range);
+  const sRows = filteredSalesForOverview();
+  const eRows = filteredExpensesForOverview();
+  const rangeLabels = { last30: 'Last 30 days', week: 'This week', month: 'This month', quarter: 'This quarter', all: 'All time' };
+  const rangeLabel = rangeLabels[overviewRange] || 'All time';
 
   let title, bodyHtml;
   if (kind === 'gross' || kind === 'net' || kind === 'profit') {
@@ -3793,7 +3875,8 @@ function openOverviewKpiDetail(kind) {
     eRows.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
     const rowsHtml = Object.entries(byCategory).sort((a, b) => b[1] - a[1])
       .map(([cat, amt]) => `<tr><td>${escapeHtml(cat)}</td><td class="num">${fmt(amt)}</td></tr>`).join('');
-    const cRows = commissionRows().filter(r => range === 'all' || range === r.month);
+    const inWindowMonths = overviewMonthKeysInWindow();
+    const cRows = commissionRows().filter(r => overviewRange === 'all' || inWindowMonths.has(r.month));
     const commissionTotal = cRows.reduce((s, r) => s + tierFor(r.gross).rate * r.net, 0);
     bodyHtml = `<div class="table-wrap"><table><thead><tr><th>Category</th><th class="num">Amount</th></tr></thead>
       <tbody>${rowsHtml || '<tr><td colspan="2" style="color:var(--graphite);">No expenses in this range.</td></tr>'}
@@ -3837,7 +3920,7 @@ function openMomentumDetail(period) {
     ${bodyHtml}`);
 }
 
-let trendGranularity = 'month';
+let trendGranularity = 'day';
 function setTrendGranularity(g) {
   trendGranularity = g;
   document.querySelectorAll('.trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.gran === g));
@@ -3949,7 +4032,8 @@ function renderMachineChart(sRows) {
 
 // ---------------- sales pattern (by hour / by day) ----------------
 function filteredSaleHours() {
-  const range = document.getElementById('rangeSelect').value;
+  const el = document.getElementById('rangeSalesSelect');
+  const range = el ? el.value : 'all';
   if (!range || range === 'all') return saleHours;
   return saleHours.filter(h => monthKey(h.date) === range);
 }
@@ -4073,6 +4157,7 @@ function renderAll() {
 
 async function init() {
   updateSidebarDate();
+  document.querySelectorAll('#panel-overview .trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.range === overviewRange));
   document.getElementById('sDate').valueAsDate = new Date();
   document.getElementById('eDate').valueAsDate = new Date();
 
