@@ -884,55 +884,113 @@
 
   <!-- ============ FINANCIALS (expenses + commission) ============ -->
   <div class="tab-panel" id="panel-financials">
-    <div class="card">
-      <div class="card-title">Log an Expense</div>
-      <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Sales tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
-      <div class="form-grid" id="expenseForm">
-        <div><label>Date</label><input id="eDate" type="date" /></div>
-        <div>
-          <label>Category</label>
-          <select id="eCategory">
-            <option>Business Insurance</option>
-            <option>IT &amp; Internet / Software</option>
-            <option>Advertising &amp; Marketing</option>
-            <option>Automobile / Fuel</option>
-            <option>Repairs &amp; Maintenance</option>
-            <option>Bank / Card Fees</option>
-            <option>Sales Rep Placement Fees</option>
-            <option>Sales Rep Revenue Share</option>
-            <option>Organizational / Filing Fees</option>
-            <option>Equipment / Machine Purchase</option>
-            <option>Other</option>
-          </select>
+    <div class="subnav">
+      <button class="subnav-btn active" data-tab="financials" onclick="switchToTab('financials')">Expenses</button>
+      <button class="subnav-btn" data-tab="reimbursements" onclick="switchToTab('reimbursements')">Reimbursements</button>
+      <button class="subnav-btn" data-tab="commissions" onclick="switchToTab('commissions')">Commissions</button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-flex">
+          <div class="card-title" style="margin:0;">Expense Log</div>
+          <select id="rangeExpensesSelect" style="max-width:180px;"></select>
         </div>
-        <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
-        <div>
-          <label>Paid By</label>
-          <select id="ePaidBy">
-            <option value="">—</option>
-            <option>Brian personally</option>
-            <option>Vala personally</option>
-            <option>Sidecar card</option>
-            <option>Sidecar bank account</option>
-          </select>
+        <div class="table-wrap"><table id="expenseTable"></table></div>
+        <div id="expensesEmpty" class="empty-state" style="display:none;">
+          <strong>No expenses logged yet</strong>
+          Add operating costs to the right to see true profitability on the Overview tab.
         </div>
-        <div>
-          <label>Type</label>
-          <select id="eExpenseType">
-            <option value="operating">Operating Expense</option>
-            <option value="capital">Capital / Equipment</option>
-          </select>
-        </div>
-        <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
-        <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
-        <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
-          <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
-            <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
-          </label>
-        </div>
-        <div class="field-wide"><button class="btn btn-primary" onclick="addExpense()">Add Expense</button></div>
       </div>
+      <div class="card">
+        <div class="card-title">Log an Expense</div>
+        <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
+        <div class="form-grid" id="expenseForm">
+          <div><label>Date</label><input id="eDate" type="date" /></div>
+          <div>
+            <label>Category</label>
+            <select id="eCategory">
+            <option>Inventory - Product Purchases</option>
+            <option>Inventory - Shipping &amp; Delivery</option>
+            <option>Inventory - Storage &amp; Handling</option>
+            <option>Machine Operations - Repairs &amp; Maintenance</option>
+            <option>Machine Operations - Parts &amp; Supplies</option>
+            <option>Machine Operations - Cleaning</option>
+            <option>Machine Operations - Connectivity &amp; Software</option>
+            <option>Machine Operations - Installation &amp; Relocation</option>
+            <option>Route &amp; Vehicle - Fuel</option>
+            <option>Route &amp; Vehicle - Maintenance &amp; Repairs</option>
+            <option>Route &amp; Vehicle - Parking &amp; Tolls</option>
+            <option>Route &amp; Vehicle - Other</option>
+            <option>Location - Commissions &amp; Revenue Share</option>
+            <option>Location - Rent &amp; Placement Fees</option>
+            <option>Sales &amp; Marketing - Advertising</option>
+            <option>Sales &amp; Marketing - Printing &amp; Marketing Materials</option>
+            <option>Sales &amp; Marketing - Promotional Products &amp; Samples</option>
+            <option>Sales &amp; Marketing - Events &amp; Networking</option>
+            <option>Sales &amp; Marketing - Website &amp; Content</option>
+            <option>Technology - Software &amp; Subscriptions</option>
+            <option>Technology - Hosting &amp; Domains</option>
+            <option>Technology - Equipment</option>
+            <option>Professional Services - Accounting &amp; Tax</option>
+            <option>Professional Services - Legal</option>
+            <option>Professional Services - Contractors &amp; Consulting</option>
+            <option>Insurance - Business Insurance</option>
+            <option>Licenses &amp; Fees - Licenses, Permits &amp; Registrations</option>
+            <option>Banking &amp; Finance - Bank &amp; Processing Fees</option>
+            <option>Banking &amp; Finance - Interest &amp; Financing Fees</option>
+            <option>General &amp; Administrative - Office Supplies</option>
+            <option>General &amp; Administrative - Phone &amp; Internet</option>
+            <option>General &amp; Administrative - Shipping &amp; Postage</option>
+            <option>General &amp; Administrative - Memberships &amp; Dues</option>
+            <option>General &amp; Administrative - Education &amp; Training</option>
+            <option>General &amp; Administrative - Meals &amp; Travel</option>
+            <option>Labor - Payroll</option>
+            <option>Labor - Contractors</option>
+            <option>Labor - Employee Expenses</option>
+            <option>Other - Miscellaneous Business Expense</option>
+            </select>
+          </div>
+          <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+          <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
+          <div>
+            <label>Paid By</label>
+            <select id="ePaidBy">
+            <option value="">—</option>
+            <option>Additional Equity Investment - BDM</option>
+            <option>Additional Equity - Renfroe Ventures LLC</option>
+            <option>Chase Business Credit BDM</option>
+            <option>Chase Business Credit VAR</option>
+            <option>Chase Business Checking</option>
+            </select>
+          </div>
+          <div>
+            <label>Type</label>
+            <select id="eExpenseType">
+              <option value="operating">Operating Expense</option>
+              <option value="capital">Capital / Equipment</option>
+            </select>
+          </div>
+          <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
+          <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
+          <div class="field-wide"><label>Receipt (optional)</label><input id="eReceipt" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
+          <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
+            <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
+              <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
+            </label>
+          </div>
+          <div class="field-wide"><button class="btn btn-primary" onclick="addExpense(this)">Add Expense</button></div>
+        </div>
+        <div id="expenseFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REIMBURSEMENTS ============ -->
+  <div class="tab-panel" id="panel-reimbursements">
+    <div class="subnav">
+      <button class="subnav-btn" data-tab="financials" onclick="switchToTab('financials')">Expenses</button>
+      <button class="subnav-btn active" data-tab="reimbursements" onclick="switchToTab('reimbursements')">Reimbursements</button>
+      <button class="subnav-btn" data-tab="commissions" onclick="switchToTab('commissions')">Commissions</button>
     </div>
     <div class="card">
       <div class="card-title">Owner Reimbursement</div>
@@ -940,15 +998,22 @@
       <div id="reimbursementSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="card">
-      <div class="section-flex">
-        <div class="card-title" style="margin:0;">Expense Log</div>
-        <select id="rangeExpensesSelect" style="max-width:180px;"></select>
+      <div class="card-title">Reimbursable Expenses</div>
+      <div class="card-desc">Every expense marked "Reimbursable," owed and already-paid-back alike.</div>
+      <div class="table-wrap"><table id="reimbursementTable"></table></div>
+      <div id="reimbursementEmpty" class="empty-state" style="display:none;">
+        <strong>Nothing here yet</strong>
+        Mark an expense "Reimbursable" on the Expenses tab to track it here.
       </div>
-      <div class="table-wrap"><table id="expenseTable"></table></div>
-      <div id="expensesEmpty" class="empty-state" style="display:none;">
-        <strong>No expenses logged yet</strong>
-        Add operating costs here to see true profitability on the Overview tab.
-      </div>
+    </div>
+  </div>
+
+  <!-- ============ COMMISSIONS ============ -->
+  <div class="tab-panel" id="panel-commissions">
+    <div class="subnav">
+      <button class="subnav-btn" data-tab="financials" onclick="switchToTab('financials')">Expenses</button>
+      <button class="subnav-btn" data-tab="reimbursements" onclick="switchToTab('reimbursements')">Reimbursements</button>
+      <button class="subnav-btn active" data-tab="commissions" onclick="switchToTab('commissions')">Commissions</button>
     </div>
     <div class="card">
       <div class="card-title">This Month's Tier</div>
@@ -3100,7 +3165,7 @@ function renderTasks() {
 // this map, switching to e.g. "health" clears .active from every .tab-btn
 // including "Machines," leaving the sidebar with nothing highlighted even
 // though you're still conceptually inside the Machines section.
-const TAB_PARENT = { health: 'machines', products: 'supply' };
+const TAB_PARENT = { health: 'machines', products: 'supply', reimbursements: 'financials', commissions: 'financials' };
 
 function switchToTab(tab) {
   // Matches both top-level tabbar buttons and the in-panel sub-nav pills
@@ -3513,27 +3578,53 @@ function renderSales() {
 }
 
 // ---------------- expenses ----------------
-async function addExpense() {
-  const date = document.getElementById('eDate').value;
-  const category = document.getElementById('eCategory').value;
-  const amount = parseFloat(document.getElementById('eAmount').value);
-  const machineId = document.getElementById('eMachine').value || null;
-  const note = document.getElementById('eNote').value.trim();
-  const vendor = document.getElementById('eVendor').value.trim();
-  const paidBy = document.getElementById('ePaidBy').value;
-  const expenseType = document.getElementById('eExpenseType').value;
-  const reimbursable = document.getElementById('eReimbursable').checked;
-  if (!date) { alert('Pick a date.'); return; }
-  if (isNaN(amount) || amount < 0) { alert('Enter an amount.'); return; }
-  try {
-    await apiPost('/api/data/expenses', { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable });
-  } catch (e) { alert('Could not save expense: ' + e.message); return; }
-  document.getElementById('eAmount').value = '';
-  document.getElementById('eNote').value = '';
-  document.getElementById('eVendor').value = '';
-  document.getElementById('eReimbursable').checked = false;
-  expenses = (await apiGet('/api/data/expenses')).expenses;
-  renderAll();
+async function uploadReceiptFile(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/data/receipt-upload', { method: 'POST', body: form });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || 'Receipt upload failed');
+  return body.key;
+}
+
+async function addExpense(btn) {
+  return withButtonBusy(btn, async () => {
+    const date = document.getElementById('eDate').value;
+    const category = document.getElementById('eCategory').value;
+    const amount = parseFloat(document.getElementById('eAmount').value);
+    const machineId = document.getElementById('eMachine').value || null;
+    const note = document.getElementById('eNote').value.trim();
+    const vendor = document.getElementById('eVendor').value.trim();
+    const paidBy = document.getElementById('ePaidBy').value;
+    const expenseType = document.getElementById('eExpenseType').value;
+    const reimbursable = document.getElementById('eReimbursable').checked;
+    const receiptFile = document.getElementById('eReceipt').files[0];
+    const status = document.getElementById('expenseFormStatus');
+    if (!date) { alert('Pick a date.'); return; }
+    if (isNaN(amount) || amount < 0) { alert('Enter an amount.'); return; }
+
+    let receiptRef = '';
+    if (receiptFile) {
+      if (status) { status.style.display = 'block'; status.textContent = 'Uploading receipt…'; }
+      try {
+        receiptRef = await uploadReceiptFile(receiptFile);
+      } catch (e) {
+        if (status) { status.textContent = 'Receipt upload failed (' + e.message + ') — saving the expense without it.'; }
+      }
+    }
+
+    try {
+      await apiPost('/api/data/expenses', { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable, receiptRef });
+    } catch (e) { alert('Could not save expense: ' + e.message); return; }
+    document.getElementById('eAmount').value = '';
+    document.getElementById('eNote').value = '';
+    document.getElementById('eVendor').value = '';
+    document.getElementById('eReimbursable').checked = false;
+    document.getElementById('eReceipt').value = '';
+    if (status) status.style.display = 'none';
+    expenses = (await apiGet('/api/data/expenses')).expenses;
+    renderAll();
+  });
 }
 async function deleteExpense(id) {
   await apiDelete('/api/data/expenses?id=' + encodeURIComponent(id));
@@ -3560,9 +3651,33 @@ function renderExpenses() {
       <td class="num">${fmt(e.amount)}</td>
       <td>${escapeHtml([e.vendor, e.note].filter(Boolean).join(' — ') || '—')}</td>
       <td>
+        ${e.receiptRef ? `<a class="link-btn" href="/api/data/receipt-upload?key=${encodeURIComponent(e.receiptRef)}" target="_blank" rel="noopener">Receipt</a>` : ''}
         ${e.reimbursable && !e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}
         <button class="btn-danger-text" onclick="deleteExpense('${e.id}')">Delete</button>
       </td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function renderReimbursements() {
+  renderReimbursementSummary();
+  const tbl = document.getElementById('reimbursementTable');
+  const empty = document.getElementById('reimbursementEmpty');
+  if (!tbl) return;
+  const rows = expenses.filter(e => e.reimbursable).slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (!rows.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  let html = '<thead><tr><th>Date</th><th>Category</th><th>Paid By</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody>';
+  rows.forEach(e => {
+    html += `<tr>
+      <td>${e.date}</td>
+      <td>${escapeHtml(e.category)}</td>
+      <td>${escapeHtml(e.paidBy || '—')}</td>
+      <td class="num">${fmt(e.amount)}</td>
+      <td>${e.reimbursed ? '<span class="tag tag-paid">Reimbursed</span>' : '<span class="tag tag-due">Owed</span>'}</td>
+      <td>${!e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}</td>
     </tr>`;
   });
   html += '</tbody>';
@@ -3577,6 +3692,7 @@ async function markExpenseReimbursed(id) {
   } catch (err) { alert('Could not update: ' + err.message); return; }
   expenses = (await apiGet('/api/data/expenses')).expenses;
   renderExpenses();
+  renderReimbursements();
 }
 
 function renderReimbursementSummary() {
@@ -4144,6 +4260,7 @@ function renderAll() {
   renderSection('sales', renderSales);
   renderSection('sales pattern chart', renderPatternChart);
   renderSection('expenses', renderExpenses);
+  renderSection('reimbursements', renderReimbursements);
   renderSection('commission', renderCommission);
   renderSection('overview', renderOverview);
   renderSection('health', renderHealth);
