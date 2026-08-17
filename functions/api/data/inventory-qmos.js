@@ -11,6 +11,14 @@
 // GET ?since=&until=&location=&machineId=  -> { log: [...] } the QMOS
 //   history (inventory_moves rows where type='qmos'), for the running log
 //   + weekly/monthly/quarterly totals view.
+// DELETE ?refId=...  -> v1.10.2 §4. Reverses the FIFO draw: adds each
+//   drawn quantity back onto its source lot's quantity_remaining, deletes
+//   the linked expense, deletes the inventory_moves rows for this refId.
+//   Editing a QMOS entry is implemented client-side as delete-then-recreate
+//   (DELETE this refId, then POST the edited values) rather than an
+//   in-place update — a QMOS quantity/reason/date change can legitimately
+//   draw from different lots than the original did, so re-running the real
+//   FIFO logic is more correct than trying to patch the old draw in place.
 //
 // Requires a D1 database bound as "DB". Sits behind Cloudflare Access.
 // Added via migrations/008_fifo_inventory.sql.
@@ -75,6 +83,38 @@ export async function onRequestPost({ request, env }) {
     });
 
     return Response.json({ ok: true, refId, expenseId, quantityRemoved: Number(quantity), totalCost, shortfall });
+  } catch (err) {
+    if (isMissingColumnOrTable(err)) {
+      return Response.json({ error: 'Run migrations/008_fifo_inventory.sql against the D1 database, then try again.' }, { status: 500 });
+    }
+    return Response.json({ error: String(err.message || err) }, { status: 500 });
+  }
+}
+
+export async function onRequestDelete({ request, env }) {
+  const url = new URL(request.url);
+  const refId = url.searchParams.get('refId');
+  if (!refId) return Response.json({ error: 'refId query param required' }, { status: 400 });
+
+  try {
+    const { results: moves } = await env.DB.prepare(
+      `SELECT id, lot_id as lotId, quantity, expense_id as expenseId FROM inventory_moves WHERE ref_id = ?1 AND type = 'qmos'`
+    ).bind(refId).all();
+    if (!moves.length) return Response.json({ error: 'QMOS entry not found' }, { status: 404 });
+
+    const stmts = [];
+    // Reverse each draw — add the quantity back onto the lot it came from.
+    // Works correctly for an auto-created shortfall lot too: adding back
+    // moves its (negative) quantity_remaining back toward zero, same as
+    // any other lot.
+    for (const m of moves) {
+      stmts.push(env.DB.prepare(`UPDATE product_costs SET quantity_remaining = quantity_remaining + ?1 WHERE id = ?2`).bind(m.quantity, m.lotId));
+    }
+    stmts.push(env.DB.prepare(`DELETE FROM inventory_moves WHERE ref_id = ?1 AND type = 'qmos'`).bind(refId));
+    const expenseId = moves[0].expenseId;
+    if (expenseId) stmts.push(env.DB.prepare(`DELETE FROM expenses WHERE id = ?1`).bind(expenseId));
+    await env.DB.batch(stmts);
+    return Response.json({ ok: true });
   } catch (err) {
     if (isMissingColumnOrTable(err)) {
       return Response.json({ error: 'Run migrations/008_fifo_inventory.sql against the D1 database, then try again.' }, { status: 500 });

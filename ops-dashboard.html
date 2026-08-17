@@ -592,6 +592,7 @@
         <button class="tab-btn tab-btn-secondary" data-tab="financials">Expenses</button>
         <button class="tab-btn tab-btn-secondary" data-tab="sales">Sales</button>
         <button class="tab-btn tab-btn-secondary" data-tab="marketing-ads">Marketing</button>
+        <button class="tab-btn tab-btn-secondary" data-tab="resources">Resources</button>
       </div>
       <div class="tabbar-more">
         <button class="tab-btn tabbar-more-btn" id="tabbarMoreBtn" onclick="toggleMoreMenu(event)" aria-haspopup="true" aria-expanded="false">More ▾</button>
@@ -1011,6 +1012,11 @@
       <div id="backstockSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
     <div class="card">
+      <h2 class="card-title">Sourcing Priority</h2>
+      <div class="card-desc">On-hand backstock vs. the fleet's average daily draw rate for that product (summed across every machine currently stocking it), sorted soonest-to-run-out first. Draw rate is a proxy from recent sell-through velocity — there's no direct backstock movement ledger yet, so this approximates "how fast this SKU actually leaves backstock" from how fast it's selling out of machines.</div>
+      <div id="sourcingPriorityBody"><div class="empty-state">Loading…</div></div>
+    </div>
+    <div class="card">
       <div class="section-flex">
         <h2 class="card-title" style="margin:0;">Backstock</h2>
         <button class="btn btn-primary" onclick="openLogPurchaseModal()">+ Log a Purchase</button>
@@ -1109,7 +1115,10 @@
       <div class="card">
         <div class="section-flex">
           <h2 class="card-title" style="margin:0;">Expense Log</h2>
-          <select id="rangeExpensesSelect" style="max-width:180px;"></select>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-ghost" onclick="toggleMissingReceiptFilter(this)">Missing Receipt Only</button>
+            <select id="rangeExpensesSelect" style="max-width:180px;"></select>
+          </div>
         </div>
         <div class="table-wrap"><table id="expenseTable"></table></div>
         <div id="expensesEmpty" class="empty-state" style="display:none;">
@@ -1227,6 +1236,22 @@
     </div>
   </div>
 
+  <!-- ============ RESOURCES (v1.10.2 §13) ============ -->
+  <div class="tab-panel" id="panel-resources">
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Demo / Site Consultation Resources</h2>
+        <button class="btn btn-primary" onclick="openAddDemoResourceModal()">+ Add Resource</button>
+      </div>
+      <div class="card-desc">Materials for site visits — virtual brochure, product guide examples, and anything else worth pulling up in front of a prospective property manager. Works well from an iPad in the field.</div>
+      <div class="table-wrap responsive-cards"><table id="demoResourcesTable"></table></div>
+      <div id="demoResourcesEmpty" class="empty-state" style="display:none;">
+        <strong>No resources yet</strong>
+        Add one above — upload a PDF or image and it'll show up here for quick access during a site visit.
+      </div>
+    </div>
+  </div>
+
   <!-- ============ CONTACTS ============ -->
   <div class="tab-panel" id="panel-contacts">
     <div class="card">
@@ -1338,6 +1363,8 @@
         <div class="kpi-card"><div class="kpi-label">Clicks</div><div class="kpi-value" id="adsTotalClicks">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Conversions</div><div class="kpi-value" id="adsTotalConversions">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Campaigns</div><div class="kpi-value" id="adsCampaignCount">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Cost / Click</div><div class="kpi-value" id="adsCPC">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Cost / Conversion</div><div class="kpi-value" id="adsCPA">—</div></div>
       </div>
       <div class="card">
         <h2 class="card-title">Spend by Campaign</h2>
@@ -1432,6 +1459,15 @@ async function apiPost(path, body) {
 async function apiDelete(path) {
   const res = await fetch(path, { method: 'DELETE' });
   if (!res.ok) throw new Error(await apiErrorMessage(res, `DELETE ${path} failed (${res.status})`));
+  return res.json();
+}
+async function apiPut(path, body) {
+  const res = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `PUT ${path} failed (${res.status})`));
   return res.json();
 }
 
@@ -1998,18 +2034,47 @@ function colorDotHtml(color, title) {
   return `<span class="color-dot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${escapeAttr(color)}; margin-right:6px; flex-shrink:0;" title="${escapeAttr(title || '')}"></span>`;
 }
 
+// v1.10.2 §1 — machine list sorting + Next Service Date column. Reuses
+// restockQueueCache (already computed at init via loadRestockQueue(), same
+// data §12's Sourcing Priority reuses) for next-service-date instead of
+// making new HAHA calls per machine just to render this column.
+let machinesSortKey = null;
+let machinesSortDir = 1;
+function sortMachinesBy(key) {
+  if (machinesSortKey === key) machinesSortDir *= -1; else { machinesSortKey = key; machinesSortDir = 1; }
+  renderMachines();
+}
+function nextServiceByForMachine(machineId) {
+  const entry = (restockQueueCache || []).find(r => r.machine.id === machineId);
+  return entry ? entry.nextServiceBy : null;
+}
 function renderMachines() {
   renderDuplicates();
   const tbl = document.getElementById('machineTable');
   const empty = document.getElementById('machinesEmpty');
   if (!machines.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  let html = '<thead><tr><th>Machine</th><th>Property</th><th>Host</th><th>Address</th><th>PM Contact</th><th>Placement</th><th>HAHA ID</th><th>Installed</th><th></th></tr></thead><tbody>';
-  machines.forEach(m => {
+
+  const sortBtn = (key, label) => {
+    const arrow = machinesSortKey === key ? (machinesSortDir === 1 ? '▲' : '▼') : '';
+    return `<button type="button" class="th-sort-btn" onclick="sortMachinesBy('${key}')" aria-sort="${machinesSortKey === key ? (machinesSortDir === 1 ? 'ascending' : 'descending') : 'none'}">${label}${arrow ? ` <span class="th-sort-arrow">${arrow}</span>` : ''}</button>`;
+  };
+  let sortedMachines = machines.slice();
+  if (machinesSortKey) {
+    sortedMachines.sort((a, b) => {
+      let av, bv;
+      if (machinesSortKey === 'nextService') { av = nextServiceByForMachine(a.id) || '9999-99-99'; bv = nextServiceByForMachine(b.id) || '9999-99-99'; }
+      else { av = (a[machinesSortKey] || '').toString().toLowerCase(); bv = (b[machinesSortKey] || '').toString().toLowerCase(); }
+      return av < bv ? -1 * machinesSortDir : av > bv ? 1 * machinesSortDir : 0;
+    });
+  }
+
+  let html = `<thead><tr><th>${sortBtn('name', 'Machine')}</th><th>Property</th><th>${sortBtn('host', 'Host')}</th><th>${sortBtn('address', 'Address')}</th><th>PM Contact</th><th>Placement</th><th>${sortBtn('nextService', 'Next Service')}</th><th>HAHA ID</th><th>${sortBtn('install', 'Installed')}</th><th></th></tr></thead><tbody>`;
+  sortedMachines.forEach(m => {
     const isRetired = m.status === 'retired';
     if (m.id === editingMachineId) {
       html += `<tr>
-        <td colspan="9">
+        <td colspan="10">
           <div class="form-grid" style="margin: 4px 0;">
             <div class="field-wide"><label>Machine Name / ID</label><input id="em_name_${m.id}" value="${escapeAttr(m.name)}" /></div>
             <div class="field-wide"><label>Host / Location Name</label><input id="em_host_${m.id}" value="${escapeAttr(m.host || '')}" /></div>
@@ -2043,6 +2108,9 @@ function renderMachines() {
       .concat((properties || []).map(p => `<option value="${p.id}" ${m.propertyId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`))
       .join('');
     const propertyCell = `<select style="font-size:12.5px; padding:3px 4px;" onchange="assignMachineProperty('${m.id}', this.value)">${propertyOptions}</select>`;
+    const nextService = nextServiceByForMachine(m.id);
+    const servicePr = nextService ? restockPriority(nextService) : null;
+    const serviceCell = nextService ? `${nextService} <span class="tag ${servicePr.cls}">${servicePr.label}</span>` : '<span style="color:var(--graphite)">—</span>';
     html += `<tr style="${isRetired ? 'opacity:0.55;' : ''}">
       <td data-label="Machine">${colorDotHtml(propertyColorFor(m.propertyId), (properties.find(p=>p.id===m.propertyId)||{}).name)}<button class="link-btn" onclick="openMachineDetail('${m.id}')">${escapeHtml(m.name)}</button>${isRetired ? ' <span class="tag tag-none">Retired</span>' : ''}</td>
       <td data-label="Property">${propertyCell}</td>
@@ -2050,6 +2118,7 @@ function renderMachines() {
       <td data-label="Address">${escapeHtml(m.address || '—')}</td>
       <td data-label="PM Contact">${contactCell}</td>
       <td data-label="Placement"><span class="tag ${m.plan === 'tiered' ? 'tag-tiered' : 'tag-none'}">${m.plan === 'tiered' ? 'Commission' : 'No-cost'}</span></td>
+      <td data-label="Next Service">${serviceCell}</td>
       <td data-label="HAHA ID">${m.hahaId ? escapeHtml(m.hahaId) : '<span style="color:var(--graphite)">—</span>'}</td>
       <td data-label="Installed">${m.install || '—'}</td>
       <td data-label="" style="white-space:nowrap;">
@@ -2370,6 +2439,7 @@ function openDataHealthDialog() {
   const missingCost = (productCatalogCache || []).filter(p => p.currentCost === null);
   const unassignedMachines = (machines || []).filter(m => m.status !== 'retired' && !m.propertyId);
   const negativeLots = backstockAggregated().filter(a => a.quantity < 0);
+  const missingContracts = propertiesMissingContract();
 
   function checklistRow(label, items, nameFn) {
     const n = items.length;
@@ -2398,9 +2468,10 @@ function openDataHealthDialog() {
         ${checklistRow('Products missing a cost', missingCost, p => p.productName)}
         ${checklistRow('Active machines with no property assigned', unassignedMachines, m => m.name)}
         ${checklistRow('Backstock lots with negative quantity', negativeLots, a => a.productName)}
+        ${checklistRow('Active properties with no contract on file', missingContracts, p => p.name)}
       </tbody>
     </table></div>
-    <div class="modal-sub" style="margin-top:14px;">Not yet tracked here: last-attempted-sync/failure history, missing machine-product capacity, and unresolved contracts — planned as these features get built out.</div>`);
+    <div class="modal-sub" style="margin-top:14px;">Not yet tracked here: last-attempted-sync/failure history and missing machine-product capacity — planned as these features get built out.</div>`);
 }
 
 // v1.10.1 F17 — Activity & Audit History. Distinct from Data Health's
@@ -3299,12 +3370,31 @@ function restockPriority(nextServiceBy) {
   return { label: 'Low', cls: 'tag-none' };
 }
 
+// v1.10.2 §11 — fleet-wide contracts summary, loaded once at init so the
+// missing-contract check (buildAttentionItems, Data Health) doesn't need a
+// call per property.
+let propertyContractsCache = [];
+let acknowledgedPropertyIds = [];
+async function loadPropertyContracts() {
+  try {
+    const data = await apiGet('/api/data/property-contracts');
+    propertyContractsCache = data.contracts || [];
+    acknowledgedPropertyIds = data.acknowledgedPropertyIds || [];
+  } catch (e) { propertyContractsCache = []; acknowledgedPropertyIds = []; }
+}
+function propertiesMissingContract() {
+  const covered = new Set(propertyContractsCache.map(c => c.propertyId));
+  return (properties || []).filter(p => p.status === 'active' && !covered.has(p.id) && !acknowledgedPropertyIds.includes(p.id));
+}
+
 let restockQueueCache = [];
 async function loadRestockQueue() {
   restockQueueCache = await computeRestockQueueAll();
   renderRestockQueue();
   renderNoBackstockList();
   if (typeof renderToday === 'function') renderToday();
+  if (typeof renderSourcingPriority === 'function') renderSourcingPriority();
+  if (typeof renderMachines === 'function') renderMachines();
 }
 
 function renderRestockQueue() {
@@ -3483,12 +3573,31 @@ function addPurchaseItemRow() {
     <div class="field-wide"><label>Product</label><select id="piProduct_${i}">${productOptionsHtml()}</select></div>
     <div><label>Quantity</label><input id="piQty_${i}" type="number" step="1" min="1" placeholder="0" /></div>
     <div><label>Unit Price ($) — required unless using package price below</label><input id="piUnitCost_${i}" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-    <div><label>— or Package Price ($)</label><input id="piPkgPrice_${i}" type="number" step="0.01" min="0" placeholder="optional" /></div>
-    <div><label>Qty per Package</label><input id="piPkgQty_${i}" type="number" step="1" min="1" placeholder="optional" /></div>
+    <div><label>— or Package Price ($) <span title="Case Calculator: enter what the whole case/package cost, plus how many units are in it, and it works out the per-unit cost for you.">ⓘ</span></label><input id="piPkgPrice_${i}" type="number" step="0.01" min="0" placeholder="e.g. total case price" oninput="updateCaseCalc(${i})" /></div>
+    <div><label>Qty per Package</label><input id="piPkgQty_${i}" type="number" step="1" min="1" placeholder="e.g. units in the case" oninput="updateCaseCalc(${i})" /></div>
+    <div id="piCalc_${i}" style="grid-column: 1 / -1; font-size:12px; color:var(--graphite); display:none;"></div>
     <div style="display:flex; align-items:end;"><button class="btn-danger-text" onclick="document.getElementById('purchaseRow_${i}').remove()">Remove</button></div>
   `;
   wrap.appendChild(row);
   wireLabelAssociations(row);
+}
+
+// v1.10.2 §3 — Case Calculator. The Package Price + Qty per Package fields
+// already let submitPurchaseBatch() compute cost/unit server-side (so a
+// blank Unit Price plus those two is already valid to submit) — this adds
+// the missing piece the spec actually asked for: showing that computed
+// cost/unit live as you type, with a one-click way to drop it into Unit
+// Price so it's visible/editable rather than a silent server-side-only
+// calculation.
+function updateCaseCalc(i) {
+  const calcEl = document.getElementById('piCalc_' + i);
+  if (!calcEl) return;
+  const pkgPrice = parseFloat(document.getElementById('piPkgPrice_' + i).value);
+  const pkgQty = parseInt(document.getElementById('piPkgQty_' + i).value, 10);
+  if (!pkgPrice || !pkgQty || pkgQty <= 0) { calcEl.style.display = 'none'; calcEl.innerHTML = ''; return; }
+  const perUnit = pkgPrice / pkgQty;
+  calcEl.style.display = 'block';
+  calcEl.innerHTML = `= ${fmt(perUnit)}/unit — <button type="button" class="link-btn" onclick="document.getElementById('piUnitCost_${i}').value='${perUnit.toFixed(4)}'">use as Unit Price</button>`;
 }
 
 async function submitPurchaseBatch(btn) {
@@ -3560,6 +3669,58 @@ function backstockAggregated() {
   return Object.values(byProduct).sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
 }
 
+// v1.10.2 §12 — Backstock Sourcing Priority / runway. Reuses
+// restockQueueCache (already computed per-machine sell-through velocity,
+// loaded once at init via loadRestockQueue()) rather than making new HAHA
+// calls — aggregate every machine's velocity for a given productId to get
+// a fleet-wide daily draw-rate proxy for that SKU, since there's no direct
+// backstock movement ledger to compute a real draw rate from.
+function sourcingPriorityRows() {
+  const velocityByProduct = {};
+  (restockQueueCache || []).forEach(entry => {
+    (entry.rows || []).forEach(row => {
+      if (!row.productId) return;
+      velocityByProduct[row.productId] = (velocityByProduct[row.productId] || 0) + (row.velocity || 0);
+    });
+  });
+  return backstockAggregated().map(a => {
+    const drawRate = velocityByProduct[a.productId] || 0;
+    const runwayDays = drawRate > 0 ? a.quantity / drawRate : null;
+    let tier;
+    if (a.quantity <= 0) tier = { label: 'Critical', cls: 'tag-due' };
+    else if (runwayDays === null) tier = { label: 'No sales data', cls: 'tag-none' };
+    else if (runwayDays <= 7) tier = { label: 'Critical', cls: 'tag-due' };
+    else if (runwayDays <= 14) tier = { label: 'Soon', cls: 'tag-tiered' };
+    else tier = { label: 'OK', cls: 'tag-paid' };
+    return { ...a, drawRate, runwayDays, tier };
+  }).sort((x, y) => {
+    const rx = x.runwayDays === null ? Infinity : x.runwayDays;
+    const ry = y.runwayDays === null ? Infinity : y.runwayDays;
+    return rx - ry;
+  });
+}
+function renderSourcingPriority() {
+  const body = document.getElementById('sourcingPriorityBody');
+  if (!body) return;
+  const rows = sourcingPriorityRows().filter(r => r.quantity > 0 || r.drawRate > 0);
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty-state">Nothing to prioritize yet — needs backstock on hand and some recent sales history.</div>';
+    return;
+  }
+  body.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th class="num">On Hand</th><th class="num">Avg Daily Draw</th><th class="num">Runway</th><th>Priority</th></tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr class="${r.tier.label === 'Critical' ? 'row-alert' : ''}">
+        <td>${escapeHtml(r.productName || r.productId)}</td>
+        <td class="num">${r.quantity}</td>
+        <td class="num">${r.drawRate > 0 ? r.drawRate.toFixed(2) + '/day' : '—'}</td>
+        <td class="num">${r.runwayDays !== null ? Math.round(r.runwayDays) + ' day(s)' : 'Not enough sales history'}</td>
+        <td><span class="tag ${r.tier.cls}">${escapeHtml(r.tier.label)}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
 function renderBackstock() {
   const summaryEl = document.getElementById('backstockSummary');
   const agg = backstockAggregated();
@@ -3579,17 +3740,63 @@ function renderBackstock() {
   if (!tbl) return;
   if (!agg.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
-  let html = '<thead><tr><th>Product</th><th class="num">Qty</th><th>Oldest Lot</th><th class="num">Value</th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Product</th><th class="num">Qty</th><th>Oldest Lot</th><th class="num">Value</th><th></th></tr></thead><tbody>';
   agg.forEach(a => {
+    // v1.10.1 F13 / v1.10.2 §2 — "Inventory deficit · N unit(s)" replaces a
+    // bare negative number with a labeled, actionable state: Record
+    // Purchase (jumps to Log a Purchase) or Adjust Inventory (v1.10.2 §5's
+    // new adjustment action, for found/uncounted stock rather than a real
+    // new purchase).
+    const deficitNote = a.quantity < 0
+      ? `<div style="font-size:11.5px; color:var(--amber); font-weight:700; margin-top:2px;">Inventory deficit · ${Math.abs(a.quantity)} unit${Math.abs(a.quantity) === 1 ? '' : 's'}</div>`
+      : '';
     html += `<tr class="${a.quantity < 0 ? 'row-alert' : ''}">
-      <td>${escapeHtml(a.productName || a.productId)}</td>
+      <td>${escapeHtml(a.productName || a.productId)}${deficitNote}</td>
       <td class="num">${a.quantity}</td>
       <td>${a.oldestDate}</td>
       <td class="num">${fmt(a.value)}</td>
+      <td>
+        ${a.quantity < 0 ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openLogPurchaseModal()">Record Purchase</button>` : ''}
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openAdjustInventoryModal('${a.productId}','${escapeAttr(a.productName || a.productId)}')">Adjust Inventory</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
+}
+
+// v1.10.2 §5 — Negative Backstock shrink / inventory adjustment.
+function openAdjustInventoryModal(productId, productName) {
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Adjust Inventory — ${escapeHtml(productName)}</div>
+    <div class="modal-sub">Use a positive quantity to correct a negative/shortfall balance (stock that was actually on hand but never logged in). Use a negative quantity to record genuine shrink or loss on positive stock (breakage, theft, expired and tossed outside QMOS). This creates its own cost lot, same as a purchase — cost defaults to $0 since adjustments usually don't have a real purchase price, but you can set one if this really was a missed purchase.</div>
+    <div class="form-grid">
+      <input type="hidden" id="adjProductId" value="${escapeAttr(productId)}" />
+      <input type="hidden" id="adjProductName" value="${escapeAttr(productName)}" />
+      <div><label>Quantity (+/-)</label><input id="adjQty" type="number" step="1" placeholder="e.g. 5 or -2" /></div>
+      <div><label>Unit Cost ($, optional)</label><input id="adjCost" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div class="field-wide"><label>Reason</label><input id="adjReason" placeholder="e.g. Found uncounted case in storage / 2 units broke in transit" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitInventoryAdjustment(this)">Save Adjustment</button></div>
+    </div>
+    <div id="adjStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
+}
+async function submitInventoryAdjustment(btn) {
+  return withButtonBusy(btn, async () => {
+    const productId = document.getElementById('adjProductId').value;
+    const productName = document.getElementById('adjProductName').value;
+    const quantity = parseInt(document.getElementById('adjQty').value, 10);
+    const unitCost = parseFloat(document.getElementById('adjCost').value) || 0;
+    const reason = document.getElementById('adjReason').value.trim();
+    const status = document.getElementById('adjStatus');
+    if (!quantity) { alert('Enter a non-zero quantity.'); return; }
+    try {
+      await apiPost('/api/data/inventory-adjustment', { productId, productName, quantity, unitCost, reason });
+    } catch (e) { if (status) { status.style.display = 'block'; status.textContent = 'Could not save: ' + e.message; } else alert('Could not save: ' + e.message); return; }
+    await loadBackstockLots();
+    closeModal();
+    renderAll();
+  });
 }
 
 // Cross-references live machine stock (from HAHA) against Backstock lots to
@@ -3652,35 +3859,46 @@ function populateQmosPickers() {
 }
 
 // v1.10.1 F12 — QMOS an Item moved off an always-on half-page form into a modal.
-function openQmosModal() {
+// v1.10.2 §4 — same modal now also handles Edit (pass a refId to prefill
+// and to have the save reverse-then-recreate under the hood).
+function openQmosModal() { openQmosEditModal(null); }
+function openQmosEditModal(refId) {
+  const existing = refId ? qmosLog.find(l => l.refId === refId) : null;
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">QMOS an Item</div>
-    <div class="modal-sub">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.</div>
+    <div class="modal-title">${existing ? 'Edit QMOS Entry' : 'QMOS an Item'}</div>
+    <div class="modal-sub">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.${existing ? ' Saving an edit reverses the original draw and re-logs it fresh with your changes, so it always reflects real current lot availability.' : ''}</div>
     <div class="form-grid" id="qmosForm">
+      <input type="hidden" id="qRefId" value="${existing ? existing.refId : ''}" />
       <div><label>Location</label><select id="qLocation"><option value="main">Backstock</option></select></div>
       <div><label>Product</label><select id="qProduct"></select></div>
-      <div><label>Quantity</label><input id="qQuantity" type="number" step="1" min="1" placeholder="0" /></div>
+      <div><label>Quantity</label><input id="qQuantity" type="number" step="1" min="1" placeholder="0" value="${existing ? existing.quantity : ''}" /></div>
       <div>
         <label>Reason</label>
         <select id="qReason">
-          <option value="quality">Quality (damaged, spoiled, etc.)</option>
-          <option value="sample">Sample</option>
-          <option value="expired">Expired</option>
+          <option value="quality" ${existing && existing.reason === 'quality' ? 'selected' : ''}>Quality (damaged, spoiled, etc.)</option>
+          <option value="sample" ${existing && existing.reason === 'sample' ? 'selected' : ''}>Sample</option>
+          <option value="expired" ${existing && existing.reason === 'expired' ? 'selected' : ''}>Expired</option>
         </select>
       </div>
-      <div><label>Date</label><input id="qDate" type="date" /></div>
-      <div class="field-wide"><label>Notes</label><input id="qNotes" placeholder="optional — e.g. crushed bag of chips" /></div>
-      <div class="field-wide"><button class="btn btn-primary" onclick="submitQmos(this)">Log QMOS</button></div>
+      <div><label>Date</label><input id="qDate" type="date" value="${existing ? existing.date : ''}" /></div>
+      <div class="field-wide"><label>Notes</label><input id="qNotes" placeholder="optional — e.g. crushed bag of chips" value="${existing ? escapeAttr(existing.notes || '') : ''}" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitQmos(this)">${existing ? 'Save Changes' : 'Log QMOS'}</button></div>
     </div>
     <div id="qmosFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
   `);
-  document.getElementById('qDate').valueAsDate = new Date();
   populateQmosPickers();
+  if (existing) {
+    document.getElementById('qLocation').value = existing.fromLocation || 'main';
+    document.getElementById('qProduct').value = existing.productId;
+  } else {
+    document.getElementById('qDate').valueAsDate = new Date();
+  }
 }
 
 async function submitQmos(btn) {
   return withButtonBusy(btn, async () => {
     const status = document.getElementById('qmosFormStatus');
+    const editingRefId = document.getElementById('qRefId').value;
     const location = document.getElementById('qLocation').value;
     const prodSel = document.getElementById('qProduct');
     const productId = prodSel.value;
@@ -3693,19 +3911,40 @@ async function submitQmos(btn) {
 
     if (status) { status.style.display = 'block'; status.textContent = 'Saving…'; }
     try {
+      if (editingRefId) {
+        await apiDelete('/api/data/inventory-qmos?refId=' + encodeURIComponent(editingRefId));
+      }
       const res = await apiPost('/api/data/inventory-qmos', { location, productId, productName, quantity, reason, date, notes });
       if (status) status.textContent = res.shortfall > 0
         ? `Logged — heads up, backstock/machine only had ${quantity - res.shortfall} on record, so it's now short by ${res.shortfall}.`
         : 'Logged.';
     } catch (e) { if (status) status.textContent = 'Could not save: ' + e.message; else alert('Could not save: ' + e.message); return; }
 
-    document.getElementById('qQuantity').value = '';
-    document.getElementById('qNotes').value = '';
+    await loadQmosLog();
+    await loadBackstockLots();
+    expenses = (await apiGet('/api/data/expenses')).expenses;
+    if (editingRefId) {
+      closeModal();
+    } else {
+      document.getElementById('qQuantity').value = '';
+      document.getElementById('qNotes').value = '';
+    }
+    renderAll();
+  });
+}
+
+function deleteQmosEntry(refId) {
+  const entry = qmosLog.find(l => l.refId === refId);
+  const label = entry ? `${entry.productName || entry.productId} x${entry.quantity}` : 'this QMOS entry';
+  confirmDialog(`Delete ${label}? This reverses the draw back onto its source lot(s) and removes the linked expense. This can't be undone.`, async () => {
+    try {
+      await apiDelete('/api/data/inventory-qmos?refId=' + encodeURIComponent(refId));
+    } catch (e) { alert('Could not delete: ' + e.message); return; }
     await loadQmosLog();
     await loadBackstockLots();
     expenses = (await apiGet('/api/data/expenses')).expenses;
     renderAll();
-  });
+  }, { confirmLabel: 'Delete QMOS Entry' });
 }
 
 async function loadQmosLog() {
@@ -3755,8 +3994,20 @@ function renderQmos() {
   if (!rows.length) { tbl.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
   const reasonLabel = { quality: 'Quality', sample: 'Sample', expired: 'Expired' };
-  let html = '<thead><tr><th>Date</th><th>Product</th><th>Where</th><th>Reason</th><th class="num">Qty</th><th class="num">Cost</th><th>Notes</th></tr></thead><tbody>';
+  // v1.10.2 §4 — GET returns one row per lot drawn (a single QMOS entry can
+  // span multiple lots), but Edit/Delete operate on the whole logged event
+  // — group by refId (every row from one submitQmos() call shares it, plus
+  // the same productId/location/reason/date/notes) so the table shows and
+  // acts on "what the user actually did," not one row per internal draw.
+  const groups = {};
   rows.forEach(l => {
+    if (!groups[l.refId]) groups[l.refId] = { ...l, quantity: 0, totalCost: 0 };
+    groups[l.refId].quantity += l.quantity;
+    groups[l.refId].totalCost += l.quantity * l.unitCost;
+  });
+  const grouped = Object.values(groups).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+  let html = '<thead><tr><th>Date</th><th>Product</th><th>Where</th><th>Reason</th><th class="num">Qty</th><th class="num">Cost</th><th>Notes</th><th></th></tr></thead><tbody>';
+  grouped.forEach(l => {
     const where = !l.fromLocation || l.fromLocation === 'main' ? 'Backstock' : machineName(l.fromLocation);
     html += `<tr>
       <td>${l.date}</td>
@@ -3764,8 +4015,12 @@ function renderQmos() {
       <td>${escapeHtml(where)}</td>
       <td>${reasonLabel[l.reason] || l.reason}</td>
       <td class="num">${l.quantity}</td>
-      <td class="num">${fmt(l.quantity * l.unitCost)}</td>
+      <td class="num">${fmt(l.totalCost)}</td>
       <td>${escapeHtml(l.notes || '—')}</td>
+      <td>
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openQmosEditModal('${l.refId}')">Edit</button>
+        <button class="btn-danger-text" onclick="deleteQmosEntry('${l.refId}')">Delete</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
@@ -4233,13 +4488,22 @@ function renderGoogleAdsView() {
   document.getElementById('adsTotalClicks').textContent = (d.totalClicks || 0).toLocaleString();
   document.getElementById('adsTotalConversions').textContent = (d.totalConversions || 0).toLocaleString();
   document.getElementById('adsCampaignCount').textContent = (d.campaigns || []).length;
+  // v1.10.2 §14 — CPC/CPA, computed client-side from data already returned
+  // (no new API calls), divide-by-zero guarded since a fresh or paused
+  // campaign can have spend with zero clicks/conversions.
+  const cpcEl = document.getElementById('adsCPC');
+  const cpaEl = document.getElementById('adsCPA');
+  if (cpcEl) cpcEl.textContent = d.totalClicks > 0 ? fmt(d.totalSpend / d.totalClicks) : '—';
+  if (cpaEl) cpaEl.textContent = d.totalConversions > 0 ? fmt(d.totalSpend / d.totalConversions) : '—';
 
   const tbl = document.getElementById('adsCampaignTable');
   if (tbl) {
     const rows = (d.campaigns || []).slice().sort((a, b) => b.spend - a.spend);
-    let html = '<thead><tr><th>Campaign</th><th>Status</th><th class="num">Spend</th><th class="num">Clicks</th><th class="num">Conversions</th></tr></thead><tbody>';
+    let html = '<thead><tr><th>Campaign</th><th>Status</th><th class="num">Spend</th><th class="num">Clicks</th><th class="num">Conversions</th><th class="num">Cost/Click</th><th class="num">Cost/Conversion</th></tr></thead><tbody>';
     rows.forEach(c => {
-      html += `<tr><td>${escapeHtml(c.name)}</td><td><span class="tag tag-none">${escapeHtml(c.status)}</span></td><td class="num">${fmt(c.spend)}</td><td class="num">${c.clicks}</td><td class="num">${c.conversions}</td></tr>`;
+      const cpc = c.clicks > 0 ? fmt(c.spend / c.clicks) : '—';
+      const cpa = c.conversions > 0 ? fmt(c.spend / c.conversions) : '—';
+      html += `<tr><td>${escapeHtml(c.name)}</td><td><span class="tag tag-none">${escapeHtml(c.status)}</span></td><td class="num">${fmt(c.spend)}</td><td class="num">${c.clicks}</td><td class="num">${c.conversions}</td><td class="num">${cpc}</td><td class="num">${cpa}</td></tr>`;
     });
     html += '</tbody>';
     tbl.innerHTML = html;
@@ -4681,11 +4945,13 @@ async function addProperty(btn) {
 
 async function openPropertyDetail(propertyId) {
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button><div class="modal-title">Loading…</div>`);
-  const [detail, history] = await Promise.all([
+  const [detail, history, contractsData] = await Promise.all([
     apiGet('/api/data/properties?id=' + encodeURIComponent(propertyId)),
     loadCombinedHistory({ propertyId }),
+    apiGet('/api/data/property-contracts?propertyId=' + encodeURIComponent(propertyId)).catch(() => ({ contracts: [], acknowledged: null })),
   ]);
   const { property, contacts, machines: propMachines } = detail;
+  const { contracts: propContracts, acknowledged: contractAck } = contractsData;
 
   const contactsHtml = !contacts.length ? '<div class="empty-state" style="padding:10px;">No contacts yet.</div>' :
     `<table><thead><tr><th>Name</th><th>Title</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${contacts.map(c => `<tr>
@@ -4733,6 +4999,25 @@ async function openPropertyDetail(propertyId) {
     <h2 class="card-title" style="margin-top:16px;">Machines at This Property</h2>
     ${machinesHtml}
 
+    <h2 class="card-title" style="margin-top:16px;">Contracts</h2>
+    <div class="card-desc">${propContracts.length ? 'Uploaded contracts and which machines each one covers.' : contractAck ? `Marked "No Contract — Acknowledged" by ${escapeHtml(contractAck.acknowledgedBy || 'someone')} on ${contractAck.acknowledgedAt.slice(0,10)}${contractAck.notes ? ': ' + escapeHtml(contractAck.notes) : ''}.` : 'No contract on file yet — upload one, or acknowledge there isn\'t one so this stops showing as missing.'}</div>
+    ${propContracts.length ? `<table><thead><tr><th>File</th><th>Covers</th><th>Uploaded</th><th></th></tr></thead><tbody>${propContracts.map(c => `<tr>
+      <td><a class="link-btn" href="/api/data/document-upload?key=${encodeURIComponent(c.fileKey)}" target="_blank" rel="noopener">${escapeHtml(c.fileName || 'Contract')}</a></td>
+      <td>${c.machineIds.length === propMachines.length && propMachines.length > 0 ? 'All machines' : c.machineIds.map(mid => escapeHtml((propMachines.find(m => m.id === mid) || {}).name || mid)).join(', ') || '—'}</td>
+      <td>${c.uploadedAt.slice(0,10)}</td>
+      <td><button class="btn-danger-text" onclick="deletePropertyContract('${c.id}','${propertyId}')">Remove</button></td>
+    </tr>`).join('')}</tbody></table>` : ''}
+    <div class="form-grid" style="margin-top:10px;">
+      <div class="field-wide"><label>Upload Contract (PDF/image)</label><input id="pcFile_${propertyId}" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
+      <div class="field-wide"><label>Covers which machines?</label>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; padding:6px 0;">
+          ${propMachines.map(m => `<label style="display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;"><input type="checkbox" class="pc-machine-${propertyId}" value="${m.id}" checked style="width:auto;" /> ${escapeHtml(m.name)}</label>`).join('') || '<span style="color:var(--graphite); font-size:12.5px;">No machines at this property yet.</span>'}
+        </div>
+      </div>
+      <div><button class="btn btn-secondary" onclick="uploadPropertyContract('${propertyId}')">Upload Contract</button></div>
+      <div><button class="btn btn-ghost" onclick="acknowledgeNoContract('${propertyId}')">No Contract — Acknowledged</button></div>
+    </div>
+
     <h2 class="card-title" style="margin-top:16px;">Log Activity</h2>
     <div class="form-grid" style="margin-bottom:8px;">
       <div><label>Type</label><select id="aType_${propertyId}">
@@ -4757,6 +5042,32 @@ async function openPropertyDetail(propertyId) {
     <h2 class="card-title" style="margin-top:16px;">Tasks &amp; Calls History</h2>
     ${combinedHistoryHtml(history)}
   `);
+}
+
+// v1.10.2 §11 — Property contracts.
+async function uploadPropertyContract(propertyId) {
+  const fileInput = document.getElementById('pcFile_' + propertyId);
+  const file = fileInput ? fileInput.files[0] : null;
+  if (!file) { alert('Pick a file to upload.'); return; }
+  const machineIds = Array.from(document.querySelectorAll('.pc-machine-' + propertyId + ':checked')).map(el => el.value);
+  try {
+    const { key, name } = await uploadDocumentFile(file, 'contracts');
+    await apiPost('/api/data/property-contracts', { propertyId, fileKey: key, fileName: name, machineIds });
+  } catch (e) { alert('Could not upload contract: ' + e.message); return; }
+  openPropertyDetail(propertyId);
+}
+function deletePropertyContract(id, propertyId) {
+  confirmDialog('Remove this contract record? The uploaded file itself stays in storage — this just removes the record here.', async () => {
+    await apiDelete('/api/data/property-contracts?id=' + encodeURIComponent(id));
+    openPropertyDetail(propertyId);
+  }, { confirmLabel: 'Remove Contract' });
+}
+async function acknowledgeNoContract(propertyId) {
+  const notes = prompt('Optional note (e.g. "verbal agreement only" or "new placement, contract pending"):', '') || '';
+  try {
+    await apiPost('/api/data/property-contracts', { propertyId, acknowledge: true, notes });
+  } catch (e) { alert('Could not save: ' + e.message); return; }
+  openPropertyDetail(propertyId);
 }
 
 async function addContact(propertyId) {
@@ -5836,6 +6147,12 @@ function buildAttentionItems() {
     }
   });
 
+  // v1.10.2 §11 — active properties with no contract on file and no
+  // "No Contract — Acknowledged" resolution recorded.
+  propertiesMissingContract().forEach(p => {
+    followUp.push({ label: `${p.name} has no contract on file`, detail: 'Upload a contract or acknowledge none exists', action: () => openPropertyDetail(p.id), category: 'financial', source: 'Data Quality' });
+  });
+
   return { critical, high, followUp, info };
 }
 
@@ -6237,60 +6554,145 @@ async function uploadReceiptFile(file) {
   if (!res.ok) throw new Error(body.error || 'Receipt upload failed');
   return body.key;
 }
+// v1.10.2 §11/§13 — shared uploader for the generic document-upload.js
+// endpoint (property contracts + demo resources), which reuses the same
+// RECEIPTS R2 bucket under a folder prefix rather than needing a second
+// bucket created and bound.
+async function uploadDocumentFile(file, folder) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('folder', folder);
+  const res = await fetch('/api/data/document-upload', { method: 'POST', body: form });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || 'Upload failed');
+  return body; // { key, name }
+}
+
+// ---------------- v1.10.2 §13 — Demo / Site Consultation Resources ----------------
+let demoResources = [];
+async function loadDemoResources() {
+  try {
+    const data = await apiGet('/api/data/demo-resources');
+    demoResources = data.resources || [];
+    if (data._migrationNeeded) warnMigrationNeeded(data._migrationNeeded);
+  } catch (e) { demoResources = []; }
+}
+function openAddDemoResourceModal() {
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Add Resource</div>
+    <div class="form-grid">
+      <div class="field-wide"><label>Title</label><input id="drTitle" placeholder="e.g. Virtual Brochure" /></div>
+      <div class="field-wide"><label>Description (optional)</label><input id="drDescription" placeholder="e.g. Send-ahead PDF for property manager intros" /></div>
+      <div class="field-wide"><label>File</label><input id="drFile" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitDemoResource(this)">Add Resource</button></div>
+    </div>
+  `);
+}
+async function submitDemoResource(btn) {
+  const title = document.getElementById('drTitle').value.trim();
+  const description = document.getElementById('drDescription').value.trim();
+  const fileInput = document.getElementById('drFile');
+  const file = fileInput ? fileInput.files[0] : null;
+  if (!title) { alert('Give the resource a title.'); return; }
+  if (!file) { alert('Pick a file to upload.'); return; }
+  btn.disabled = true;
+  try {
+    const { key, name } = await uploadDocumentFile(file, 'demo-resources');
+    await apiPost('/api/data/demo-resources', { title, description, fileKey: key, fileName: name });
+  } catch (e) { alert('Could not save resource: ' + e.message); btn.disabled = false; return; }
+  await loadDemoResources();
+  renderDemoResources();
+  closeModal();
+}
+function deleteDemoResource(id) {
+  confirmDialog('Remove this resource? The uploaded file itself stays in storage — this just removes it from the list.', async () => {
+    await apiDelete('/api/data/demo-resources?id=' + encodeURIComponent(id));
+    await loadDemoResources();
+    renderDemoResources();
+  }, { confirmLabel: 'Remove Resource' });
+}
+function renderDemoResources() {
+  const table = document.getElementById('demoResourcesTable');
+  const empty = document.getElementById('demoResourcesEmpty');
+  if (!table) return;
+  const rows = (demoResources || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (!rows.length) {
+    table.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  table.innerHTML = `<thead><tr><th>Title</th><th>Description</th><th>Added</th><th></th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${escapeHtml(r.title)}</td>
+      <td style="color:var(--graphite);">${escapeHtml(r.description || '')}</td>
+      <td>${r.uploadedAt ? escapeHtml(fmtWhen(r.uploadedAt)) : ''}</td>
+      <td style="white-space:nowrap;">
+        <a class="btn btn-secondary" style="padding:5px 10px; font-size:12px;" href="/api/data/document-upload?key=${encodeURIComponent(r.fileKey)}" target="_blank" rel="noopener">View</a>
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px;" onclick="deleteDemoResource('${r.id}')">Delete</button>
+      </td>
+    </tr>`).join('')}</tbody>`;
+}
 
 // v1.10.1 F12 — Log an Expense (the full form, with machine/receipt/
 // reimbursable fields) moved off an always-on half-page form into a modal.
 // Reuses EXPENSE_CATEGORY_OPTIONS_HTML, the same category list quickAddExpense()
 // already uses, rather than duplicating it a third time.
-function openAddExpenseModal() {
-  const machineOptions = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+function openAddExpenseModal() { openExpenseModal(null); }
+function openExpenseModal(expenseId) {
+  const ed = expenseId ? expenses.find(x => x.id === expenseId) : null;
+  const machineOptions = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}" ${ed && ed.machineId === m.id ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
+  const paidByOptions = ['Additional Equity Investment - BDM', 'Additional Equity - Renfroe Ventures LLC', 'Chase Business Credit BDM', 'Chase Business Credit VAR', 'Chase Business Checking']
+    .map(v => `<option ${ed && ed.paidBy === v ? 'selected' : ''}>${v}</option>`).join('');
+  const receiptSection = (ed && ed.receiptRef)
+    ? `<div class="field-wide"><label>Receipt</label><div><a class="link-btn" href="/api/data/receipt-upload?key=${encodeURIComponent(ed.receiptRef)}" target="_blank" rel="noopener">View current receipt</a></div></div>`
+    : `<div class="field-wide"><label>Receipt ${ed ? '— attach one now' : '(optional)'}</label><input id="eReceipt" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>`;
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">Log an Expense</div>
-    <div class="modal-sub">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
+    <div class="modal-title">${ed ? 'Edit Expense' : 'Log an Expense'}</div>
+    <div class="modal-sub">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.)</div>
     <div class="form-grid" id="expenseForm">
-      <div><label>Date</label><input id="eDate" type="date" /></div>
+      <input type="hidden" id="eId" value="${ed ? ed.id : ''}" />
+      <div><label>Date</label><input id="eDate" type="date" value="${ed ? ed.date : ''}" /></div>
       <div>
         <label>Category</label>
         <select id="eCategory">${EXPENSE_CATEGORY_OPTIONS_HTML}</select>
       </div>
-      <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-      <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
+      <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" value="${ed ? ed.amount : ''}" /></div>
+      <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" value="${ed ? escapeAttr(ed.vendor || '') : ''}" /></div>
       <div>
         <label>Paid By</label>
         <select id="ePaidBy">
-        <option value="">—</option>
-        <option>Additional Equity Investment - BDM</option>
-        <option>Additional Equity - Renfroe Ventures LLC</option>
-        <option>Chase Business Credit BDM</option>
-        <option>Chase Business Credit VAR</option>
-        <option>Chase Business Checking</option>
+        <option value="" ${ed && !ed.paidBy ? 'selected' : ''}>—</option>
+        ${paidByOptions}
         </select>
       </div>
       <div>
-        <label>Type</label>
+        <label>Type <span tabindex="0" title="Operating: day-to-day running costs - product purchases, commissions, gas/mileage, small repairs, cleaning supplies. Capital/Equipment: lasting value beyond this period - a new machine, major component replacement, anything you'd still be using or reselling a year from now. Rough threshold: over ~$500 and outlasting this quarter leans capital - confirm exact wording with your accountant.">&#9432;</span></label>
         <select id="eExpenseType">
-          <option value="operating">Operating Expense</option>
-          <option value="capital">Capital / Equipment</option>
+          <option value="operating" ${!ed || ed.expenseType !== 'capital' ? 'selected' : ''}>Operating Expense</option>
+          <option value="capital" ${ed && ed.expenseType === 'capital' ? 'selected' : ''}>Capital / Equipment</option>
         </select>
       </div>
       <div><label>Machine (optional)</label><select id="eMachine">${machineOptions}</select></div>
-      <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
-      <div class="field-wide"><label>Receipt (optional)</label><input id="eReceipt" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
+      <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" value="${ed ? escapeAttr(ed.note || '') : ''}" /></div>
+      ${receiptSection}
       <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
         <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
-          <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
+          <input type="checkbox" id="eReimbursable" style="width:auto;" ${ed && ed.reimbursable ? 'checked' : ''} /> Reimbursable
         </label>
       </div>
-      <div class="field-wide"><button class="btn btn-primary" onclick="addExpense(this)">Add Expense</button></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitExpenseModal(this)">${ed ? 'Save Changes' : 'Add Expense'}</button></div>
     </div>
     <div id="expenseFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
   `);
-  document.getElementById('eDate').valueAsDate = new Date();
+  if (ed) { document.getElementById('eCategory').value = ed.category; }
+  else { document.getElementById('eDate').valueAsDate = new Date(); }
 }
 
-async function addExpense(btn) {
+async function submitExpenseModal(btn) {
+  const editingId = document.getElementById('eId').value;
   const category0 = document.getElementById('eCategory').value;
-  if (category0 === 'Inventory - Product Purchases') {
+  if (!editingId && category0 === 'Inventory - Product Purchases') {
     const proceed = confirm(
       'Inventory - Product Purchases is usually logged from Inventory \u2192 Backstock \u2192 "Log a Purchase" instead — that records it by item (with quantity and FIFO cost) so it shows up correctly in Backstock and Products, not just as a lump expense line.\n\nGo to Backstock now? Cancel to log it here as a plain expense anyway.'
     );
@@ -6306,12 +6708,14 @@ async function addExpense(btn) {
     const paidBy = document.getElementById('ePaidBy').value;
     const expenseType = document.getElementById('eExpenseType').value;
     const reimbursable = document.getElementById('eReimbursable').checked;
-    const receiptFile = document.getElementById('eReceipt').files[0];
+    const receiptInput = document.getElementById('eReceipt');
+    const receiptFile = receiptInput ? receiptInput.files[0] : null;
     const status = document.getElementById('expenseFormStatus');
     if (!date) { alert('Pick a date.'); return; }
     if (isNaN(amount) || amount < 0) { alert('Enter an amount.'); return; }
 
-    let receiptRef = '';
+    const existingExp = editingId ? expenses.find(x => x.id === editingId) : null;
+    let receiptRef = existingExp ? (existingExp.receiptRef || '') : '';
     if (receiptFile) {
       if (status) { status.style.display = 'block'; status.textContent = 'Uploading receipt…'; }
       try {
@@ -6322,15 +6726,24 @@ async function addExpense(btn) {
     }
 
     try {
-      await apiPost('/api/data/expenses', { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable, receiptRef });
+      if (editingId) {
+        await apiPut('/api/data/expenses?id=' + encodeURIComponent(editingId), { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable, reimbursed: existingExp ? existingExp.reimbursed : false, receiptRef });
+      } else {
+        await apiPost('/api/data/expenses', { date, category, amount, machineId, note, vendor, paidBy, expenseType, reimbursable, receiptRef });
+      }
     } catch (e) { alert('Could not save expense: ' + e.message); return; }
-    document.getElementById('eAmount').value = '';
-    document.getElementById('eNote').value = '';
-    document.getElementById('eVendor').value = '';
-    document.getElementById('eReimbursable').checked = false;
-    document.getElementById('eReceipt').value = '';
-    if (status) status.style.display = 'none';
+
     expenses = (await apiGet('/api/data/expenses')).expenses;
+    if (editingId) {
+      closeModal();
+    } else {
+      document.getElementById('eAmount').value = '';
+      document.getElementById('eNote').value = '';
+      document.getElementById('eVendor').value = '';
+      document.getElementById('eReimbursable').checked = false;
+      if (receiptInput) receiptInput.value = '';
+      if (status) status.style.display = 'none';
+    }
     renderAll();
   });
 }
@@ -6344,10 +6757,20 @@ function deleteExpense(id) {
   }, { confirmLabel: 'Delete Expense' });
 }
 
+// v1.10.2 §2 — missing-receipt filter toggle, persisted only for the
+// current session (resets on reload, same lightweight pattern as the
+// other in-page filter toggles in this file).
+let expenseMissingReceiptOnly = false;
+function toggleMissingReceiptFilter(btn) {
+  expenseMissingReceiptOnly = !expenseMissingReceiptOnly;
+  btn.className = expenseMissingReceiptOnly ? 'btn btn-secondary' : 'btn btn-ghost';
+  renderExpenses();
+}
 function renderExpenses() {
   const tbl = document.getElementById('expenseTable');
   const empty = document.getElementById('expensesEmpty');
-  const rows = expensesForMonthSelect('rangeExpensesSelect').slice().sort((a, b) => b.date.localeCompare(a.date));
+  let rows = expensesForMonthSelect('rangeExpensesSelect').slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (expenseMissingReceiptOnly) rows = rows.filter(e => !e.receiptRef);
   renderReimbursementSummary();
   if (!rows.length) { tbl.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
@@ -6355,9 +6778,13 @@ function renderExpenses() {
   rows.forEach(e => {
     const capexTag = e.expenseType === 'capital' ? ' <span class="tag tag-tiered">Capital</span>' : '';
     const reimbTag = e.reimbursable ? (e.reimbursed ? ' <span class="tag tag-paid">Reimbursed</span>' : ' <span class="tag tag-due">Owed</span>') : '';
+    // Missing-receipt uses its own amber/warning tone (tag-tiered), distinct
+    // from the red "Owed" reimbursement state (v1.10.1 F12's "genuine
+    // warning state, not reusing the same red as everything else").
+    const receiptTag = !e.receiptRef ? ' <span class="tag tag-tiered">No Receipt</span>' : '';
     html += `<tr>
       <td>${e.date}</td>
-      <td>${escapeHtml(e.category)}${capexTag}</td>
+      <td>${escapeHtml(e.category)}${capexTag}${receiptTag}</td>
       <td>${e.machineId ? escapeHtml(machineName(e.machineId)) : '<span style="color:var(--graphite)">Company-wide</span>'}</td>
       <td>${escapeHtml(e.paidBy || '—')}${reimbTag}</td>
       <td class="num">${fmt(e.amount)}</td>
@@ -6365,6 +6792,7 @@ function renderExpenses() {
       <td>
         ${e.receiptRef ? `<a class="link-btn" href="/api/data/receipt-upload?key=${encodeURIComponent(e.receiptRef)}" target="_blank" rel="noopener">Receipt</a>` : ''}
         ${e.reimbursable && !e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openExpenseModal('${e.id}')">Edit</button>
         <button class="btn-danger-text" onclick="deleteExpense('${e.id}')">Delete</button>
       </td>
     </tr>`;
@@ -6389,7 +6817,10 @@ function renderReimbursements() {
       <td>${escapeHtml(e.paidBy || '—')}</td>
       <td class="num">${fmt(e.amount)}</td>
       <td>${e.reimbursed ? '<span class="tag tag-paid">Reimbursed</span>' : '<span class="tag tag-due">Owed</span>'}</td>
-      <td>${!e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}</td>
+      <td>
+        ${!e.reimbursed ? `<button class="btn-danger-text" style="color:var(--sky-deep);" onclick="markExpenseReimbursed('${e.id}')">Mark Reimbursed</button>` : ''}
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openExpenseModal('${e.id}')">Edit</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
@@ -7055,6 +7486,7 @@ function renderAll() {
   renderSection('health', renderHealth);
   renderSection('restock queue', renderRestockQueue);
   renderSection('backstock', renderBackstock);
+  renderSection('sourcing priority', renderSourcingPriority);
   renderSection('qmos', renderQmos);
   renderSection('products', () => { if (typeof renderProducts === 'function') renderProducts(); });
   renderSection('category performance', () => { if (typeof renderCategoryPerformance === 'function') renderCategoryPerformance(); });
@@ -7065,6 +7497,7 @@ function renderAll() {
   renderSection('marketing-ads', renderGoogleAdsView);
   renderSection('marketing-ga', renderGoogleAnalyticsView);
   renderSection('receipts', renderReceipts);
+  renderSection('resources', renderDemoResources);
   renderSection('today', () => { if (typeof renderToday === 'function') renderToday(); });
   renderSection('nav badges', updateNavBadges);
 }
@@ -7134,6 +7567,8 @@ async function init() {
   await loadTasks();
   await loadAllActivity();
   await loadProductCostLots();
+  await loadPropertyContracts();
+  await loadDemoResources();
   buildPayPeriodOptions();
   loadPayPeriod();
   loadRestockQueue(); // not awaited — fires several parallel HAHA calls per machine, renders in when ready
