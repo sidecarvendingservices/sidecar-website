@@ -119,8 +119,12 @@
   .sidebar-date { font-size: 12px; color: rgba(255,255,255,.8); font-weight: 700; margin-top: 3px; }
   .dashboard-version { font-size: 10.5px; color: rgba(255,255,255,.65); letter-spacing: 0.02em; margin-top: 6px; }
   /* Thin separator between the brand/version block and the nav list below
-     it — requested as a cleaner break than the plain 16px gap alone gave. */
-  .sidebar-divider { height: 1px; background: rgba(255,255,255,.14); margin-top: 16px; border: none; }
+     it — requested as a cleaner break than the plain 16px gap alone gave.
+     Explicit width/margin reset because a bare <hr> picks up browser
+     default inline margins that fought the intended full-width line; the
+     first alpha value tried (.14) was also too close to the navy
+     background to actually read as a visible line. */
+  .sidebar-divider { width: 100%; height: 1px; background: rgba(255,255,255,.28); margin: 16px 0 0; border: none; }
 
   .sidebar-filter.month-filter {
     display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.85); font-weight: 700;
@@ -572,7 +576,7 @@
     </div>
     <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
-    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.20</div>
+    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.21</div>
     <hr class="sidebar-divider" />
 
     <div class="tabbar-wrap" id="tabbarWrap">
@@ -664,14 +668,6 @@
         <div class="kpi-sub">&nbsp;</div>
       </div>
     </div>
-    <div class="card">
-      <div class="section-flex">
-        <h2 class="card-title" style="margin:0;">Due Today &amp; Overdue</h2>
-        <button class="btn btn-secondary" onclick="switchToTab('tasks')">Open Tasks Tab</button>
-      </div>
-      <div id="todayTasksBody"><div class="empty-state">Nothing due — nice.</div></div>
-    </div>
-
     <div class="section-flex" style="margin-bottom:14px; margin-top:18px;">
       <div class="card-desc" style="margin:0;" id="overviewRangeNote">Last 30 days. Commission is tracked by calendar month, so quarter/month views include the full month's commission even if the window only covers part of it.</div>
       <div class="trend-gran-toggle">
@@ -2689,7 +2685,14 @@ function openModal(html) {
 
   const box = document.getElementById('modalBox');
   box.innerHTML = html;
-  document.getElementById('modalOverlay').style.display = 'flex';
+  const overlay = document.getElementById('modalOverlay');
+  overlay.style.display = 'flex';
+  // Reset scroll position — #modalOverlay/#modalBox are one shared, reused
+  // DOM node for every dialog. Without this, opening a short dialog right
+  // after scrolling down inside a tall one (e.g. Metric Dictionary) left it
+  // still scrolled, so the next dialog appeared to open flush at the very
+  // top of the page instead of the intended 30px gap.
+  overlay.scrollTop = 0;
   wireLabelAssociations(box);
 
   // Accessible name: point the dialog at its own .modal-title if present,
@@ -5853,7 +5856,7 @@ function renderToday() {
     all.forEach((it, idx) => {
       html += `<div class="attn-row" data-attn-idx="${idx}" style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid #f0f0f0; cursor:pointer;">
         <span class="tag ${it.tone}" style="flex-shrink:0;">${it.title}</span>
-        <span style="flex:1;">${escapeHtml(it.label)}</span>
+        <span style="flex:1; font-size:13px; color:var(--charcoal);">${escapeHtml(it.label)}</span>
         <span style="color:var(--graphite); font-size:12px;">${escapeHtml(it.detail || '')}</span>
       </div>`;
     });
@@ -5876,31 +5879,6 @@ function renderToday() {
   const openTasks = (tasks || []).filter(t => t.status !== 'complete').length;
   const openTasksEl = document.getElementById('todayOpenTasks');
   if (openTasksEl) openTasksEl.textContent = openTasks;
-
-  // due today / overdue tasks list
-  const dueBody = document.getElementById('todayTasksBody');
-  if (dueBody) {
-    const today = todayStr();
-    const dueRows = (tasks || []).filter(t => t.status !== 'complete' && t.dueDate && t.dueDate <= today);
-    if (!dueRows.length) {
-      dueBody.innerHTML = '<div class="empty-state">Nothing due — nice.</div>';
-    } else {
-      const priorityTag = { critical: 'tag-due', high: 'tag-due', normal: 'tag-tiered', low: 'tag-none' };
-      let html = '<table><thead><tr><th>Title</th><th>Owner</th><th>Due</th><th>Priority</th><th>Related</th></tr></thead><tbody>';
-      dueRows.forEach(t => {
-        const overdue = t.dueDate < today;
-        html += `<tr class="${overdue ? 'row-alert' : ''}">
-          <td>${escapeHtml(t.title)}</td>
-          <td>${escapeHtml(t.owner || 'Unassigned')}</td>
-          <td>${t.dueDate}${overdue ? ' <span class="tag tag-due">overdue</span>' : ''}</td>
-          <td><span class="tag ${priorityTag[t.priority] || 'tag-none'}">${t.priority}</span></td>
-          <td>${escapeHtml(taskLinkLabel(t))}</td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      dueBody.innerHTML = html;
-    }
-  }
 }
 
 // v1.10.1 F18/F19 — Action Center: the same aggregated queue that feeds
