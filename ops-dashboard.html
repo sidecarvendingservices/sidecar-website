@@ -237,6 +237,17 @@
     display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--graphite);
     background: #F7F9FA; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px;
   }
+  /* Sidebar variant (moved here from the content-header — loading in async up
+     top was shifting the History/Sync buttons every time it appeared). Sits
+     at the bottom of the sidebar on desktop; on the horizontal mobile/tablet
+     tabbar it just falls after the tabs since there's no fixed "bottom" to
+     pin to at that layout. */
+  .sidebar-whoami-pill {
+    display: none; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700;
+    color: rgba(255,255,255,.85); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 999px; padding: 7px 12px; margin-top: 14px; width: fit-content;
+  }
+  @media (min-width: 901px) { .sidebar-whoami-pill { margin-top: auto; } }
   .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .sync-dot-fresh { background: var(--green); }
   .sync-dot-stale { background: #E0A030; }
@@ -540,6 +551,10 @@
         <div class="tabbar-more-menu" id="tabbarMoreMenu" role="menu"></div>
       </div>
     </div>
+
+    <div class="sidebar-whoami-pill" id="whoamiPill" style="display:none;" title="Matched via your login email against the Team list">
+      <span id="whoamiText" aria-live="polite"></span>
+    </div>
   </nav>
 
   <div class="app">
@@ -556,9 +571,6 @@
           <button role="menuitem" onclick="closeQuickAddMenu(); quickAddInventory();">Add Inventory</button>
           <button role="menuitem" onclick="closeQuickAddMenu(); quickUploadReceipt();">Upload Receipt</button>
         </div>
-      </div>
-      <div class="haha-sync-status" id="whoamiPill" style="display:none;" title="Matched via your login email against the Team list">
-        <span id="whoamiText" aria-live="polite"></span>
       </div>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">History</button>
       <button class="btn-header-sync" onclick="openSyncDialog()">Sync</button>
