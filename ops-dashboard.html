@@ -162,7 +162,17 @@
     background: var(--bg); margin: 0 -20px 20px; padding: 10px 20px;
   }
   @media (min-width: 901px) {
-    .tabbar-wrap { position: static; margin: 12px 0 0; padding: 0; background: transparent; flex: 1; }
+    /* v1.10.1 F16 fix: this used to be flex:1, which let the nav list's
+       height depend on how much space was left in the sidebar — so when the
+       "logged in as..." pill below it went from display:none to visible
+       (once the /api/whoami fetch resolves, usually a beat after first
+       paint), the flex-grow recalculation visibly shifted the whole nav
+       list upward. Fixed height positioning (small fixed gap under the
+       version number, natural content height) means the nav list never
+       moves regardless of whether/when the pill appears — the pill is
+       pinned to the sidebar's bottom independently via position:absolute
+       below instead of via margin-top:auto in this same flex flow. */
+    .tabbar-wrap { position: static; margin: 16px 0 0; padding: 0; background: transparent; padding-bottom: 60px; }
   }
   .tabbar {
     display: flex; gap: 2px; flex: 1; min-width: 0;
@@ -247,7 +257,14 @@
     color: rgba(255,255,255,.85); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
     border-radius: 999px; padding: 7px 12px; margin-top: 14px; width: fit-content;
   }
-  @media (min-width: 901px) { .sidebar-whoami-pill { margin-top: auto; } }
+  @media (min-width: 901px) {
+    /* Pinned to the sidebar's bottom via absolute positioning instead of
+       margin-top:auto in the flex flow — see the .tabbar-wrap comment above
+       for why: an auto margin here would shift the nav list every time this
+       pill's display toggles. .app-sidebar is position:sticky, which (like
+       relative) establishes the containing block this resolves against. */
+    .sidebar-whoami-pill { margin-top: 0; position: absolute; left: 18px; right: 18px; bottom: 22px; width: auto; }
+  }
   .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .sync-dot-fresh { background: var(--green); }
   .sync-dot-stale { background: #E0A030; }
@@ -573,6 +590,7 @@
         </div>
       </div>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
+      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openDataHealthDialog()">Data Health</button>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
       <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
     </div>
@@ -2183,6 +2201,88 @@ async function runSyncDialog(btn) {
   });
 }
 
+// v1.10.1 F15 — Metric Dictionary: one authoritative definition per
+// calculated number, so "what does this actually mean" has one answer
+// instead of living only in scattered code comments. Definitions here are
+// pulled directly from the actual calculation logic (not re-derived from
+// memory), so if the calculation ever changes, this should be updated in
+// the same commit.
+const METRIC_DICTIONARY = [
+  {
+    name: 'Gross Sales',
+    def: 'Total revenue from vended product before any deductions — cost of goods, processing fees, expenses, or commission.',
+    calc: 'Sum of the gross field on every sales/order record for the selected period.',
+    source: 'HAHA sync (per-transaction) or manually logged Sales entries.',
+  },
+  {
+    name: 'Contribution Profit (formerly "Net Sales")',
+    def: 'Gross Sales minus Cost of Goods and Processing Fees. Renamed in v1.10.1 (F13) because "Net Sales" conventionally means revenue after discounts/refunds, not after COGS — the old label implied something different from what was actually being calculated.',
+    calc: 'Gross − COGS − Processing Fees.',
+    source: 'Same sales/order records as Gross Sales.',
+    note: 'The Commission tab still says "Net Sales" specifically — that\'s the actual wording in signed placement agreements with properties, kept as-is on purpose so it matches the contract language.',
+  },
+  {
+    name: 'Tracked Operating Profit (formerly "Net Profit")',
+    def: 'Contribution Profit minus operating expenses and commission owed for the period. Renamed in v1.10.1 (F13) — "Net Profit" implied a complete accounting figure; this doesn\'t yet include depreciation, interest, taxes, or every possible operating cost, so the name now says what it actually is: everything currently tracked in this system.',
+    calc: 'Contribution Profit − (Expenses + Commission) for the selected period.',
+    source: 'Sales/order records + Expense Log + commission calculation.',
+  },
+  {
+    name: 'COGS (Cost of Goods)',
+    def: 'The FIFO cost of the actual units sold — drawn from the oldest open purchase lot(s) at the time of sale, not a flat average cost.',
+    calc: 'Per-unit FIFO cost from product_costs lots × units sold, or the cost HAHA reports if a manual purchase lot hasn\'t been logged yet.',
+    source: 'Inventory purchase lots (Backstock) and/or HAHA\'s reported product cost.',
+  },
+  {
+    name: 'Margin',
+    def: 'Retail price minus current cost, as a percentage of price — a per-product profitability check, not a period total.',
+    calc: '(Price − Current Cost) / Price × 100.',
+    source: 'Products tab — current cost from the most recent purchase lot (or HAHA\'s catalog cost if none logged), price from HAHA\'s catalog.',
+  },
+  {
+    name: 'Sell-Through Velocity',
+    def: 'How fast a product is actually moving in a specific machine — used to estimate days remaining and flag what needs restocking soonest.',
+    calc: 'Units sold in the trailing 14 days ÷ 14. Days Remaining = current stock ÷ velocity.',
+    source: 'Machine Workspace → Inventory & Restock, per product per machine.',
+  },
+  {
+    name: 'Next Service Date',
+    def: 'The soonest date this machine actually needs a visit — either because a product is projected to sell out, or because a tracked expiration date is coming up (whichever is sooner). An expiration-driven date is pulled forward automatically so you\'re not caught short.',
+    calc: 'Earliest of: any product\'s projected stockout date (from Sell-Through Velocity), or a tracked best-by date minus a few days\' buffer.',
+    source: 'Machine Workspace sell-through calculation + Product Expiration tracking.',
+  },
+  {
+    name: 'Commission',
+    def: 'What\'s owed to a property based on that property\'s combined sales that month, using a tiered rate structure from the placement agreement.',
+    calc: 'The TIER is set by the property group\'s combined Gross Sales for the month; the resulting RATE is applied to that same group\'s combined Net Sales (see the Contribution Profit entry above for why this one screen keeps that specific wording).',
+    source: 'Sales/order records, grouped by Property (or by raw host text for machines not yet assigned to a Property).',
+    note: 'F13 flagged an open question, not yet resolved: the Overview KPIs use a rolling 30-day window, but Commission is always computed for full calendar months — worth a follow-up conversation on whether to unify these or just label the distinction more clearly.',
+  },
+  {
+    name: 'Runway (Backstock sourcing priority)',
+    def: 'Not built yet — planned for v1.10.2 (§12). Will estimate how many days of on-hand backstock remain for a SKU based on average draw rate, to flag what needs reordering soonest.',
+    calc: '—',
+    source: '—',
+  },
+];
+
+function openMetricDictionary() {
+  const rowsHtml = METRIC_DICTIONARY.map(m => `
+    <div style="padding:14px 0; border-bottom:1px solid var(--border);">
+      <h2 class="card-title" style="margin:0 0 4px;">${escapeHtml(m.name)}</h2>
+      <div style="font-size:13px; color:var(--charcoal); margin-bottom:6px;">${escapeHtml(m.def)}</div>
+      <div style="font-size:12px; color:var(--graphite);"><strong>Calculation:</strong> ${escapeHtml(m.calc)}</div>
+      <div style="font-size:12px; color:var(--graphite);"><strong>Source:</strong> ${escapeHtml(m.source)}</div>
+      ${m.note ? `<div style="font-size:12px; color:var(--sky-deep); margin-top:4px;">${escapeHtml(m.note)}</div>` : ''}
+    </div>
+  `).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Metric Dictionary</div>
+    <div class="modal-sub">One authoritative definition per calculated number on this dashboard — where a label was renamed (v1.10.1 F13), the old name is noted too.</div>
+    <div>${rowsHtml}</div>
+  `);
+}
+
 function openSyncHistoryDialog() {
   const hahaLine = lastHahaSyncAt ? `${fmtWhen(lastHahaSyncAt)} (${fmtAgo(lastHahaSyncAt)})` : 'Never synced yet';
   const adsLine = (typeof googleAdsConnected !== 'undefined' && googleAdsConnected)
@@ -2203,6 +2303,72 @@ function openSyncHistoryDialog() {
         <tr><td>Zoho</td><td>Not connected — coming soon</td></tr>
       </tbody>
     </table></div>`);
+}
+
+// v1.10.1 F16 — Data Health & Freshness. Two parts:
+//  1) Stale-threshold flags layered on top of the same sync timestamps
+//     "Data Syncs" already shows, so a stale integration is visible without
+//     having to eyeball a raw "3 days ago" and do the math yourself.
+//  2) A Data Quality checklist computed entirely from state already loaded
+//     client-side (no new endpoints) — products missing a cost, active
+//     machines with no property, and negative backstock lots. Deliberately
+//     NOT included here (documented in V1.10.1_SPEC.md instead of built):
+//     last-attempted-sync/failure history (needs new D1 tracking that
+//     doesn't exist yet), a "missing capacity" checklist item (capacity is
+//     tracked per machine-product pair with no pre-loaded global list — would
+//     mean an async call per machine, too expensive to run just to open this
+//     dialog), and "unresolved contracts" (contracts don't exist yet, v1.10.2 §11).
+function openDataHealthDialog() {
+  const HAHA_STALE_MS = 2 * 60 * 60 * 1000; // HAHA sync cron runs every 30 min — 2h+ with nothing means it's actually stuck
+  const MARKETING_STALE_MS = 48 * 60 * 60 * 1000; // Google Ads/Analytics sync roughly daily — 48h is a generous cutoff before flagging
+
+  function syncRow(label, lastSyncAt, connected, staleMs) {
+    if (connected === false) return { label, text: 'Not connected', dot: 'sync-dot-none' };
+    if (!lastSyncAt) return { label, text: 'Never synced', dot: 'sync-dot-none' };
+    const age = Date.now() - new Date(lastSyncAt).getTime();
+    const stale = age > staleMs;
+    return { label, text: `${fmtAgo(lastSyncAt)}${stale ? ' — STALE' : ''}`, dot: stale ? 'sync-dot-stale' : 'sync-dot-fresh' };
+  }
+  const syncRows = [
+    syncRow('HAHA', lastHahaSyncAt, true, HAHA_STALE_MS),
+    syncRow('Google Ads', typeof googleAdsLastSyncAt !== 'undefined' ? googleAdsLastSyncAt : null, (typeof googleAdsConnected !== 'undefined' && googleAdsConnected), MARKETING_STALE_MS),
+    syncRow('Google Analytics', typeof googleAnalyticsLastSyncAt !== 'undefined' ? googleAnalyticsLastSyncAt : null, (typeof googleAnalyticsConnected !== 'undefined' && googleAnalyticsConnected), MARKETING_STALE_MS),
+  ];
+
+  const missingCost = (productCatalogCache || []).filter(p => p.currentCost === null);
+  const unassignedMachines = (machines || []).filter(m => m.status !== 'retired' && !m.propertyId);
+  const negativeLots = backstockAggregated().filter(a => a.quantity < 0);
+
+  function checklistRow(label, items, nameFn) {
+    const n = items.length;
+    const detail = n ? items.slice(0, 5).map(nameFn).join(', ') + (n > 5 ? `, +${n - 5} more` : '') : 'None — looks good';
+    return `<tr>
+      <td><span class="sync-dot ${n ? 'sync-dot-stale' : 'sync-dot-fresh'}" style="margin-right:7px;"></span>${escapeHtml(label)}</td>
+      <td class="num" style="font-weight:800;">${n}</td>
+      <td style="color:var(--graphite); font-size:12.5px;">${escapeHtml(detail)}</td>
+    </tr>`;
+  }
+
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Data Health</div>
+    <div class="modal-sub">Integration freshness and a data-quality checklist, computed from what's already loaded — nothing here requires a new fetch.</div>
+    <div style="font-weight:800; font-size:13px; margin-top:16px;">Integration Freshness</div>
+    <div class="table-wrap" style="margin-top:8px;"><table>
+      <thead><tr><th>Integration</th><th>Status</th></tr></thead>
+      <tbody>
+        ${syncRows.map(r => `<tr><td>${escapeHtml(r.label)}</td><td><span class="sync-dot ${r.dot}" style="margin-right:7px;"></span>${escapeHtml(r.text)}</td></tr>`).join('')}
+      </tbody>
+    </table></div>
+    <div style="font-weight:800; font-size:13px; margin-top:18px;">Data Quality Checklist</div>
+    <div class="table-wrap" style="margin-top:8px;"><table>
+      <thead><tr><th>Check</th><th>Count</th><th>Examples</th></tr></thead>
+      <tbody>
+        ${checklistRow('Products missing a cost', missingCost, p => p.name)}
+        ${checklistRow('Active machines with no property assigned', unassignedMachines, m => m.name)}
+        ${checklistRow('Backstock lots with negative quantity', negativeLots, a => a.productName)}
+      </tbody>
+    </table></div>
+    <div class="modal-sub" style="margin-top:14px;">Not yet tracked here: last-attempted-sync/failure history, missing machine-product capacity, and unresolved contracts — planned as these features get built out.</div>`);
 }
 
 async function checkHealthNow(btn) {
