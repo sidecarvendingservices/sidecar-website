@@ -572,8 +572,8 @@
           <button role="menuitem" onclick="closeQuickAddMenu(); quickUploadReceipt();">Upload Receipt</button>
         </div>
       </div>
-      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">History</button>
-      <button class="btn-header-sync" onclick="openSyncDialog()">Sync</button>
+      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
+      <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
     </div>
 
     <button id="backToTopBtn" class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top" title="Back to top">↑</button>
@@ -629,7 +629,7 @@
         <div class="kpi-sub" id="kpiGrossSub">&nbsp;</div>
       </div>
       <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('net')" title="View breakdown by machine" role="button" tabindex="0" aria-label="View breakdown by machine" onkeydown="cardKeyHandler(event)">
-        <div class="kpi-label">Net Sales</div>
+        <div class="kpi-label">Contribution Profit</div>
         <div class="kpi-value" id="kpiNet">$0.00</div>
         <div class="kpi-sub" id="kpiNetSub">after COGS &amp; fees</div>
       </div>
@@ -639,7 +639,7 @@
         <div class="kpi-sub" id="kpiCostsSub">operating costs paid out</div>
       </div>
       <div class="kpi-card clickable-card" onclick="openOverviewKpiDetail('profit')" title="View breakdown by machine" role="button" tabindex="0" aria-label="View breakdown by machine" onkeydown="cardKeyHandler(event)">
-        <div class="kpi-label">Net Profit</div>
+        <div class="kpi-label">Tracked Operating Profit</div>
         <div class="kpi-value accent" id="kpiProfit">$0.00</div>
         <div class="kpi-sub" id="kpiMargin">&nbsp;</div>
       </div>
@@ -682,7 +682,7 @@
             <button class="trend-gran-btn active" data-gran="day" onclick="setTrendGranularity('day')">Day</button>
           </div>
         </div>
-        <div class="card-desc">Gross sales, net sales, and profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
+        <div class="card-desc">Gross sales, contribution profit, and tracked operating profit — by month, week, or day. Week/day view covers the most recent period and excludes commission (tracked monthly only).</div>
         <div class="chart-box"><canvas id="trendChart" role="img" aria-label="Sales and profit trend over time"></canvas></div>
         <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('trendChart')">View data table</button>
         <div class="table-wrap" id="trendChart_table" hidden style="margin-top:8px;"></div>
@@ -698,8 +698,8 @@
 
     <div class="card clickable-card card-has-chart-table" onclick="switchToTab('machines')" title="Open Machines" role="button" tabindex="0" aria-label="Open Machines" onkeydown="cardKeyHandler(event)">
       <h2 class="card-title">By Machine</h2>
-      <div class="card-desc">Net sales per machine for the selected period.</div>
-      <div class="chart-box small"><canvas id="machineChart" role="img" aria-label="Net sales per machine"></canvas></div>
+      <div class="card-desc">Contribution profit per machine for the selected period.</div>
+      <div class="chart-box small"><canvas id="machineChart" role="img" aria-label="Contribution profit per machine"></canvas></div>
       <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('machineChart')">View data table</button>
       <div class="table-wrap" id="machineChart_table" hidden style="margin-top:8px;"></div>
     </div>
@@ -716,42 +716,20 @@
       <div class="card-desc">These share the same HAHA Market ID or name — probably the same physical machine added twice. Merging moves all sales/expense/health history onto the kept machine, then removes the duplicate.</div>
       <div id="duplicatesList"></div>
     </div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="section-flex">
-          <h2 class="card-title" style="margin:0;">Machines</h2>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Machines</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="importMachinesFromHaha(this)">Import from HAHA</button>
+          <button class="btn btn-primary" onclick="openAddMachineModal()">+ Add Machine</button>
         </div>
-        <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
-        <div id="machinesEmpty" class="empty-state" style="display:none;">
-          <strong>No machines yet</strong>
-          Add your first machine to the right, or use "Import from HAHA" to pull your registered devices in automatically.
-        </div>
-        <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
       </div>
-      <div class="card">
-        <h2 class="card-title">Add a Machine</h2>
-        <div class="card-desc">One row per machine — this feeds every other tab.</div>
-        <div class="form-grid" id="machineForm">
-          <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
-          <div class="field-wide"><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
-          <div class="field-wide"><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
-          <div>
-            <label>Placement Type</label>
-            <select id="mPlan">
-              <option value="none">No-cost placement</option>
-              <option value="tiered">Commission (tiered)</option>
-            </select>
-          </div>
-          <div><label>Install Date</label><input id="mInstall" type="date" /></div>
-          <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
-          <div class="field-wide"><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
-          <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
-          <div class="field-wide"><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
-          <div class="field-wide"><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
-        </div>
-        <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
+      <div class="table-wrap responsive-cards"><table id="machineTable"></table></div>
+      <div id="machinesEmpty" class="empty-state" style="display:none;">
+        <strong>No machines yet</strong>
+        Add your first machine, or use "Import from HAHA" to pull your registered devices in automatically.
       </div>
+      <div id="machineImportStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
   </div>
 
@@ -889,7 +867,7 @@
     </div>
     <div class="card">
       <h2 class="card-title">Log a Sales Entry Manually</h2>
-      <div class="card-desc">One entry per machine per day (or per batch/report pull) — Net Sales is calculated automatically.</div>
+      <div class="card-desc">One entry per machine per day (or per batch/report pull) — Contribution Profit is calculated automatically.</div>
       <div class="form-grid" id="salesForm">
         <div><label>Machine</label><select id="sMachine"></select></div>
         <div><label>Date</label><input id="sDate" type="date" /></div>
@@ -898,7 +876,7 @@
         <div><label>Processing Fees ($)</label><input id="sFees" type="number" step="0.01" min="0" placeholder="0.00" /></div>
         <div><button class="btn btn-primary" onclick="addSale()">Add Entry</button></div>
       </div>
-      <div class="pill-note" style="margin-top:10px; display:inline-block;">Net Sales = Gross − Cost of Goods − Processing Fees</div>
+      <div class="pill-note" style="margin-top:10px; display:inline-block;">Contribution Profit = Gross − Cost of Goods − Processing Fees</div>
     </div>
     <div class="card">
       <div class="section-flex">
@@ -1293,44 +1271,16 @@
   <!-- ============ RELATIONSHIPS (properties, contacts, activity) ============ -->
   <!-- ============ TEAM ============ -->
   <div class="tab-panel" id="panel-team">
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Team</h2>
-        <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
-        <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
-        <div id="teamEmpty" class="empty-state" style="display:none;">
-          <strong>No team members yet</strong>
-          Add one to the right — they'll then show up as an Account Manager / Stocker option on Properties and an Owner option on Tasks.
-        </div>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Team</h2>
+        <button class="btn btn-primary" onclick="openTeamModal()">+ Add Team Member</button>
       </div>
-      <div class="card">
-        <h2 class="card-title" id="teamFormTitle">Add Team Member</h2>
-        <div class="form-grid" id="teamForm">
-          <input type="hidden" id="teamId" value="" />
-          <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" /></div>
-          <div><label>Email</label><input id="teamEmail" type="email" placeholder="login email" /></div>
-          <div>
-            <label>Role</label>
-            <select id="teamRole">
-              <option>Admin</option>
-              <option>Stocker</option>
-              <option>Receiver</option>
-              <option>Sales</option>
-              <option>Account Manager</option>
-            </select>
-          </div>
-          <div><label>Phone</label><input id="teamPhone" placeholder="optional" /></div>
-          <div>
-            <label>Status</label>
-            <select id="teamStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
-          </div>
-          <div class="field-wide"><label>Notes</label><input id="teamNotes" placeholder="optional" /></div>
-          <div class="field-wide" style="display:flex; gap:8px;">
-            <button class="btn btn-primary" onclick="submitTeamMember(this)">Save</button>
-            <button class="btn btn-secondary" id="teamCancelBtn" style="display:none;" onclick="cancelTeamEdit()">Cancel Edit</button>
-          </div>
-        </div>
-        <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
+      <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
+      <div id="teamEmpty" class="empty-state" style="display:none;">
+        <strong>No team members yet</strong>
+        Add one above — they'll then show up as an Account Manager / Stocker option on Properties and an Owner option on Tasks.
       </div>
     </div>
   </div>
@@ -1376,35 +1326,15 @@
       <div id="setupPropertiesStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
 
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Properties</h2>
-        <div class="table-wrap"><table id="propertyTable"></table></div>
-        <div id="propertiesEmpty" class="empty-state" style="display:none;">
-          <strong>No properties yet</strong>
-          Add one to the right, or use "Set Up Properties" above to create them from your existing machines.
-        </div>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Properties</h2>
+        <button class="btn btn-primary" onclick="openAddPropertyModal()">+ Add Property</button>
       </div>
-      <div class="card">
-        <h2 class="card-title">Add Property</h2>
-        <div class="form-grid" id="propertyForm">
-          <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
-          <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
-          <div class="field-wide"><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
-          <div class="field-wide"><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
-          <div>
-            <label>Status</label>
-            <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
-          </div>
-          <div><label>Relationship Started</label><input id="pRelStart" type="date" /></div>
-          <div>
-            <label>Assigned Operator</label>
-            <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
-          </div>
-          <div><label>Account Manager</label><select id="pAccountManager"><option value="">—</option></select></div>
-          <div><label>Stocker</label><select id="pStocker"><option value="">—</option></select></div>
-          <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
-        </div>
+      <div class="table-wrap"><table id="propertyTable"></table></div>
+      <div id="propertiesEmpty" class="empty-state" style="display:none;">
+        <strong>No properties yet</strong>
+        Add one above, or use "Set Up Properties" above to create them from your existing machines.
       </div>
     </div>
   </div>
@@ -1795,10 +1725,74 @@ async function withButtonBusy(btn, fn) {
   }
 }
 
+// v1.10.1 F12/F14 — Add Machine moved off an always-on half-page form into a
+// modal, and starts with Property selection first: picking a property
+// inherits its address + primary contact (still editable — this is a
+// starting point, not a lock), rather than re-typing everything by hand for
+// every machine at a property you've already told the dashboard about. New
+// machines still require an explicit property choice (or "No property yet")
+// — nothing is silently inherited from some other "all machines" default.
+function openAddMachineModal() {
+  const propertyOptions = ['<option value="">— No property yet —</option>']
+    .concat((properties || []).filter(p => p.status !== 'inactive').map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`))
+    .join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Add a Machine</div>
+    <div class="modal-sub">One row per machine — this feeds every other tab. Pick a Property first to fill in its address/contact automatically — you can still edit any of it below.</div>
+    <div class="form-grid" id="machineForm">
+      <div class="field-wide"><label>Property</label><select id="mProperty" onchange="applyMachinePropertyDefaults(this.value)">${propertyOptions}</select></div>
+      <div class="field-wide"><label>Machine Name / ID</label><input id="mName" placeholder="e.g. SS-01" /></div>
+      <div class="field-wide"><label>Host / Location Name</label><input id="mHost" placeholder="e.g. Perimeter Auto Care" /></div>
+      <div class="field-wide"><label>Address</label><input id="mAddress" placeholder="Street, City, GA" /></div>
+      <div>
+        <label>Placement Type</label>
+        <select id="mPlan">
+          <option value="none">No-cost placement</option>
+          <option value="tiered">Commission (tiered)</option>
+        </select>
+      </div>
+      <div><label>Install Date</label><input id="mInstall" type="date" /></div>
+      <div><label>HAHA Market ID (sticker #)</label><input id="mHaha" placeholder="e.g. B144835" /></div>
+      <div class="field-wide"><label>Property Manager Name</label><input id="mContactName" placeholder="e.g. Margie Chen" /></div>
+      <div><label>PM Phone</label><input id="mContactPhone" placeholder="e.g. (470) 555-0139" /></div>
+      <div class="field-wide"><label>PM Email</label><input id="mContactEmail" type="email" placeholder="e.g. margie@example.com" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="addMachine(this)">Add Machine</button></div>
+    </div>
+    <div class="pill-note" style="margin-top:10px; display:inline-block;">HAHA Market ID is what links a machine here to its sales on HAHA's side — optional, only needed for auto-sync.</div>
+  `);
+}
+
+// Pre-fills address + primary contact from the selected property (and its
+// Contacts record, if one exists) — fields stay editable, this is just a
+// starting point so you're not re-typing the same address/PM info for every
+// machine at a property you've already set up.
+function applyMachinePropertyDefaults(propertyId) {
+  if (!propertyId) return;
+  const prop = (properties || []).find(p => p.id === propertyId);
+  if (!prop) return;
+  const hostEl = document.getElementById('mHost');
+  const addrEl = document.getElementById('mAddress');
+  if (hostEl && !hostEl.value.trim()) hostEl.value = prop.name || '';
+  if (addrEl && !addrEl.value.trim()) addrEl.value = prop.address || '';
+
+  const primaryContact = (allContacts || [])
+    .filter(c => c.propertyId === propertyId)
+    .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))[0];
+  if (primaryContact) {
+    const nameEl = document.getElementById('mContactName');
+    const phoneEl = document.getElementById('mContactPhone');
+    const emailEl = document.getElementById('mContactEmail');
+    if (nameEl && !nameEl.value.trim()) nameEl.value = primaryContact.name || '';
+    if (phoneEl && !phoneEl.value.trim()) phoneEl.value = primaryContact.phone || '';
+    if (emailEl && !emailEl.value.trim()) emailEl.value = primaryContact.email || '';
+  }
+}
+
 async function addMachine(btn) {
   return withButtonBusy(btn, () => addMachineImpl());
 }
 async function addMachineImpl() {
+  const propertyId = document.getElementById('mProperty').value || null;
   const name = document.getElementById('mName').value.trim();
   const host = document.getElementById('mHost').value.trim();
   const address = document.getElementById('mAddress').value.trim();
@@ -1810,16 +1804,9 @@ async function addMachineImpl() {
   const contactEmail = document.getElementById('mContactEmail').value.trim();
   if (!name) { alert('Give the machine a name or ID.'); return; }
   try {
-    await apiPost('/api/data/machines', { name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
+    await apiPost('/api/data/machines', { propertyId, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail });
   } catch (e) { alert('Could not save machine: ' + e.message); return; }
-  document.getElementById('mName').value = '';
-  document.getElementById('mHost').value = '';
-  document.getElementById('mAddress').value = '';
-  document.getElementById('mInstall').value = '';
-  document.getElementById('mHaha').value = '';
-  document.getElementById('mContactName').value = '';
-  document.getElementById('mContactPhone').value = '';
-  document.getElementById('mContactEmail').value = '';
+  closeModal();
   machines = (await apiGet('/api/data/machines')).machines;
   renderAll();
 }
@@ -2331,8 +2318,8 @@ function openSyncHistoryDialog() {
     ? (googleAnalyticsLastSyncAt ? `${fmtWhen(googleAnalyticsLastSyncAt)} (${fmtAgo(googleAnalyticsLastSyncAt)})` : 'Connected — not synced yet')
     : 'Not connected — see Marketing tab';
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">Sync History</div>
-    <div class="modal-sub">Last successful sync per integration.</div>
+    <div class="modal-title">Data Syncs</div>
+    <div class="modal-sub">Last successful sync per integration — real Activity History (business changes, not just integration syncs) is coming in a later update.</div>
     <div class="table-wrap" style="margin-top:10px;"><table>
       <thead><tr><th>Integration</th><th>Last Synced</th></tr></thead>
       <tbody>
@@ -4217,28 +4204,42 @@ function renderTeam() {
   tbl.innerHTML = html;
 }
 
-function editTeamMember(id) {
-  const t = team.find(x => x.id === id);
-  if (!t) return;
-  document.getElementById('teamId').value = t.id;
-  document.getElementById('teamName').value = t.name;
-  document.getElementById('teamEmail').value = t.email;
-  document.getElementById('teamRole').value = t.role;
-  document.getElementById('teamPhone').value = t.phone || '';
-  document.getElementById('teamStatus').value = t.status;
-  document.getElementById('teamNotes').value = t.notes || '';
-  document.getElementById('teamFormTitle').textContent = 'Edit Team Member';
-  document.getElementById('teamCancelBtn').style.display = 'inline-block';
-  switchToTab('team');
+// v1.10.1 F12 — Add/Edit Team Member moved off an always-on half-page form
+// into a modal. Same underlying fields/ids as before, and submitTeamMember()
+// is unchanged apart from closing the modal instead of resetting an
+// inline form — id omitted means "add," id present means "edit," same as
+// the original always-visible version.
+function openTeamModal(id) {
+  const t = id ? team.find(x => x.id === id) : null;
+  const roleOptions = ['Admin', 'Stocker', 'Receiver', 'Sales', 'Account Manager']
+    .map(r => `<option ${t && t.role === r ? 'selected' : ''}>${r}</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">${t ? 'Edit Team Member' : 'Add Team Member'}</div>
+    <div class="form-grid" id="teamForm">
+      <input type="hidden" id="teamId" value="${t ? escapeAttr(t.id) : ''}" />
+      <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" value="${t ? escapeAttr(t.name) : ''}" /></div>
+      <div><label>Email</label><input id="teamEmail" type="email" placeholder="login email" value="${t ? escapeAttr(t.email) : ''}" /></div>
+      <div>
+        <label>Role</label>
+        <select id="teamRole">${roleOptions}</select>
+      </div>
+      <div><label>Phone</label><input id="teamPhone" placeholder="optional" value="${t ? escapeAttr(t.phone || '') : ''}" /></div>
+      <div>
+        <label>Status</label>
+        <select id="teamStatus">
+          <option value="active" ${!t || t.status === 'active' ? 'selected' : ''}>Active</option>
+          <option value="inactive" ${t && t.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+        </select>
+      </div>
+      <div class="field-wide"><label>Notes</label><input id="teamNotes" placeholder="optional" value="${t ? escapeAttr(t.notes || '') : ''}" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitTeamMember(this)">Save</button></div>
+    </div>
+    <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
 }
 
-function cancelTeamEdit() {
-  document.getElementById('teamId').value = '';
-  ['teamName', 'teamEmail', 'teamPhone', 'teamNotes'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('teamRole').value = 'Admin';
-  document.getElementById('teamStatus').value = 'active';
-  document.getElementById('teamFormTitle').textContent = 'Add Team Member';
-  document.getElementById('teamCancelBtn').style.display = 'none';
+function editTeamMember(id) {
+  openTeamModal(id);
 }
 
 async function submitTeamMember(btn) {
@@ -4260,7 +4261,7 @@ async function submitTeamMember(btn) {
       if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Could not save: ' + e.message; } else alert('Could not save: ' + e.message);
       return;
     }
-    cancelTeamEdit();
+    closeModal();
     await loadTeam();
     renderTeam();
     await loadProperties();
@@ -4417,6 +4418,33 @@ async function submitEditProperty(btn, propertyId) {
   });
 }
 
+// v1.10.1 F12 — Add Property moved off an always-on half-page form into a modal.
+function openAddPropertyModal() {
+  const teamOptionsHtml = () => '<option value="">—</option>' + team.filter(t => t.status === 'active').map(t =>
+    `<option value="${t.id}">${escapeHtml(t.name)} (${escapeHtml(t.role)})</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Add Property</div>
+    <div class="form-grid" id="propertyForm">
+      <div class="field-wide"><label>Property / Business Name</label><input id="pName" placeholder="e.g. The Oaks Apartments" /></div>
+      <div><label>Type</label><input id="pType" placeholder="e.g. Apartment Community" /></div>
+      <div class="field-wide"><label>Address</label><input id="pAddress" placeholder="Street, City, GA" /></div>
+      <div class="field-wide"><label>Website</label><input id="pWebsite" placeholder="optional" /></div>
+      <div>
+        <label>Status</label>
+        <select id="pStatus"><option value="active">Active</option><option value="prospect">Prospect</option><option value="inactive">Inactive</option></select>
+      </div>
+      <div><label>Relationship Started</label><input id="pRelStart" type="date" /></div>
+      <div>
+        <label>Assigned Operator</label>
+        <select id="pOperator"><option value="">—</option><option>Brian</option><option>Vala</option></select>
+      </div>
+      <div><label>Account Manager</label><select id="pAccountManager">${teamOptionsHtml()}</select></div>
+      <div><label>Stocker</label><select id="pStocker">${teamOptionsHtml()}</select></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="addProperty(this)">Add Property</button></div>
+    </div>
+  `);
+}
+
 async function addProperty(btn) {
   return withButtonBusy(btn, async () => {
     const name = document.getElementById('pName').value.trim();
@@ -4434,9 +4462,7 @@ async function addProperty(btn) {
         stockerId: document.getElementById('pStocker').value || null,
       });
     } catch (e) { alert('Could not save property: ' + e.message); return; }
-    ['pName', 'pType', 'pAddress', 'pWebsite', 'pRelStart'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('pAccountManager').value = '';
-    document.getElementById('pStocker').value = '';
+    closeModal();
     await loadProperties();
     renderRelationships();
   });
@@ -6228,7 +6254,7 @@ function openOverviewKpiDetail(kind) {
 
   let title, bodyHtml;
   if (kind === 'gross' || kind === 'net' || kind === 'profit') {
-    title = kind === 'gross' ? 'Gross Sales' : kind === 'net' ? 'Net Sales' : 'Net Profit';
+    title = kind === 'gross' ? 'Gross Sales' : kind === 'net' ? 'Contribution Profit' : 'Tracked Operating Profit';
     const byM = machineBreakdownRows(sRows);
     const rowsHtml = byM.map(r => {
       const net = r.gross - r.cogs - r.fees;
@@ -6356,7 +6382,7 @@ function renderTrendChart() {
   const trendTableWrap = document.getElementById('trendChart_table');
   if (trendTableWrap) {
     trendTableWrap.innerHTML = chartTableHtml(
-      ['Period', 'Gross Sales', 'Net Sales', 'Profit'],
+      ['Period', 'Gross Sales', 'Contribution Profit', 'Tracked Operating Profit'],
       keys.map((k, i) => [labelFn(k), fmt(grossByKey[i]), fmt(netByKey[i]), fmt(profitByKey[i])])
     );
   }
@@ -6370,7 +6396,7 @@ function renderTrendChart() {
       labels: keys.map(labelFn),
       datasets: [
         { label: 'Gross Sales', data: grossByKey, borderColor: '#29ABE2', backgroundColor: '#29ABE2', tension: .25 },
-        { label: 'Net Sales', data: netByKey, borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25 },
+        { label: 'Contribution Profit', data: netByKey, borderColor: '#1A7EB5', backgroundColor: '#1A7EB5', tension: .25 },
         { label: 'Profit', data: profitByKey, borderColor: '#FF6B2B', backgroundColor: '#FF6B2B', tension: .25 },
       ]
     },
@@ -6408,7 +6434,7 @@ function renderMachineChart(sRows) {
   const ids = Object.keys(byMachine);
   const machineTableWrap = document.getElementById('machineChart_table');
   if (machineTableWrap) {
-    machineTableWrap.innerHTML = chartTableHtml(['Machine', 'Net Sales'], ids.map(id => [machineName(id), fmt(byMachine[id])]));
+    machineTableWrap.innerHTML = chartTableHtml(['Machine', 'Contribution Profit'], ids.map(id => [machineName(id), fmt(byMachine[id])]));
   }
   const ctx = document.getElementById('machineChart');
   if (!CHARTS_AVAILABLE) { chartUnavailableNote('machineChart'); return; }
@@ -6418,7 +6444,7 @@ function renderMachineChart(sRows) {
     type: 'bar',
     data: {
       labels: ids.map(machineName),
-      datasets: [{ label: 'Net Sales', data: ids.map(id => byMachine[id]),
+      datasets: [{ label: 'Contribution Profit', data: ids.map(id => byMachine[id]),
         backgroundColor: ids.map(id => propertyColorFor((machines.find(m => m.id === id) || {}).propertyId) || '#29ABE2'), borderRadius: 4 }]
     },
     options: {
