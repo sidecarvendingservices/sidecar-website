@@ -533,6 +533,19 @@
   tr.product-row { cursor: pointer; }
   tr.product-row:hover { background: #F7FAFB; }
   td.product-select-cell { width: 30px; }
+
+  /* v1.10.1 F20 — reduced-motion support. Applies to every animation/
+     transition in this file (the fadein tab-panel keyframe, card hover
+     transitions, and anything added later) rather than opting in
+     case-by-case — the safer default for a checklist item like this. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -548,11 +561,12 @@
     </div>
     <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
-    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.17</div>
+    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.18</div>
 
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
         <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="action-center">Action Center<span class="nav-badge" id="navBadgeActionCenter" style="display:none;">0</span></button>
         <button class="tab-btn" data-tab="tasks">Tasks &amp; Calls<span class="nav-badge" id="navBadgeTasks" style="display:none;">0</span></button>
         <button class="tab-btn tab-btn-secondary" data-tab="team">Team</button>
         <button class="tab-btn tab-btn-secondary" data-tab="relationships">Properties<span class="nav-badge" id="navBadgeProperties" style="display:none;">0</span></button>
@@ -577,6 +591,14 @@
   <div class="app">
 
     <div class="content-header" id="contentHeader">
+      <div class="global-search-wrap" style="position:relative;">
+        <label for="globalSearchInput" class="visually-hidden">Search machines, properties, contacts, products, and tasks</label>
+        <input id="globalSearchInput" type="search" placeholder="Search everything…" autocomplete="off"
+               style="border:1.5px solid var(--border-strong); border-radius:999px; padding:9px 16px; font-size:13px; font-family:inherit; min-height:44px; width:220px;"
+               oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" />
+        <div id="globalSearchResults" role="listbox" aria-label="Search results"
+             style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:60; width:340px; max-height:400px; overflow-y:auto; background:#fff; border:1px solid var(--border-strong); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+      </div>
       <div class="quick-add-wrap">
         <button class="btn-quick-add" onclick="toggleQuickAddMenu(event)" aria-haspopup="true" aria-expanded="false">+ Quick Add ▾</button>
         <div class="quick-add-menu" id="quickAddMenu" role="menu">
@@ -591,6 +613,7 @@
       </div>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openDataHealthDialog()">Data Health</button>
+      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openActivityHistoryDialog()">Activity History</button>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
       <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
     </div>
@@ -607,8 +630,11 @@
   <!-- ============ OVERVIEW ============ -->
   <div class="tab-panel active" id="panel-overview">
     <div class="card">
-      <h2 class="card-title">What Needs Attention</h2>
-      <div class="card-desc">Pulled live from Machine Health, the Restock Queue, Tasks, and Commission — nothing here is entered separately.</div>
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">What Needs Attention</h2>
+        <button class="btn btn-secondary" onclick="switchToTab('action-center')">Open Action Center</button>
+      </div>
+      <div class="card-desc">Pulled live from Machine Health, the Restock Queue, Tasks, Commission, and Data Quality — nothing here is entered separately. Full queue with filters lives in Action Center.</div>
       <div id="todayAttention"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="kpi-grid">
@@ -721,6 +747,16 @@
       <div class="chart-box small"><canvas id="machineChart" role="img" aria-label="Contribution profit per machine"></canvas></div>
       <button class="chart-table-toggle" onclick="event.stopPropagation(); toggleChartTable('machineChart')">View data table</button>
       <div class="table-wrap" id="machineChart_table" hidden style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ============ ACTION CENTER (v1.10.1 F18/F19) ============ -->
+  <div class="tab-panel" id="panel-action-center">
+    <div class="card">
+      <h2 class="card-title">Action Center</h2>
+      <div class="card-desc">Every open item that needs a decision — machine health, service dates, inventory, tasks, commission, and data quality — in one prioritized queue instead of six tabs.</div>
+      <div id="actionCenterFilters" style="display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 4px;" role="tablist" aria-label="Saved views"></div>
+      <div id="actionCenterBody" style="margin-top:10px;"><div class="empty-state">Loading…</div></div>
     </div>
   </div>
 
@@ -2371,6 +2407,73 @@ function openDataHealthDialog() {
     <div class="modal-sub" style="margin-top:14px;">Not yet tracked here: last-attempted-sync/failure history, missing machine-product capacity, and unresolved contracts — planned as these features get built out.</div>`);
 }
 
+// v1.10.1 F17 — Activity & Audit History. Distinct from "Data Syncs"
+// (integration sync timestamps) — this is a real audit trail of who
+// changed what, sourced from audit_log (migrations/015_audit_log.sql) via
+// GET /api/data/audit-log. Only instrumented so far against write paths
+// that exist today: team member role changes, property Account
+// Manager/Stocker reassignment, and machine property reassignment — the
+// spec's fuller list (pricing, planograms, device state, contracts) gets
+// instrumented as those v1.10.2 features actually ship, since there's
+// nothing to audit yet for a feature that doesn't exist.
+const AUDIT_ACTION_LABELS = {
+  role_change: 'Changed role',
+  property_reassign: 'Reassigned property owner(s)',
+  machine_reassign: 'Reassigned machine’s property',
+};
+function describeAuditChange(entry) {
+  const before = entry.before || {};
+  const after = entry.after || {};
+  const parts = [];
+  for (const key of Object.keys(after)) {
+    const b = before[key], a = after[key];
+    if (b === a) continue;
+    const resolve = (v) => {
+      if (key === 'accountManagerId' || key === 'stockerId') return (team.find(t => t.id === v) || {}).name || (v ? v : '—');
+      if (key === 'propertyId') return (properties.find(p => p.id === v) || {}).name || (v ? v : '— (unassigned)');
+      if (key === 'role') return v || '—';
+      return v === null || v === undefined || v === '' ? '—' : v;
+    };
+    parts.push(`${key}: ${escapeHtml(String(resolve(b)))} → ${escapeHtml(String(resolve(a)))}`);
+  }
+  return parts.join('; ') || '—';
+}
+async function openActivityHistoryDialog() {
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Activity History</div>
+    <div class="modal-sub">Who changed what — role changes and property/machine ownership reassignment so far. Pricing, planogram, and device-state changes will appear here once those features ship.</div>
+    <div id="activityHistoryBody" style="margin-top:10px;">Loading…</div>`);
+  try {
+    const data = await apiGet('/api/data/audit-log');
+    const body = document.getElementById('activityHistoryBody');
+    if (!body) return; // dialog was closed before this resolved
+    if (data._migrationNeeded) {
+      body.innerHTML = `<div class="modal-sub">Run <code>${escapeHtml(data._migrationNeeded)}</code> against the database to start recording activity history.</div>`;
+      return;
+    }
+    const entries = data.entries || [];
+    if (!entries.length) {
+      body.innerHTML = `<div class="modal-sub">No recorded activity yet — this fills in as role and ownership changes happen.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th><th>Change</th></tr></thead>
+      <tbody>
+        ${entries.map(e => `<tr>
+          <td>${escapeHtml(fmtAgo(e.occurredAt))}</td>
+          <td>${escapeHtml(e.actorName || e.actorEmail || 'Unknown')}</td>
+          <td>${escapeHtml(AUDIT_ACTION_LABELS[e.action] || e.action)}</td>
+          <td>${escapeHtml(e.entityLabel || e.entityId)}</td>
+          <td style="font-size:12.5px; color:var(--graphite);">${describeAuditChange(e)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  } catch (e) {
+    const body = document.getElementById('activityHistoryBody');
+    if (body) body.innerHTML = `<div class="modal-sub">Couldn’t load activity history: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
 async function checkHealthNow(btn) {
   return withButtonBusy(btn, () => checkHealthNowImpl());
 }
@@ -3739,6 +3842,11 @@ async function computeProductCatalog() {
 async function loadProductsCatalog() {
   productCatalogCache = await computeProductCatalog();
   renderProducts();
+  // v1.10.1 F18 — Action Center's missing-cost/low-margin checks need
+  // productCatalogCache, which isn't ready yet when renderAll() runs at
+  // init (this load is deliberately not awaited there) — refresh once it is.
+  if (typeof renderActionCenter === 'function') renderActionCenter();
+  if (typeof renderToday === 'function') renderToday();
   // Several selects are built from productCatalogCache before this (unawaited, kicked off
   // from init()) resolves — refresh them now that real product data exists, instead of
   // leaving them stuck on "No products found yet" until the user happens to re-open them.
@@ -5663,13 +5771,13 @@ function buildAttentionItems() {
     const h = byMachine[m.id];
     const fresh = healthFreshness(h);
     if (fresh.state === 'offline') {
-      critical.push({ label: `${m.name} is offline`, detail: h ? `since ${fmtWhen(h.checkedAt)}` : '', action: () => switchToTab('health') });
+      critical.push({ label: `${m.name} is offline`, detail: h ? `since ${fmtWhen(h.checkedAt)}` : '', action: () => switchToTab('health'), category: 'field', source: 'Machine Health' });
     } else if (fresh.state === 'stale') {
-      high.push({ label: `${m.name} hasn't reported in a while`, detail: `last checked ${fmtAgo(h.checkedAt)}`, action: () => switchToTab('health') });
+      high.push({ label: `${m.name} hasn't reported in a while`, detail: `last checked ${fmtAgo(h.checkedAt)}`, action: () => switchToTab('health'), category: 'field', source: 'Machine Health' });
     }
     if (h && h.temperature !== null && h.temperature !== undefined) {
       const outOfRange = (h.warningLow !== null && h.temperature < h.warningLow) || (h.warningHigh !== null && h.temperature > h.warningHigh);
-      if (outOfRange) high.push({ label: `${m.name} temperature out of range`, detail: `${h.temperature}°`, action: () => switchToTab('health') });
+      if (outOfRange) high.push({ label: `${m.name} temperature out of range`, detail: `${h.temperature}°`, action: () => switchToTab('health'), category: 'field', source: 'Machine Health' });
     }
   });
 
@@ -5677,7 +5785,7 @@ function buildAttentionItems() {
   (restockQueueCache || []).forEach(entry => {
     if (!entry.nextServiceBy) return;
     const pr = restockPriority(entry.nextServiceBy);
-    const item = { label: `${entry.machine.name} needs service`, detail: `by ${entry.nextServiceBy} (${pr.label})`, action: () => switchToTab('supply') };
+    const item = { label: `${entry.machine.name} needs service`, detail: `by ${entry.nextServiceBy} (${pr.label})`, action: () => switchToTab('supply'), category: 'field', source: 'Restock Queue' };
     if (pr.label === 'Critical') critical.push(item);
     else if (pr.label === 'High') high.push(item);
     else if (pr.label === 'Medium') followUp.push(item);
@@ -5685,14 +5793,14 @@ function buildAttentionItems() {
 
   // Backstock — negative/short lots need reconciling
   backstockAggregated().forEach(a => {
-    if (a.quantity < 0) followUp.push({ label: `${a.productName || a.productId} is short in Backstock`, detail: `${a.quantity} on hand`, action: () => switchToTab('backstock') });
+    if (a.quantity < 0) followUp.push({ label: `${a.productName || a.productId} is short in Backstock`, detail: `${a.quantity} on hand`, action: () => switchToTab('backstock'), category: 'inventory', source: 'Backstock' });
   });
 
   // Tasks
   (tasks || []).forEach(t => {
     if (t.status === 'complete') return;
     if (!t.dueDate) return;
-    const item = { label: t.title, detail: `${t.owner || 'Unassigned'} — related: ${taskLinkLabel(t)}`, action: () => switchToTab('tasks') };
+    const item = { label: t.title, detail: `${t.owner || 'Unassigned'} — related: ${taskLinkLabel(t)}`, action: () => switchToTab('tasks'), category: 'task', source: 'Tasks', owner: t.owner || 'Unassigned' };
     if (t.dueDate < today) critical.push({ ...item, label: `Overdue: ${t.title}` });
     else if (t.dueDate === today && (t.priority === 'critical' || t.priority === 'high')) high.push(item);
     else if (t.dueDate === today) followUp.push(item);
@@ -5704,8 +5812,25 @@ function buildAttentionItems() {
   groups.forEach(g => {
     const payment = paymentFor(g.key, curMonth);
     const status = payment ? payment.status : 'due';
-    if (status === 'past_due') critical.push({ label: `Commission past due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials') });
-    else if (status === 'due' && g.commissionOwed > 0) info.push({ label: `Commission due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials') });
+    if (status === 'past_due') critical.push({ label: `Commission past due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials'), category: 'financial', source: 'Commission' });
+    else if (status === 'due' && g.commissionOwed > 0) info.push({ label: `Commission due — ${g.label}`, detail: fmt(g.commissionOwed), action: () => switchToTab('financials'), category: 'financial', source: 'Commission' });
+  });
+
+  // v1.10.1 F18 — data-quality housekeeping (same checks as F16's Data
+  // Health dialog, folded in here too so they show up in the one
+  // aggregated queue instead of only being visible if you happen to open
+  // that separate dialog).
+  (productCatalogCache || []).forEach(p => {
+    if (p.currentCost === null) followUp.push({ label: `${p.name} is missing a cost`, detail: 'Needed for margin and Backstock value calculations', action: () => switchToTab('products'), category: 'inventory', source: 'Data Quality' });
+  });
+  activeMachines.forEach(m => {
+    if (!m.propertyId) followUp.push({ label: `${m.name} has no property assigned`, detail: 'Blocks Account Manager/Stocker inheritance (F14)', action: () => switchToTab('machines'), category: 'inventory', source: 'Data Quality' });
+  });
+  (productCatalogCache || []).forEach(p => {
+    if (p.currentCost !== null && p.price) {
+      const margin = (p.price - p.currentCost) / p.price;
+      if (margin < 0.15) info.push({ label: `${p.name} margin is thin`, detail: `${(margin * 100).toFixed(0)}% margin`, action: () => switchToTab('products'), category: 'financial', source: 'Products' });
+    }
   });
 
   return { critical, high, followUp, info };
@@ -5777,6 +5902,137 @@ function renderToday() {
     }
   }
 }
+
+// v1.10.1 F18/F19 — Action Center: the same aggregated queue that feeds
+// Overview's "What Needs Attention" widget, promoted to a dedicated
+// full-page view with age/owner/source columns and saved-view filters.
+// Reuses buildAttentionItems() rather than recomputing anything — one
+// source of truth for "what needs attention" whether you're glancing at
+// Overview or working the full queue here.
+const ACTION_CENTER_VIEWS = [
+  { key: 'all', label: 'All' },
+  { key: 'needs-attention', label: 'Needs Attention' },
+  { key: 'field', label: 'Field Visit' },
+  { key: 'inventory', label: 'Inventory Purchase' },
+  { key: 'financial', label: 'Financial Cleanup' },
+];
+let actionCenterView = 'all';
+function setActionCenterView(key) {
+  actionCenterView = key;
+  renderActionCenter();
+}
+function renderActionCenter() {
+  const filterBar = document.getElementById('actionCenterFilters');
+  if (filterBar) {
+    filterBar.innerHTML = ACTION_CENTER_VIEWS.map(v =>
+      `<button class="subnav-btn${v.key === actionCenterView ? ' active' : ''}" role="tab" aria-selected="${v.key === actionCenterView}" onclick="setActionCenterView('${v.key}')">${escapeHtml(v.label)}</button>`
+    ).join('');
+  }
+  const body = document.getElementById('actionCenterBody');
+  if (!body) return;
+  const { critical, high, followUp, info } = buildAttentionItems();
+  let all = [
+    ...critical.map(it => ({ ...it, severity: 'Critical', tone: 'tag-due' })),
+    ...high.map(it => ({ ...it, severity: 'High', tone: 'tag-due' })),
+    ...followUp.map(it => ({ ...it, severity: 'Follow-up', tone: 'tag-tiered' })),
+    ...info.map(it => ({ ...it, severity: 'Info', tone: 'tag-none' })),
+  ];
+  if (actionCenterView === 'needs-attention') all = all.filter(it => it.severity === 'Critical' || it.severity === 'High');
+  else if (actionCenterView !== 'all') all = all.filter(it => it.category === actionCenterView);
+
+  if (!all.length) {
+    body.innerHTML = '<div class="empty-state"><strong>All clear</strong>Nothing in this view right now.</div>';
+    return;
+  }
+  body.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Severity</th><th>Item</th><th>Detail</th><th>Owner</th><th>Source</th><th>Action</th></tr></thead>
+    <tbody>
+      ${all.map((it, idx) => `<tr>
+        <td><span class="tag ${it.tone}">${escapeHtml(it.severity)}</span></td>
+        <td>${escapeHtml(it.label)}</td>
+        <td style="color:var(--graphite); font-size:12.5px;">${escapeHtml(it.detail || '')}</td>
+        <td>${escapeHtml(it.owner || '—')}</td>
+        <td>${escapeHtml(it.source || '—')}</td>
+        <td><button class="btn btn-secondary" style="min-height:36px; padding:6px 12px;" data-ac-idx="${idx}">Open</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+  Array.from(body.querySelectorAll('[data-ac-idx]')).forEach(el => {
+    const idx = parseInt(el.dataset.acIdx, 10);
+    if (all[idx] && typeof all[idx].action === 'function') el.addEventListener('click', () => all[idx].action());
+  });
+}
+
+// v1.10.1 F19 — Global search across machines, properties, contacts,
+// products, and tasks (all already loaded client-side, so this is a plain
+// substring scan, not a new endpoint). Persistent cross-tab filter state
+// beyond this (F19's other bullet) is deliberately not built this pass —
+// see V1.10.1_SPEC.md's F19 note for why.
+function handleGlobalSearch(raw) {
+  const q = (raw || '').trim().toLowerCase();
+  const box = document.getElementById('globalSearchResults');
+  if (!box) return;
+  if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const results = [];
+  (machines || []).filter(m => m.status !== 'retired').forEach(m => {
+    if (m.name.toLowerCase().includes(q) || (m.host || '').toLowerCase().includes(q)) {
+      results.push({ type: 'Machine', label: m.name, detail: m.host || '', action: () => openMachineDetail(m.id) });
+    }
+  });
+  (properties || []).forEach(p => {
+    if (p.name.toLowerCase().includes(q) || (p.address || '').toLowerCase().includes(q)) {
+      results.push({ type: 'Property', label: p.name, detail: p.address || '', action: () => openPropertyDetail(p.id) });
+    }
+  });
+  (allContacts || []).forEach(c => {
+    if (c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.phone || '').includes(q)) {
+      results.push({ type: 'Contact', label: c.name, detail: c.email || c.phone || '', action: () => openContactDetail(c.id) });
+    }
+  });
+  (productCatalogCache || []).forEach(p => {
+    if (p.name.toLowerCase().includes(q)) {
+      results.push({ type: 'Product', label: p.name, detail: `${p.machineCount} machine(s)`, action: () => switchToTab('products') });
+    }
+  });
+  (tasks || []).forEach(t => {
+    if (t.status !== 'complete' && t.title.toLowerCase().includes(q)) {
+      results.push({ type: 'Task', label: t.title, detail: t.owner || 'Unassigned', action: () => openTaskDetail(t.id) });
+    }
+  });
+
+  if (!results.length) {
+    box.innerHTML = `<div style="padding:12px 14px; color:var(--graphite); font-size:13px;">No matches for "${escapeHtml(raw)}"</div>`;
+    box.style.display = 'block';
+    return;
+  }
+  box.innerHTML = results.slice(0, 25).map((r, idx) => `
+    <div role="option" tabindex="0" data-gsr-idx="${idx}" style="padding:9px 14px; border-bottom:1px solid #f0f0f0; cursor:pointer; display:flex; align-items:center; gap:8px; min-height:44px;">
+      <span class="tag tag-none" style="flex-shrink:0;">${escapeHtml(r.type)}</span>
+      <span style="flex:1; font-weight:700;">${escapeHtml(r.label)}</span>
+      <span style="color:var(--graphite); font-size:12px;">${escapeHtml(r.detail)}</span>
+    </div>`).join('');
+  box.style.display = 'block';
+  Array.from(box.querySelectorAll('[data-gsr-idx]')).forEach(el => {
+    const idx = parseInt(el.dataset.gsrIdx, 10);
+    const fire = () => { results[idx].action(); closeGlobalSearch(); };
+    el.addEventListener('click', fire);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
+  });
+}
+function closeGlobalSearch() {
+  const box = document.getElementById('globalSearchResults');
+  const input = document.getElementById('globalSearchInput');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (input) input.value = '';
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.global-search-wrap');
+  if (wrap && !wrap.contains(e.target)) closeGlobalSearch();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('globalSearchResults')?.style.display === 'block') closeGlobalSearch();
+});
 
 // ---------------- sales ----------------
 // v1.10.1 F12 — Log a Sales Entry Manually moved off an always-on form into a modal.
@@ -6804,10 +7060,13 @@ function updateNavBadges() {
   setBadge('navBadgeMachines', (machines || []).filter(m => m.status !== 'retired').length);
   setBadge('navBadgeProperties', (properties || []).length);
   setBadge('navBadgeTasks', (tasks || []).filter(t => t.status !== 'complete').length);
+  const { critical, high } = buildAttentionItems();
+  setBadge('navBadgeActionCenter', critical.length + high.length);
 }
 
 function renderAll() {
   renderSection('range options', buildRangeOptions);
+  renderSection('action center', renderActionCenter);
   renderSection('machines', renderMachines);
   renderSection('sales', renderSales);
   renderSection('sales pattern chart', renderPatternChart);

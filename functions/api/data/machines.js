@@ -18,6 +18,8 @@
 // before or after that migration has been run (falls back to the narrower
 // column set if the new columns don't exist yet).
 
+import { logAudit } from '../../_lib/audit.js';
+
 function genId() {
   return crypto.randomUUID();
 }
@@ -78,7 +80,7 @@ export async function onRequestPost({ request, env }) {
   // never silently inserts a second row for an id that should have been
   // updated, regardless of how the id column's constraints are defined.
   if (body.id) {
-    const existing = await env.DB.prepare('SELECT id FROM machines WHERE id = ?1').bind(body.id).first();
+    const existing = await env.DB.prepare('SELECT id, property_id as propertyId FROM machines WHERE id = ?1').bind(body.id).first();
     if (existing) {
       try {
         await env.DB.prepare(
@@ -88,6 +90,15 @@ export async function onRequestPost({ request, env }) {
              property_id=?11, status=?12, retired_at=?13, retired_reason=?14
            WHERE id=?1`
         ).bind(body.id, name, host, address, plan, install, hahaId, contactName, contactPhone, contactEmail, propertyId, status, retiredAt, retiredReason).run();
+        // v1.10.1 F17 — which property a machine belongs to drives who's
+        // responsible for it (inherited Account Manager/Stocker, F14), so
+        // it's worth its own audit action distinct from routine field edits.
+        if ((existing.propertyId || null) !== (propertyId || null)) {
+          await logAudit(env, request, {
+            action: 'machine_reassign', entityType: 'machine', entityId: body.id, entityLabel: name,
+            before: { propertyId: existing.propertyId || null }, after: { propertyId: propertyId || null },
+          });
+        }
       } catch (err) {
         if (!isMissingColumnOrTable(err)) return Response.json({ error: String(err.message || err) }, { status: 500 });
         await env.DB.prepare(

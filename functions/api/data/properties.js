@@ -17,6 +17,8 @@
 //
 // Requires a D1 database bound as "DB". Sits behind Cloudflare Access.
 
+import { logAudit } from '../../_lib/audit.js';
+
 function genId(prefix) {
   return prefix + '_' + crypto.randomUUID();
 }
@@ -140,7 +142,7 @@ export async function onRequestPost({ request, env }) {
 
   try {
     if (body.id) {
-      const existing = await env.DB.prepare('SELECT id FROM properties WHERE id = ?1').bind(body.id).first();
+      const existing = await env.DB.prepare('SELECT id, name, account_manager_id as accountManagerId, stocker_id as stockerId FROM properties WHERE id = ?1').bind(body.id).first();
       if (existing) {
         await env.DB.prepare(
           `UPDATE properties SET name=?2, property_type=?3, address=?4, website=?5, notes=?6,
@@ -148,6 +150,16 @@ export async function onRequestPost({ request, env }) {
              account_manager_id=?11, stocker_id=?12 WHERE id=?1`
         ).bind(body.id, name, propertyType, address, website, notes, placementType, status, relationshipStarted, assignedOperator,
           accountManagerId || null, stockerId || null).run();
+        // v1.10.1 F17 — reassigning who's responsible for a property is
+        // the one edit here worth an audit trail (pricing/inventory-adjacent
+        // accountability), not every cosmetic field change.
+        if (existing.accountManagerId !== (accountManagerId || null) || existing.stockerId !== (stockerId || null)) {
+          await logAudit(env, request, {
+            action: 'property_reassign', entityType: 'property', entityId: body.id, entityLabel: name,
+            before: { accountManagerId: existing.accountManagerId, stockerId: existing.stockerId },
+            after: { accountManagerId: accountManagerId || null, stockerId: stockerId || null },
+          });
+        }
         return Response.json({ id: body.id, name, propertyType, address, website, notes, placementType, status, relationshipStarted, assignedOperator, accountManagerId, stockerId });
       }
     }

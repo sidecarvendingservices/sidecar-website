@@ -9,6 +9,8 @@
 // Requires a D1 database bound as "DB". Sits behind Cloudflare Access.
 // Added via migrations/009_team.sql.
 
+import { logAudit } from '../../_lib/audit.js';
+
 function genId(prefix) {
   return prefix + '_' + crypto.randomUUID();
 }
@@ -65,11 +67,21 @@ export async function onRequestPost({ request, env }) {
     if (dupe) return Response.json({ error: 'Another team member already uses that email.' }, { status: 409 });
 
     if (body.id) {
-      const existing = await env.DB.prepare('SELECT id FROM team_members WHERE id = ?1').bind(body.id).first();
+      const existing = await env.DB.prepare('SELECT id, name, role FROM team_members WHERE id = ?1').bind(body.id).first();
       if (existing) {
         await env.DB.prepare(
           `UPDATE team_members SET name=?2, email=?3, role=?4, phone=?5, status=?6, notes=?7 WHERE id=?1`
         ).bind(body.id, name, normalizedEmail, role, phone, status, notes).run();
+        // v1.10.1 F17 — role is the one field on this record with real
+        // security implications (F5's permissions gate reads it), so it's
+        // the one worth a dedicated audit action rather than lumping every
+        // team-member edit under one generic "updated" entry.
+        if (existing.role !== role) {
+          await logAudit(env, request, {
+            action: 'role_change', entityType: 'team_member', entityId: body.id, entityLabel: name,
+            before: { role: existing.role }, after: { role },
+          });
+        }
         return Response.json({ id: body.id, name, email: normalizedEmail, role, phone, status, notes });
       }
     }
