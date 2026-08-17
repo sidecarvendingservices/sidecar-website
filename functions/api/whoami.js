@@ -23,23 +23,6 @@ function isMissingTableError(err) {
 }
 
 export async function onRequestGet({ request, env }) {
-  // ?debug=1 dumps every header this Function received, plus what the JWT
-  // verifier concluded — handy if this ever needs re-diagnosing (e.g. after
-  // rotating the Access app, which changes the AUD tag).
-  const debugUrl = new URL(request.url);
-  if (debugUrl.searchParams.get('debug') === '1') {
-    const headers = {};
-    for (const [key, value] of request.headers.entries()) headers[key] = value;
-    const verifiedEmail = await verifyAccessEmail(request, env).catch(e => 'ERROR: ' + e.message);
-    return Response.json({
-      url: request.url,
-      headers,
-      envHasTeamDomain: !!env.CF_ACCESS_TEAM_DOMAIN,
-      envHasAud: !!env.CF_ACCESS_AUD,
-      verifiedEmail,
-    });
-  }
-
   const email = await verifyAccessEmail(request, env);
   if (!email) return Response.json({ email: null, member: null });
 
