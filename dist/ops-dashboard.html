@@ -531,7 +531,7 @@
     </div>
     <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
-    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.14</div>
+    <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">Version 1.9.15</div>
 
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
@@ -866,17 +866,11 @@
       <div id="missingCostStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
     </div>
     <div class="card">
-      <h2 class="card-title">Log a Sales Entry Manually</h2>
-      <div class="card-desc">One entry per machine per day (or per batch/report pull) — Contribution Profit is calculated automatically.</div>
-      <div class="form-grid" id="salesForm">
-        <div><label>Machine</label><select id="sMachine"></select></div>
-        <div><label>Date</label><input id="sDate" type="date" /></div>
-        <div><label>Gross Sales ($)</label><input id="sGross" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div><label>Cost of Goods ($)</label><input id="sCogs" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div><label>Processing Fees ($)</label><input id="sFees" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-        <div><button class="btn btn-primary" onclick="addSale()">Add Entry</button></div>
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Log a Sales Entry Manually</h2>
+        <button class="btn btn-primary" onclick="openAddSaleModal()">+ Log Sales Entry</button>
       </div>
-      <div class="pill-note" style="margin-top:10px; display:inline-block;">Contribution Profit = Gross − Cost of Goods − Processing Fees</div>
+      <div class="card-desc">One entry per machine per day (or per batch/report pull) — Contribution Profit is calculated automatically. Contribution Profit = Gross − Cost of Goods − Processing Fees.</div>
     </div>
     <div class="card">
       <div class="section-flex">
@@ -950,39 +944,16 @@
       <div class="card-desc">What's currently held in reserve, not yet loaded into a machine, valued at FIFO cost.</div>
       <div id="backstockSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Backstock</h2>
-        <div class="card-desc">One row per open purchase lot, oldest first — this is the order they'll be drawn from when you restock a machine or QMOS product out. Rows in red are negative (more has been moved out than was ever logged in).</div>
-        <div class="table-wrap responsive-cards"><table id="backstockTable"></table></div>
-        <div id="backstockEmpty" class="empty-state" style="display:none;">
-          <strong>Nothing in Backstock yet</strong>
-          Log a purchase to the right to get started.
-        </div>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Backstock</h2>
+        <button class="btn btn-primary" onclick="openLogPurchaseModal()">+ Log a Purchase</button>
       </div>
-      <div class="card">
-        <h2 class="card-title">Log a Purchase</h2>
-        <div class="card-desc">Group everything from one buying trip under a batch title (e.g. "Costco run 8/16") — each product still gets its own expense line for accurate category tracking, but they'll show together. Every item needs a cost — enter Unit Price directly, or Package Price + Qty per Package if that's easier than figuring out the per-unit cost yourself.</div>
-        <div class="form-grid" style="margin-bottom:10px;">
-          <div class="field-wide"><label>Batch Title</label><input id="pbLabel" placeholder="e.g. Costco inventory purchase" /></div>
-          <div><label>Purchase Date</label><input id="pbDate" type="date" /></div>
-          <div><label>Vendor</label><input id="pbVendor" placeholder="optional" /></div>
-          <div>
-            <label>Paid By</label>
-            <select id="pbPaidBy">
-              <option value="">—</option>
-              <option>Additional Equity Investment - BDM</option>
-              <option>Additional Equity - Renfroe Ventures LLC</option>
-              <option>Chase Business Credit BDM</option>
-              <option>Chase Business Credit VAR</option>
-              <option>Chase Business Checking</option>
-            </select>
-          </div>
-        </div>
-        <div id="purchaseItemRows"></div>
-        <div style="margin:8px 0;"><button class="btn btn-secondary" onclick="addPurchaseItemRow()">+ Add Product</button></div>
-        <button class="btn btn-primary" onclick="submitPurchaseBatch(this)">Save Purchase</button>
-        <div id="purchaseBatchStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      <div class="card-desc">One row per open purchase lot, oldest first — this is the order they'll be drawn from when you restock a machine or QMOS product out. Rows in red are negative (more has been moved out than was ever logged in).</div>
+      <div class="table-wrap responsive-cards"><table id="backstockTable"></table></div>
+      <div id="backstockEmpty" class="empty-state" style="display:none;">
+        <strong>Nothing in Backstock yet</strong>
+        Log a purchase above to get started.
       </div>
     </div>
   </div>
@@ -1039,43 +1010,23 @@
       <div class="card-desc">Quantity Marked Out of System — quality issues, samples, and expired product, valued at FIFO cost. "QMOS" = write-offs; this is a real cost, logged as an expense automatically.</div>
       <div id="qmosSummary" class="kpi-grid" style="margin-bottom:0;"></div>
     </div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="section-flex">
-          <h2 class="card-title" style="margin:0;">QMOS Log</h2>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">QMOS Log</h2>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <select id="qmosPeriodFilter" style="max-width:160px;" onchange="renderQmos()">
             <option value="all">All time</option>
             <option value="week">This week</option>
             <option value="month">This month</option>
             <option value="quarter">This quarter</option>
           </select>
-        </div>
-        <div class="table-wrap responsive-cards"><table id="qmosTable"></table></div>
-        <div id="qmosEmpty" class="empty-state" style="display:none;">
-          <strong>Nothing logged yet</strong>
-          QMOS an item to the right when something's crushed, wet, expired, or given away as a sample.
+          <button class="btn btn-primary" onclick="openQmosModal()">+ Log QMOS</button>
         </div>
       </div>
-      <div class="card">
-        <h2 class="card-title">QMOS an Item</h2>
-        <div class="card-desc">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.</div>
-        <div class="form-grid" id="qmosForm">
-          <div><label>Location</label><select id="qLocation"><option value="main">Backstock</option></select></div>
-          <div><label>Product</label><select id="qProduct"></select></div>
-          <div><label>Quantity</label><input id="qQuantity" type="number" step="1" min="1" placeholder="0" /></div>
-          <div>
-            <label>Reason</label>
-            <select id="qReason">
-              <option value="quality">Quality (damaged, spoiled, etc.)</option>
-              <option value="sample">Sample</option>
-              <option value="expired">Expired</option>
-            </select>
-          </div>
-          <div><label>Date</label><input id="qDate" type="date" /></div>
-          <div class="field-wide"><label>Notes</label><input id="qNotes" placeholder="optional — e.g. crushed bag of chips" /></div>
-          <div class="field-wide"><button class="btn btn-primary" onclick="submitQmos(this)">Log QMOS</button></div>
-        </div>
-        <div id="qmosFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      <div class="table-wrap responsive-cards"><table id="qmosTable"></table></div>
+      <div id="qmosEmpty" class="empty-state" style="display:none;">
+        <strong>Nothing logged yet</strong>
+        Log QMOS above when something's crushed, wet, expired, or given away as a sample.
       </div>
     </div>
   </div>
@@ -1101,86 +1052,11 @@
         </div>
       </div>
       <div class="card">
-        <h2 class="card-title">Log an Expense</h2>
-        <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
-        <div class="form-grid" id="expenseForm">
-          <div><label>Date</label><input id="eDate" type="date" /></div>
-          <div>
-            <label>Category</label>
-            <select id="eCategory">
-            <option>Inventory - Product Purchases</option>
-            <option>Inventory - Shipping &amp; Delivery</option>
-            <option>Inventory - Storage &amp; Handling</option>
-            <option>Inventory - Shrinkage &amp; Waste (QMOS)</option>
-            <option>Machine Operations - Repairs &amp; Maintenance</option>
-            <option>Machine Operations - Parts &amp; Supplies</option>
-            <option>Machine Operations - Cleaning</option>
-            <option>Machine Operations - Connectivity &amp; Software</option>
-            <option>Machine Operations - Installation &amp; Relocation</option>
-            <option>Route &amp; Vehicle - Fuel</option>
-            <option>Route &amp; Vehicle - Maintenance &amp; Repairs</option>
-            <option>Route &amp; Vehicle - Parking &amp; Tolls</option>
-            <option>Route &amp; Vehicle - Other</option>
-            <option>Location - Commissions &amp; Revenue Share</option>
-            <option>Location - Rent &amp; Placement Fees</option>
-            <option>Sales &amp; Marketing - Advertising</option>
-            <option>Sales &amp; Marketing - Printing &amp; Marketing Materials</option>
-            <option>Sales &amp; Marketing - Promotional Products &amp; Samples</option>
-            <option>Sales &amp; Marketing - Events &amp; Networking</option>
-            <option>Sales &amp; Marketing - Website &amp; Content</option>
-            <option>Technology - Software &amp; Subscriptions</option>
-            <option>Technology - Hosting &amp; Domains</option>
-            <option>Technology - Equipment</option>
-            <option>Professional Services - Accounting &amp; Tax</option>
-            <option>Professional Services - Legal</option>
-            <option>Professional Services - Contractors &amp; Consulting</option>
-            <option>Insurance - Business Insurance</option>
-            <option>Licenses &amp; Fees - Licenses, Permits &amp; Registrations</option>
-            <option>Banking &amp; Finance - Bank &amp; Processing Fees</option>
-            <option>Banking &amp; Finance - Interest &amp; Financing Fees</option>
-            <option>General &amp; Administrative - Office Supplies</option>
-            <option>General &amp; Administrative - Phone &amp; Internet</option>
-            <option>General &amp; Administrative - Shipping &amp; Postage</option>
-            <option>General &amp; Administrative - Memberships &amp; Dues</option>
-            <option>General &amp; Administrative - Education &amp; Training</option>
-            <option>General &amp; Administrative - Meals &amp; Travel</option>
-            <option>Labor - Payroll</option>
-            <option>Labor - Contractors</option>
-            <option>Labor - Employee Expenses</option>
-            <option>Other - Miscellaneous Business Expense</option>
-            </select>
-          </div>
-          <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-          <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
-          <div>
-            <label>Paid By</label>
-            <select id="ePaidBy">
-            <option value="">—</option>
-            <option>Additional Equity Investment - BDM</option>
-            <option>Additional Equity - Renfroe Ventures LLC</option>
-            <option>Chase Business Credit BDM</option>
-            <option>Chase Business Credit VAR</option>
-            <option>Chase Business Checking</option>
-            </select>
-          </div>
-          <div>
-            <label>Type</label>
-            <select id="eExpenseType">
-              <option value="operating">Operating Expense</option>
-              <option value="capital">Capital / Equipment</option>
-            </select>
-          </div>
-          <div><label>Machine (optional)</label><select id="eMachine"><option value="">Company-wide</option></select></div>
-          <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
-          <div class="field-wide"><label>Receipt (optional)</label><input id="eReceipt" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
-          <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
-            <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
-              <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
-            </label>
-          </div>
-          <div class="field-wide"><button class="btn btn-primary" onclick="addExpense(this)">Add Expense</button></div>
+        <div class="section-flex">
+          <h2 class="card-title" style="margin:0;">Log an Expense</h2>
+          <button class="btn btn-primary" onclick="openAddExpenseModal()">+ Log an Expense</button>
         </div>
-        <div id="expenseFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+        <div class="card-desc">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs. This full form covers machine assignment, receipts, and reimbursable status — for a bare-bones quick entry, use the header's Quick Add menu instead.</div>
       </div>
     </div>
   </div>
@@ -1271,73 +1147,33 @@
   <!-- ============ RELATIONSHIPS (properties, contacts, activity) ============ -->
   <!-- ============ TEAM ============ -->
   <div class="tab-panel" id="panel-team">
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Team</h2>
-        <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
-        <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
-        <div id="teamEmpty" class="empty-state" style="display:none;">
-          <strong>No team members yet</strong>
-          Add one to the right — they'll then show up as an Account Manager / Stocker option on Properties and an Owner option on Tasks.
-        </div>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Team</h2>
+        <button class="btn btn-primary" onclick="openTeamModal()">+ Add Team Member</button>
       </div>
-      <div class="card">
-        <h2 class="card-title" id="teamFormTitle">Add Team Member</h2>
-        <div class="form-grid" id="teamForm">
-          <input type="hidden" id="teamId" value="" />
-          <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" /></div>
-          <div><label>Email</label><input id="teamEmail" type="email" placeholder="login email" /></div>
-          <div>
-            <label>Role</label>
-            <select id="teamRole">
-              <option>Admin</option>
-              <option>Stocker</option>
-              <option>Receiver</option>
-              <option>Sales</option>
-              <option>Account Manager</option>
-            </select>
-          </div>
-          <div><label>Phone</label><input id="teamPhone" placeholder="optional" /></div>
-          <div>
-            <label>Status</label>
-            <select id="teamStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
-          </div>
-          <div class="field-wide"><label>Notes</label><input id="teamNotes" placeholder="optional" /></div>
-          <div class="field-wide" style="display:flex; gap:8px;">
-            <button class="btn btn-primary" onclick="submitTeamMember(this)">Save</button>
-            <button class="btn btn-secondary" id="teamCancelBtn" style="display:none;" onclick="cancelTeamEdit()">Cancel Edit</button>
-          </div>
-        </div>
-        <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+      <div class="card-desc">Everyone with a dashboard login or a route assignment. Email must match what they log in with (Cloudflare Access) for "logged in as" and My Tasks to work.</div>
+      <div class="table-wrap responsive-cards"><table id="teamTable"></table></div>
+      <div id="teamEmpty" class="empty-state" style="display:none;">
+        <strong>No team members yet</strong>
+        Add one above — they'll then show up as an Account Manager / Stocker option on Properties and an Owner option on Tasks.
       </div>
     </div>
   </div>
 
   <!-- ============ CONTACTS ============ -->
   <div class="tab-panel" id="panel-contacts">
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Contacts</h2>
-        <div class="card-desc">Every property manager and prospect, in one place. Contacts without a Property yet are prospects — Tasks & Calls logged against them show up here and on the property once they're linked.</div>
-        <div style="margin-bottom:10px;"><input id="contactSearch" placeholder="Search contacts…" oninput="renderContacts()" style="max-width:320px;" /></div>
-        <div class="table-wrap responsive-cards"><table id="contactsTable"></table></div>
-        <div id="contactsEmpty" class="empty-state" style="display:none;">
-          <strong>No contacts yet</strong>
-          Add one to the right — link a Property if they have one, or leave it blank for a prospect you haven't placed yet.
-        </div>
+    <div class="card">
+      <div class="section-flex">
+        <h2 class="card-title" style="margin:0;">Contacts</h2>
+        <button class="btn btn-primary" onclick="openAddContactModal()">+ Add Contact</button>
       </div>
-      <div class="card">
-        <h2 class="card-title">Add Contact</h2>
-        <div class="form-grid" id="contactForm">
-          <div><label>Property (optional)</label><select id="ctProperty" onchange="onContactPropertyChange()"><option value="">— Prospect, no property yet —</option></select></div>
-          <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" /></div>
-          <div class="field-wide"><label>Name</label><input id="ctName" placeholder="e.g. Sarah Jones" /></div>
-          <div><label>Title</label><input id="ctTitle" placeholder="e.g. Property Manager" /></div>
-          <div><label>Phone</label><input id="ctPhone" /></div>
-          <div class="field-wide"><label>Email</label><input id="ctEmail" type="email" /></div>
-          <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="ctPrimary" style="width:auto;" /> Primary contact</label></div>
-          <div class="field-wide"><button class="btn btn-primary" onclick="addContactStandalone(this)">Add Contact</button></div>
-        </div>
+      <div class="card-desc">Every property manager and prospect, in one place. Contacts without a Property yet are prospects — Tasks & Calls logged against them show up here and on the property once they're linked.</div>
+      <div style="margin-bottom:10px;"><input id="contactSearch" placeholder="Search contacts…" oninput="renderContacts()" style="max-width:320px;" /></div>
+      <div class="table-wrap responsive-cards"><table id="contactsTable"></table></div>
+      <div id="contactsEmpty" class="empty-state" style="display:none;">
+        <strong>No contacts yet</strong>
+        Add one above — link a Property if they have one, or leave it blank for a prospect you haven't placed yet.
       </div>
     </div>
   </div>
@@ -2161,14 +1997,23 @@ function renderMachines() {
   html += '</tbody>';
   tbl.innerHTML = html;
 
-  // refresh machine dropdowns
+  // Refresh machine dropdowns if their forms happen to be open right now
+  // (v1.10.1 F12 moved these into on-demand modals — Add Sale/Add Expense
+  // build their own <select> fresh from `machines` every time they open,
+  // so this is just a nice-to-have for the rare case a modal is open while
+  // machines reload in the background; both are null most of the time).
   const sMachine = document.getElementById('sMachine');
   const eMachine = document.getElementById('eMachine');
-  const curS = sMachine.value, curE = eMachine.value;
-  sMachine.innerHTML = machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
-  eMachine.innerHTML = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
-  if (machines.some(m => m.id === curS)) sMachine.value = curS;
-  if (curE && machines.some(m => m.id === curE)) eMachine.value = curE;
+  if (sMachine) {
+    const curS = sMachine.value;
+    sMachine.innerHTML = machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+    if (machines.some(m => m.id === curS)) sMachine.value = curS;
+  }
+  if (eMachine) {
+    const curE = eMachine.value;
+    eMachine.innerHTML = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+    if (curE && machines.some(m => m.id === curE)) eMachine.value = curE;
+  }
 }
 
 // ---------------- duplicate detection / merge ----------------
@@ -3320,6 +3165,38 @@ function productOptionsHtml(selectedId) {
   return list.map(p => `<option value="${escapeAttr(p.productId)}" data-name="${escapeAttr(p.productName)}" ${p.productId === selectedId ? 'selected' : ''}>${escapeHtml(p.productName)}</option>`).join('');
 }
 
+// v1.10.1 F12 — Log a Purchase moved off an always-on half-page form into a
+// modal. Stays open after a successful save (see submitPurchaseBatch) since
+// logging several purchases from one buying trip in a row is the common case.
+function openLogPurchaseModal() {
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Log a Purchase</div>
+    <div class="modal-sub">Group everything from one buying trip under a batch title (e.g. "Costco run 8/16") — each product still gets its own expense line for accurate category tracking, but they'll show together. Every item needs a cost — enter Unit Price directly, or Package Price + Qty per Package if that's easier than figuring out the per-unit cost yourself.</div>
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div class="field-wide"><label>Batch Title</label><input id="pbLabel" placeholder="e.g. Costco inventory purchase" /></div>
+      <div><label>Purchase Date</label><input id="pbDate" type="date" /></div>
+      <div><label>Vendor</label><input id="pbVendor" placeholder="optional" /></div>
+      <div>
+        <label>Paid By</label>
+        <select id="pbPaidBy">
+          <option value="">—</option>
+          <option>Additional Equity Investment - BDM</option>
+          <option>Additional Equity - Renfroe Ventures LLC</option>
+          <option>Chase Business Credit BDM</option>
+          <option>Chase Business Credit VAR</option>
+          <option>Chase Business Checking</option>
+        </select>
+      </div>
+    </div>
+    <div id="purchaseItemRows"></div>
+    <div style="margin:8px 0;"><button class="btn btn-secondary" onclick="addPurchaseItemRow()">+ Add Product</button></div>
+    <button class="btn btn-primary" onclick="submitPurchaseBatch(this)">Save Purchase</button>
+    <div id="purchaseBatchStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
+  document.getElementById('pbDate').valueAsDate = new Date();
+  addPurchaseItemRow();
+}
+
 let purchaseRowSeq = 0;
 function addPurchaseItemRow() {
   const wrap = document.getElementById('purchaseItemRows');
@@ -3389,6 +3266,7 @@ async function submitPurchaseBatch(btn) {
     document.getElementById('pbLabel').value = '';
     document.getElementById('pbVendor').value = '';
     document.getElementById('purchaseItemRows').innerHTML = '';
+    addPurchaseItemRow(); // leave one empty row ready — this form stays open after saving, for logging several purchases in one sitting
     if (status) { status.textContent = `Saved — ${items.length} product(s) added to Backstock and logged on the Expense Log.`; }
     await loadBackstockLots();
     expenses = (await apiGet('/api/data/expenses')).expenses;
@@ -3498,6 +3376,33 @@ function populateQmosPickers() {
       machines.filter(m => m.status !== 'retired').map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   }
   if (prodSel) prodSel.innerHTML = productOptionsHtml();
+}
+
+// v1.10.1 F12 — QMOS an Item moved off an always-on half-page form into a modal.
+function openQmosModal() {
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">QMOS an Item</div>
+    <div class="modal-sub">Draws from the oldest lot at the location you pick, same as a sale would, and logs the cost as an expense automatically.</div>
+    <div class="form-grid" id="qmosForm">
+      <div><label>Location</label><select id="qLocation"><option value="main">Backstock</option></select></div>
+      <div><label>Product</label><select id="qProduct"></select></div>
+      <div><label>Quantity</label><input id="qQuantity" type="number" step="1" min="1" placeholder="0" /></div>
+      <div>
+        <label>Reason</label>
+        <select id="qReason">
+          <option value="quality">Quality (damaged, spoiled, etc.)</option>
+          <option value="sample">Sample</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+      <div><label>Date</label><input id="qDate" type="date" /></div>
+      <div class="field-wide"><label>Notes</label><input id="qNotes" placeholder="optional — e.g. crushed bag of chips" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitQmos(this)">Log QMOS</button></div>
+    </div>
+    <div id="qmosFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
+  document.getElementById('qDate').valueAsDate = new Date();
+  populateQmosPickers();
 }
 
 async function submitQmos(btn) {
@@ -4232,28 +4137,42 @@ function renderTeam() {
   tbl.innerHTML = html;
 }
 
-function editTeamMember(id) {
-  const t = team.find(x => x.id === id);
-  if (!t) return;
-  document.getElementById('teamId').value = t.id;
-  document.getElementById('teamName').value = t.name;
-  document.getElementById('teamEmail').value = t.email;
-  document.getElementById('teamRole').value = t.role;
-  document.getElementById('teamPhone').value = t.phone || '';
-  document.getElementById('teamStatus').value = t.status;
-  document.getElementById('teamNotes').value = t.notes || '';
-  document.getElementById('teamFormTitle').textContent = 'Edit Team Member';
-  document.getElementById('teamCancelBtn').style.display = 'inline-block';
-  switchToTab('team');
+// v1.10.1 F12 — Add/Edit Team Member moved off an always-on half-page form
+// into a modal. Same underlying fields/ids as before, and submitTeamMember()
+// is unchanged apart from closing the modal instead of resetting an
+// inline form — id omitted means "add," id present means "edit," same as
+// the original always-visible version.
+function openTeamModal(id) {
+  const t = id ? team.find(x => x.id === id) : null;
+  const roleOptions = ['Admin', 'Stocker', 'Receiver', 'Sales', 'Account Manager']
+    .map(r => `<option ${t && t.role === r ? 'selected' : ''}>${r}</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">${t ? 'Edit Team Member' : 'Add Team Member'}</div>
+    <div class="form-grid" id="teamForm">
+      <input type="hidden" id="teamId" value="${t ? escapeAttr(t.id) : ''}" />
+      <div><label>Name</label><input id="teamName" placeholder="e.g. Vala Renfroe" value="${t ? escapeAttr(t.name) : ''}" /></div>
+      <div><label>Email</label><input id="teamEmail" type="email" placeholder="login email" value="${t ? escapeAttr(t.email) : ''}" /></div>
+      <div>
+        <label>Role</label>
+        <select id="teamRole">${roleOptions}</select>
+      </div>
+      <div><label>Phone</label><input id="teamPhone" placeholder="optional" value="${t ? escapeAttr(t.phone || '') : ''}" /></div>
+      <div>
+        <label>Status</label>
+        <select id="teamStatus">
+          <option value="active" ${!t || t.status === 'active' ? 'selected' : ''}>Active</option>
+          <option value="inactive" ${t && t.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+        </select>
+      </div>
+      <div class="field-wide"><label>Notes</label><input id="teamNotes" placeholder="optional" value="${t ? escapeAttr(t.notes || '') : ''}" /></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitTeamMember(this)">Save</button></div>
+    </div>
+    <div id="teamFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
 }
 
-function cancelTeamEdit() {
-  document.getElementById('teamId').value = '';
-  ['teamName', 'teamEmail', 'teamPhone', 'teamNotes'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('teamRole').value = 'Admin';
-  document.getElementById('teamStatus').value = 'active';
-  document.getElementById('teamFormTitle').textContent = 'Add Team Member';
-  document.getElementById('teamCancelBtn').style.display = 'none';
+function editTeamMember(id) {
+  openTeamModal(id);
 }
 
 async function submitTeamMember(btn) {
@@ -4275,7 +4194,7 @@ async function submitTeamMember(btn) {
       if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Could not save: ' + e.message; } else alert('Could not save: ' + e.message);
       return;
     }
-    cancelTeamEdit();
+    closeModal();
     await loadTeam();
     renderTeam();
     await loadProperties();
@@ -4597,6 +4516,25 @@ function onContactPropertyChange() {
   if (propId && companyField) companyField.value = '';
 }
 
+// v1.10.1 F12 — Add Contact moved off an always-on half-page form into a modal.
+function openAddContactModal() {
+  const propertyOptions = '<option value="">— Prospect, no property yet —</option>' +
+    properties.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Add Contact</div>
+    <div class="form-grid" id="contactForm">
+      <div><label>Property (optional)</label><select id="ctProperty" onchange="onContactPropertyChange()">${propertyOptions}</select></div>
+      <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" /></div>
+      <div class="field-wide"><label>Name</label><input id="ctName" placeholder="e.g. Sarah Jones" /></div>
+      <div><label>Title</label><input id="ctTitle" placeholder="e.g. Property Manager" /></div>
+      <div><label>Phone</label><input id="ctPhone" /></div>
+      <div class="field-wide"><label>Email</label><input id="ctEmail" type="email" /></div>
+      <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="ctPrimary" style="width:auto;" /> Primary contact</label></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="addContactStandalone(this)">Add Contact</button></div>
+    </div>
+  `);
+}
+
 function renderContacts() {
   const propSel = document.getElementById('ctProperty');
   if (propSel && propSel.dataset.wired !== '1') {
@@ -4651,9 +4589,7 @@ async function addContactStandalone(btn) {
         isPrimary: document.getElementById('ctPrimary').checked,
       });
     } catch (e) { alert('Could not save contact: ' + e.message); return; }
-    ['ctCompany', 'ctName', 'ctTitle', 'ctPhone', 'ctEmail'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('ctProperty').value = '';
-    document.getElementById('ctPrimary').checked = false;
+    closeModal();
     await loadContacts();
     renderContacts();
   });
@@ -5652,6 +5588,24 @@ function renderToday() {
 }
 
 // ---------------- sales ----------------
+// v1.10.1 F12 — Log a Sales Entry Manually moved off an always-on form into a modal.
+function openAddSaleModal() {
+  const machineOptions = machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Log a Sales Entry Manually</div>
+    <div class="modal-sub">One entry per machine per day (or per batch/report pull) — Contribution Profit is calculated automatically. Contribution Profit = Gross − Cost of Goods − Processing Fees.</div>
+    <div class="form-grid" id="salesForm">
+      <div><label>Machine</label><select id="sMachine">${machineOptions}</select></div>
+      <div><label>Date</label><input id="sDate" type="date" /></div>
+      <div><label>Gross Sales ($)</label><input id="sGross" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div><label>Cost of Goods ($)</label><input id="sCogs" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div><label>Processing Fees ($)</label><input id="sFees" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div><button class="btn btn-primary" onclick="addSale()">Add Entry</button></div>
+    </div>
+  `);
+  document.getElementById('sDate').valueAsDate = new Date();
+}
+
 async function addSale() {
   const machineId = document.getElementById('sMachine').value;
   const date = document.getElementById('sDate').value;
@@ -5859,13 +5813,63 @@ async function uploadReceiptFile(file) {
   return body.key;
 }
 
+// v1.10.1 F12 — Log an Expense (the full form, with machine/receipt/
+// reimbursable fields) moved off an always-on half-page form into a modal.
+// Reuses EXPENSE_CATEGORY_OPTIONS_HTML, the same category list quickAddExpense()
+// already uses, rather than duplicating it a third time.
+function openAddExpenseModal() {
+  const machineOptions = '<option value="">Company-wide</option>' + machines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <div class="modal-title">Log an Expense</div>
+    <div class="modal-sub">Operating costs — insurance, software, fuel, filing fees, contractor payments, etc. (Not product cost — that's tracked on the Inventory tab.) Mark "Capital / Equipment" for machine purchases, major repairs, etc. rather than routine operating costs.</div>
+    <div class="form-grid" id="expenseForm">
+      <div><label>Date</label><input id="eDate" type="date" /></div>
+      <div>
+        <label>Category</label>
+        <select id="eCategory">${EXPENSE_CATEGORY_OPTIONS_HTML}</select>
+      </div>
+      <div><label>Amount ($)</label><input id="eAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+      <div class="field-wide"><label>Vendor</label><input id="eVendor" placeholder="optional" /></div>
+      <div>
+        <label>Paid By</label>
+        <select id="ePaidBy">
+        <option value="">—</option>
+        <option>Additional Equity Investment - BDM</option>
+        <option>Additional Equity - Renfroe Ventures LLC</option>
+        <option>Chase Business Credit BDM</option>
+        <option>Chase Business Credit VAR</option>
+        <option>Chase Business Checking</option>
+        </select>
+      </div>
+      <div>
+        <label>Type</label>
+        <select id="eExpenseType">
+          <option value="operating">Operating Expense</option>
+          <option value="capital">Capital / Equipment</option>
+        </select>
+      </div>
+      <div><label>Machine (optional)</label><select id="eMachine">${machineOptions}</select></div>
+      <div class="field-wide"><label>Note</label><input id="eNote" placeholder="optional" /></div>
+      <div class="field-wide"><label>Receipt (optional)</label><input id="eReceipt" type="file" accept="image/jpeg,image/png,image/heic,image/webp,application/pdf" /></div>
+      <div style="display:flex; align-items:end; gap:6px; padding-bottom:8px;">
+        <label style="margin:0; display:flex; align-items:center; gap:5px; text-transform:none; font-weight:600; font-size:12.5px;">
+          <input type="checkbox" id="eReimbursable" style="width:auto;" /> Reimbursable
+        </label>
+      </div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="addExpense(this)">Add Expense</button></div>
+    </div>
+    <div id="expenseFormStatus" class="pill-note" aria-live="polite" style="display:none; margin-top:10px;"></div>
+  `);
+  document.getElementById('eDate').valueAsDate = new Date();
+}
+
 async function addExpense(btn) {
   const category0 = document.getElementById('eCategory').value;
   if (category0 === 'Inventory - Product Purchases') {
     const proceed = confirm(
       'Inventory - Product Purchases is usually logged from Inventory \u2192 Backstock \u2192 "Log a Purchase" instead — that records it by item (with quantity and FIFO cost) so it shows up correctly in Backstock and Products, not just as a lump expense line.\n\nGo to Backstock now? Cancel to log it here as a plain expense anyway.'
     );
-    if (proceed) { switchToTab('backstock'); return; }
+    if (proceed) { closeModal(); switchToTab('backstock'); return; }
   }
   return withButtonBusy(btn, async () => {
     const date = document.getElementById('eDate').value;
@@ -6641,11 +6645,15 @@ async function init() {
   updateSidebarDate();
   wireTabSemantics();
   document.querySelectorAll('#panel-overview .trend-gran-btn').forEach(b => b.classList.toggle('active', b.dataset.range === overviewRange));
-  document.getElementById('sDate').valueAsDate = new Date();
-  document.getElementById('eDate').valueAsDate = new Date();
+  // v1.10.1 F12 — sDate/eDate/pbDate/qDate now live inside on-demand modals
+  // (Add Sale/Add Expense/Log a Purchase/Add QMOS), not the always-loaded
+  // page, so none of them exist yet at init time; each modal-open function
+  // sets its own date default instead. Guarded rather than removed in case
+  // any of these ever end up back on the page directly.
+  if (document.getElementById('sDate')) document.getElementById('sDate').valueAsDate = new Date();
+  if (document.getElementById('eDate')) document.getElementById('eDate').valueAsDate = new Date();
   if (document.getElementById('pbDate')) document.getElementById('pbDate').valueAsDate = new Date();
   if (document.getElementById('qDate')) document.getElementById('qDate').valueAsDate = new Date();
-  addPurchaseItemRow();
 
   // default HAHA sync range: last 30 days
   const today = new Date();
