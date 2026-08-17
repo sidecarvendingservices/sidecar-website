@@ -629,7 +629,6 @@
         <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
         <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openDataHealthDialog()">Data Health</button>
         <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openActivityHistoryDialog()">Activity History</button>
-        <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
         <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
       </div>
     </div>
@@ -2335,33 +2334,17 @@ function openMetricDictionary() {
   `);
 }
 
-function openSyncHistoryDialog() {
-  const hahaLine = lastHahaSyncAt ? `${fmtWhen(lastHahaSyncAt)} (${fmtAgo(lastHahaSyncAt)})` : 'Never synced yet';
-  const adsLine = (typeof googleAdsConnected !== 'undefined' && googleAdsConnected)
-    ? (googleAdsLastSyncAt ? `${fmtWhen(googleAdsLastSyncAt)} (${fmtAgo(googleAdsLastSyncAt)})` : 'Connected — not synced yet')
-    : 'Not connected — see Marketing tab';
-  const gaLine = (typeof googleAnalyticsConnected !== 'undefined' && googleAnalyticsConnected)
-    ? (googleAnalyticsLastSyncAt ? `${fmtWhen(googleAnalyticsLastSyncAt)} (${fmtAgo(googleAnalyticsLastSyncAt)})` : 'Connected — not synced yet')
-    : 'Not connected — see Marketing tab';
-  openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">Data Syncs</div>
-    <div class="modal-sub">Last successful sync per integration — real Activity History (business changes, not just integration syncs) is coming in a later update.</div>
-    <div class="table-wrap" style="margin-top:10px;"><table>
-      <thead><tr><th>Integration</th><th>Last Synced</th></tr></thead>
-      <tbody>
-        <tr><td>HAHA</td><td>${escapeHtml(hahaLine)}</td></tr>
-        <tr><td>Google Ads</td><td>${escapeHtml(adsLine)}</td></tr>
-        <tr><td>Google Analytics</td><td>${escapeHtml(gaLine)}</td></tr>
-        <tr><td>Zoho</td><td>Not connected — coming soon</td></tr>
-      </tbody>
-    </table></div>`);
-}
-
-// v1.10.1 F16 — Data Health & Freshness. Two parts:
-//  1) Stale-threshold flags layered on top of the same sync timestamps
-//     "Data Syncs" already shows, so a stale integration is visible without
-//     having to eyeball a raw "3 days ago" and do the math yourself.
-//  2) A Data Quality checklist computed entirely from state already loaded
+// v1.10.1 F16 — Data Health & Freshness. Three parts, all in one dialog
+// (previously split across a separate "Data Syncs" button + dialog that
+// just duplicated the top half of this one — folded together 2026-08-16
+// since showing the same per-integration sync info in two places was
+// redundant, not two genuinely different views):
+//  1) Exact last-synced timestamp per integration (what "Data Syncs" used
+//     to show on its own).
+//  2) Stale-threshold flags layered on top of those same timestamps, so a
+//     stale integration is visible without eyeballing a raw "3 days ago"
+//     and doing the math yourself.
+//  3) A Data Quality checklist computed entirely from state already loaded
 //     client-side (no new endpoints) — products missing a cost, active
 //     machines with no property, and negative backstock lots. Deliberately
 //     NOT included here (documented in V1.10.1_SPEC.md instead of built):
@@ -2379,12 +2362,13 @@ function openDataHealthDialog() {
     if (!lastSyncAt) return { label, text: 'Never synced', dot: 'sync-dot-none' };
     const age = Date.now() - new Date(lastSyncAt).getTime();
     const stale = age > staleMs;
-    return { label, text: `${fmtAgo(lastSyncAt)}${stale ? ' — STALE' : ''}`, dot: stale ? 'sync-dot-stale' : 'sync-dot-fresh' };
+    return { label, text: `${fmtWhen(lastSyncAt)} (${fmtAgo(lastSyncAt)})${stale ? ' — STALE' : ''}`, dot: stale ? 'sync-dot-stale' : 'sync-dot-fresh' };
   }
   const syncRows = [
     syncRow('HAHA', lastHahaSyncAt, true, HAHA_STALE_MS),
     syncRow('Google Ads', typeof googleAdsLastSyncAt !== 'undefined' ? googleAdsLastSyncAt : null, (typeof googleAdsConnected !== 'undefined' && googleAdsConnected), MARKETING_STALE_MS),
     syncRow('Google Analytics', typeof googleAnalyticsLastSyncAt !== 'undefined' ? googleAnalyticsLastSyncAt : null, (typeof googleAnalyticsConnected !== 'undefined' && googleAnalyticsConnected), MARKETING_STALE_MS),
+    syncRow('Zoho', null, false, MARKETING_STALE_MS),
   ];
 
   const missingCost = (productCatalogCache || []).filter(p => p.currentCost === null);
@@ -2423,8 +2407,8 @@ function openDataHealthDialog() {
     <div class="modal-sub" style="margin-top:14px;">Not yet tracked here: last-attempted-sync/failure history, missing machine-product capacity, and unresolved contracts — planned as these features get built out.</div>`);
 }
 
-// v1.10.1 F17 — Activity & Audit History. Distinct from "Data Syncs"
-// (integration sync timestamps) — this is a real audit trail of who
+// v1.10.1 F17 — Activity & Audit History. Distinct from Data Health's
+// integration sync timestamps — this is a real audit trail of who
 // changed what, sourced from audit_log (migrations/015_audit_log.sql) via
 // GET /api/data/audit-log. Only instrumented so far against write paths
 // that exist today: team member role changes, property Account
@@ -4554,7 +4538,7 @@ function renderRelationships() {
   properties.forEach(p => {
     const machineCount = machines.filter(m => m.propertyId === p.id).length;
     html += `<tr>
-      <td><span class="color-dot" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${escapeAttr(p.color || '#ccc')};" title="${escapeAttr(p.color || '')}"></span></td>
+      <td>${colorDotHtml(p.color || '#ccc', p.color || '')}</td>
       <td><button class="link-btn" onclick="openPropertyDetail('${p.id}')">${escapeHtml(p.name)}</button></td>
       <td>${escapeHtml(p.propertyType || '—')}</td>
       <td><span class="tag ${p.status === 'active' ? 'tag-paid' : p.status === 'prospect' ? 'tag-tiered' : 'tag-none'}">${escapeHtml(p.status)}</span></td>
