@@ -118,6 +118,9 @@
   .brand-sub { font-family: var(--font-head); font-size: 16px; color: #fff; margin-top: 8px; font-weight: 800; letter-spacing: .01em; }
   .sidebar-date { font-size: 12px; color: rgba(255,255,255,.8); font-weight: 700; margin-top: 3px; }
   .dashboard-version { font-size: 10.5px; color: rgba(255,255,255,.65); letter-spacing: 0.02em; margin-top: 6px; }
+  /* Thin separator between the brand/version block and the nav list below
+     it — requested as a cleaner break than the plain 16px gap alone gave. */
+  .sidebar-divider { height: 1px; background: rgba(255,255,255,.14); margin-top: 16px; border: none; }
 
   .sidebar-filter.month-filter {
     display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.85); font-weight: 700;
@@ -242,6 +245,14 @@
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 40;
   }
+  /* v1.10.1 follow-up fix — content-header previously had 7 direct flex
+     children (search + Quick Add + 5 sync/history buttons) all sharing one
+     space-between, which spread them evenly across the full width instead
+     of reading as deliberate groups. Now exactly two groups: search stays
+     left-justified, everything else (Quick Add + the status/history
+     buttons) is right-justified together as one cluster. */
+  .content-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .content-header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   @media (min-width: 641px) and (max-width: 900px) { .content-header { margin: 0 -32px 20px; padding: 12px 32px; } }
   .haha-sync-status {
     display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--graphite);
@@ -562,6 +573,7 @@
     <div class="brand-sub">Command Center</div>
     <div class="sidebar-date" id="sidebarDate">&nbsp;</div>
     <div class="dashboard-version" id="dashboardVersion" title="Confirms which version is currently live">{{BUILD_VERSION}}</div>
+    <hr class="sidebar-divider" />
 
     <div class="tabbar-wrap" id="tabbarWrap">
       <div class="tabbar" id="tabbar">
@@ -591,31 +603,35 @@
   <div class="app">
 
     <div class="content-header" id="contentHeader">
-      <div class="global-search-wrap" style="position:relative;">
-        <label for="globalSearchInput" class="visually-hidden">Search machines, properties, contacts, products, and tasks</label>
-        <input id="globalSearchInput" type="search" placeholder="Search everything…" autocomplete="off"
-               style="border:1.5px solid var(--border-strong); border-radius:999px; padding:9px 16px; font-size:13px; font-family:inherit; min-height:44px; width:220px;"
-               oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" />
-        <div id="globalSearchResults" role="listbox" aria-label="Search results"
-             style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:60; width:340px; max-height:400px; overflow-y:auto; background:#fff; border:1px solid var(--border-strong); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
-      </div>
-      <div class="quick-add-wrap">
-        <button class="btn-quick-add" onclick="toggleQuickAddMenu(event)" aria-haspopup="true" aria-expanded="false">+ Quick Add ▾</button>
-        <div class="quick-add-menu" id="quickAddMenu" role="menu">
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddTask();">New Task</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddContact();">New Contact</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickScheduleCall();">Schedule Call</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickLogCall();">Log Call</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddExpense();">Add Expense</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickAddInventory();">Add Inventory</button>
-          <button role="menuitem" onclick="closeQuickAddMenu(); quickUploadReceipt();">Upload Receipt</button>
+      <div class="content-header-left">
+        <div class="global-search-wrap" style="position:relative;">
+          <label for="globalSearchInput" class="visually-hidden">Search machines, properties, contacts, products, and tasks</label>
+          <input id="globalSearchInput" type="search" placeholder="Search everything…" autocomplete="off"
+                 style="border:1.5px solid var(--border-strong); border-radius:999px; padding:9px 16px; font-size:13px; font-family:inherit; min-height:44px; width:220px;"
+                 oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" />
+          <div id="globalSearchResults" role="listbox" aria-label="Search results"
+               style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:60; width:340px; max-height:400px; overflow-y:auto; background:#fff; border:1px solid var(--border-strong); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
         </div>
       </div>
-      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
-      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openDataHealthDialog()">Data Health</button>
-      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openActivityHistoryDialog()">Activity History</button>
-      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
-      <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
+      <div class="content-header-right">
+        <div class="quick-add-wrap">
+          <button class="btn-quick-add" onclick="toggleQuickAddMenu(event)" aria-haspopup="true" aria-expanded="false">+ Quick Add ▾</button>
+          <div class="quick-add-menu" id="quickAddMenu" role="menu">
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickAddTask();">New Task</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickAddContact();">New Contact</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickScheduleCall();">Schedule Call</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickLogCall();">Log Call</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickAddExpense();">Add Expense</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickAddInventory();">Add Inventory</button>
+            <button role="menuitem" onclick="closeQuickAddMenu(); quickUploadReceipt();">Upload Receipt</button>
+          </div>
+        </div>
+        <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
+        <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openDataHealthDialog()">Data Health</button>
+        <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openActivityHistoryDialog()">Activity History</button>
+        <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
+        <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
+      </div>
     </div>
 
     <button id="backToTopBtn" class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top" title="Back to top">↑</button>
@@ -2399,7 +2415,7 @@ function openDataHealthDialog() {
     <div class="table-wrap" style="margin-top:8px;"><table>
       <thead><tr><th>Check</th><th>Count</th><th>Examples</th></tr></thead>
       <tbody>
-        ${checklistRow('Products missing a cost', missingCost, p => p.name)}
+        ${checklistRow('Products missing a cost', missingCost, p => p.productName)}
         ${checklistRow('Active machines with no property assigned', unassignedMachines, m => m.name)}
         ${checklistRow('Backstock lots with negative quantity', negativeLots, a => a.productName)}
       </tbody>
@@ -4037,7 +4053,7 @@ function renderProducts() {
       <td data-label="Product">${r.productImage ? `<img class="thumb" src="${escapeAttr(r.productImage)}" onerror="this.style.display='none'">` : ''}${escapeHtml(r.productName)}</td>
       <td data-label="Category"><span class="category-text ${currentCat ? '' : 'is-uncategorized'}">${currentCat ? escapeHtml(currentCat) : 'Uncategorized'}</span></td>
       <td data-label="In Machines" class="num">${r.machineCount}</td>
-      <td data-label="Current Cost" class="num">${r.currentCost !== null ? fmt(r.currentCost) : '—'}${r.currentCostSource === 'haha' ? ' <span class="tag tag-none">from HAHA</span>' : ''}</td>
+      <td data-label="Current Cost" class="num">${r.currentCost !== null ? fmt(r.currentCost) : '—'}</td>
       <td data-label="Price" class="num">${r.price !== null ? fmt(r.price) : '—'}</td>
       <td data-label="Margin" class="num">${margin !== null ? margin.toFixed(0) + '%' : '—'}</td>
     </tr>`;
@@ -5821,7 +5837,7 @@ function buildAttentionItems() {
   // aggregated queue instead of only being visible if you happen to open
   // that separate dialog).
   (productCatalogCache || []).forEach(p => {
-    if (p.currentCost === null) followUp.push({ label: `${p.name} is missing a cost`, detail: 'Needed for margin and Backstock value calculations', action: () => switchToTab('products'), category: 'inventory', source: 'Data Quality' });
+    if (p.currentCost === null) followUp.push({ label: `${p.productName} is missing a cost`, detail: 'Needed for margin and Backstock value calculations', action: () => switchToTab('products'), category: 'inventory', source: 'Data Quality' });
   });
   activeMachines.forEach(m => {
     if (!m.propertyId) followUp.push({ label: `${m.name} has no property assigned`, detail: 'Blocks Account Manager/Stocker inheritance (F14)', action: () => switchToTab('machines'), category: 'inventory', source: 'Data Quality' });
@@ -5829,7 +5845,7 @@ function buildAttentionItems() {
   (productCatalogCache || []).forEach(p => {
     if (p.currentCost !== null && p.price) {
       const margin = (p.price - p.currentCost) / p.price;
-      if (margin < 0.15) info.push({ label: `${p.name} margin is thin`, detail: `${(margin * 100).toFixed(0)}% margin`, action: () => switchToTab('products'), category: 'financial', source: 'Products' });
+      if (margin < 0.15) info.push({ label: `${p.productName} margin is thin`, detail: `${(margin * 100).toFixed(0)}% margin`, action: () => switchToTab('products'), category: 'financial', source: 'Products' });
     }
   });
 
@@ -5991,8 +6007,8 @@ function handleGlobalSearch(raw) {
     }
   });
   (productCatalogCache || []).forEach(p => {
-    if (p.name.toLowerCase().includes(q)) {
-      results.push({ type: 'Product', label: p.name, detail: `${p.machineCount} machine(s)`, action: () => switchToTab('products') });
+    if ((p.productName || '').toLowerCase().includes(q)) {
+      results.push({ type: 'Product', label: p.productName, detail: `${p.machineCount} machine(s)`, action: () => switchToTab('products') });
     }
   });
   (tasks || []).forEach(t => {
