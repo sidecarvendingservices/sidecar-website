@@ -572,6 +572,7 @@
           <button role="menuitem" onclick="closeQuickAddMenu(); quickUploadReceipt();">Upload Receipt</button>
         </div>
       </div>
+      <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openMetricDictionary()">Metric Dictionary</button>
       <button class="btn-header-sync" style="background:transparent; color:var(--sky-deep); border:1.5px solid var(--sky-deep);" onclick="openSyncHistoryDialog()">Data Syncs</button>
       <button class="btn-header-sync" onclick="openSyncDialog()">Sync Data</button>
     </div>
@@ -4415,7 +4416,10 @@ async function openPropertyDetail(propertyId) {
       <td>${escapeHtml(c.title || '—')}</td>
       <td>${escapeHtml(c.phone || '—')}</td>
       <td>${escapeHtml(c.email || '—')}</td>
-      <td><button class="btn-danger-text" onclick="deleteContact('${c.id}','${propertyId}')">Remove</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openContactModal('${c.id}','${propertyId}')">Edit</button>
+        <button class="btn-danger-text" onclick="deleteContact('${c.id}','${propertyId}')">Remove</button>
+      </td>
     </tr>`).join('')}</tbody></table>`;
 
   const machinesHtml = !propMachines.length ? '<div class="empty-state" style="padding:10px;">No machines linked yet.</div>' :
@@ -4516,24 +4520,35 @@ function onContactPropertyChange() {
   if (propId && companyField) companyField.value = '';
 }
 
-// v1.10.1 F12 — Add Contact moved off an always-on half-page form into a modal.
-function openAddContactModal() {
+// v1.10.1 F12 — Add Contact moved off an always-on half-page form into a
+// modal. Also now doubles as Edit (previously missing entirely — Contacts
+// could be added or removed, never edited). Pass a contactId to edit; pass
+// a returnPropertyId when opened from inside the Property Detail modal so
+// saving returns you there instead of just closing.
+function openContactModal(contactId, returnPropertyId) {
+  const c = contactId ? allContacts.find(x => x.id === contactId) : null;
   const propertyOptions = '<option value="">— Prospect, no property yet —</option>' +
-    properties.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    properties.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p =>
+      `<option value="${p.id}" ${c && c.propertyId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-    <div class="modal-title">Add Contact</div>
+    <div class="modal-title">${c ? 'Edit Contact' : 'Add Contact'}</div>
     <div class="form-grid" id="contactForm">
+      <input type="hidden" id="ctId" value="${c ? escapeAttr(c.id) : ''}" />
+      <input type="hidden" id="ctReturnProperty" value="${returnPropertyId ? escapeAttr(returnPropertyId) : ''}" />
       <div><label>Property (optional)</label><select id="ctProperty" onchange="onContactPropertyChange()">${propertyOptions}</select></div>
-      <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" /></div>
-      <div class="field-wide"><label>Name</label><input id="ctName" placeholder="e.g. Sarah Jones" /></div>
-      <div><label>Title</label><input id="ctTitle" placeholder="e.g. Property Manager" /></div>
-      <div><label>Phone</label><input id="ctPhone" /></div>
-      <div class="field-wide"><label>Email</label><input id="ctEmail" type="email" /></div>
-      <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="ctPrimary" style="width:auto;" /> Primary contact</label></div>
-      <div class="field-wide"><button class="btn btn-primary" onclick="addContactStandalone(this)">Add Contact</button></div>
+      <div><label>Company</label><input id="ctCompany" placeholder="only used if no Property" value="${c ? escapeAttr(c.company || '') : ''}" ${c && c.propertyId ? 'disabled' : ''} /></div>
+      <div class="field-wide"><label>Name</label><input id="ctName" placeholder="e.g. Sarah Jones" value="${c ? escapeAttr(c.name) : ''}" /></div>
+      <div><label>Title</label><input id="ctTitle" placeholder="e.g. Property Manager" value="${c ? escapeAttr(c.title || '') : ''}" /></div>
+      <div><label>Phone</label><input id="ctPhone" value="${c ? escapeAttr(c.phone || '') : ''}" /></div>
+      <div class="field-wide"><label>Email</label><input id="ctEmail" type="email" value="${c ? escapeAttr(c.email || '') : ''}" /></div>
+      <div><label style="display:flex; align-items:center; gap:5px; text-transform:none;"><input type="checkbox" id="ctPrimary" style="width:auto;" ${c && c.isPrimary ? 'checked' : ''} /> Primary contact</label></div>
+      <div class="field-wide"><button class="btn btn-primary" onclick="submitContactModal(this)">${c ? 'Save Changes' : 'Add Contact'}</button></div>
     </div>
   `);
 }
+
+// Kept as a thin alias — a few call sites still say "Add Contact" explicitly.
+function openAddContactModal() { openContactModal(); }
 
 function renderContacts() {
   const propSel = document.getElementById('ctProperty');
@@ -4566,21 +4581,26 @@ function renderContacts() {
       <td>${escapeHtml(c.title || '—')}</td>
       <td>${escapeHtml(c.phone || '—')}</td>
       <td>${escapeHtml(c.email || '—')}</td>
-      <td><button class="btn-danger-text" onclick="deleteContactStandalone('${c.id}')">Remove</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-danger-text" style="color:var(--sky-deep);" onclick="openContactModal('${c.id}')">Edit</button>
+        <button class="btn-danger-text" onclick="deleteContactStandalone('${c.id}')">Remove</button>
+      </td>
     </tr>`;
   });
   html += '</tbody>';
   tbl.innerHTML = html;
 }
 
-async function addContactStandalone(btn) {
+async function submitContactModal(btn) {
   return withButtonBusy(btn, async () => {
     const name = document.getElementById('ctName').value.trim();
     if (!name) { alert('Give the contact a name.'); return; }
+    const id = document.getElementById('ctId').value || undefined;
+    const returnPropertyId = document.getElementById('ctReturnProperty').value || null;
     const propertyId = document.getElementById('ctProperty').value || null;
     try {
       await apiPost('/api/data/contacts', {
-        propertyId,
+        id, propertyId,
         company: document.getElementById('ctCompany').value.trim(),
         name,
         title: document.getElementById('ctTitle').value.trim(),
@@ -4589,11 +4609,16 @@ async function addContactStandalone(btn) {
         isPrimary: document.getElementById('ctPrimary').checked,
       });
     } catch (e) { alert('Could not save contact: ' + e.message); return; }
-    closeModal();
     await loadContacts();
+    // Opened from inside Property Detail (Edit there) — go back to it
+    // instead of just closing, so the edit doesn't feel like a dead end.
+    if (returnPropertyId) { openPropertyDetail(returnPropertyId); return; }
+    closeModal();
     renderContacts();
   });
 }
+// Kept as an alias — matches the name used before this became add+edit.
+const addContactStandalone = submitContactModal;
 
 async function deleteContactStandalone(id) {
   if (!confirm('Remove this contact?')) return;
@@ -4671,7 +4696,7 @@ async function openContactDetail(id) {
   openModal(`<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     <div class="modal-title">${escapeHtml(c.name)}</div>
     <div class="modal-sub">${escapeHtml(c.title || 'Contact')}${c.propertyId ? ' — ' + escapeHtml(c.propertyName || '') : (c.company ? ' — ' + escapeHtml(c.company) : '')}${!c.propertyId ? ' · <span class="tag tag-none">prospect</span>' : ''}</div>
-    <div class="card-desc" style="margin-top:6px;">${[c.phone, c.email].filter(Boolean).map(escapeHtml).join(' · ') || 'No phone/email on file'}</div>
+    <div class="card-desc" style="margin-top:6px;">${[c.phone, c.email].filter(Boolean).map(escapeHtml).join(' · ') || 'No phone/email on file'} · <button class="link-btn" onclick="openContactModal('${id}')">Edit contact</button></div>
 
     <h2 class="card-title" style="margin-top:14px;">Log a Call</h2>
     <div class="form-grid" style="margin-bottom:8px;">
